@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient
 // Charts replaced with lightweight CSS visualizations to reduce memory
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { toast } from 'sonner'
+import { toast } from '@/hooks/use-toast'
 import { useTheme } from 'next-themes'
 import { useAppStore, type ViewName, type UserInfo } from '@/store/appStore'
 import { cn } from '@/lib/utils'
@@ -39,7 +39,7 @@ import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
-import { Toaster } from '@/components/ui/sonner'
+// Toaster moved to layout.tsx
 
 // ==================== lucide icons ====================
 import {
@@ -1538,7 +1538,6 @@ export default function App() {
             </div>
           </>}
         </div>
-          <Toaster richColors position='top-right' />
         </div>
       </TooltipProvider>
     </QueryClientProvider>

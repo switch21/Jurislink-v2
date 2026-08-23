@@ -1,6 +1,5 @@
 "use client"
 
-// Inspired by react-hot-toast library
 import * as React from "react"
 
 import type {
@@ -8,8 +7,8 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_LIMIT = 5
+const TOAST_REMOVE_DELAY = 5000
 
 type ToasterToast = ToastProps & {
   id: string
@@ -36,21 +35,21 @@ type ActionType = typeof actionTypes
 
 type Action =
   | {
-    type: ActionType["ADD_TOAST"]
-    toast: ToasterToast
-  }
+      type: ActionType["ADD_TOAST"]
+      toast: ToasterToast
+    }
   | {
-    type: ActionType["UPDATE_TOAST"]
-    toast: Partial<ToasterToast>
-  }
+      type: ActionType["UPDATE_TOAST"]
+      toast: Partial<ToasterToast>
+    }
   | {
-    type: ActionType["DISMISS_TOAST"]
-    toastId?: ToasterToast["id"]
-  }
+      type: ActionType["DISMISS_TOAST"]
+      toastId?: ToasterToast["id"]
+    }
   | {
-    type: ActionType["REMOVE_TOAST"]
-    toastId?: ToasterToast["id"]
-  }
+      type: ActionType["REMOVE_TOAST"]
+      toastId?: ToasterToast["id"]
+    }
 
 interface State {
   toasts: ToasterToast[]
@@ -93,8 +92,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -170,6 +167,26 @@ function toast({ ...props }: Toast) {
     update,
   }
 }
+
+// Sonner-compatible API
+// @ts-expect-error -- assigning to function object
+toast.success = (message: string, opts?: Partial<Toast>) =>
+  toast({ title: message, variant: "success", ...opts })
+
+// @ts-expect-error -- assigning to function object
+toast.error = (message: string, opts?: Partial<Toast>) =>
+  toast({ title: message, variant: "destructive", ...opts })
+
+// @ts-expect-error -- assigning to function object
+toast.info = (message: string, opts?: Partial<Toast>) =>
+  toast({ title: message, variant: "default", ...opts })
+
+// @ts-expect-error -- assigning to function object
+toast.warning = (message: string, opts?: Partial<Toast>) =>
+  toast({ title: message, variant: "warning", ...opts })
+
+// @ts-expect-error -- assigning to function object
+toast.dismiss = () => dispatch({ type: "DISMISS_TOAST" })
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
