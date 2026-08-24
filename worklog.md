@@ -274,3 +274,26 @@ Stage Summary:
 - root_admin can change any user's password from Admin > Utilisateurs (Lock icon)
 - Admin sidebar now includes Paramètres menu
 - Committed locally: fc25ac1
+---
+Task ID: 2
+Agent: Main
+Task: Populate database with 3 cabinets, 3 plans, ~20 new cases, verify root_admin
+
+Work Log:
+- Fixed git remote to point to switch21/Jurislink-v2
+- Pushed fc25ac1 (root_admin protection + password management) to Jurislink-v2
+- Created seed-multi-tenant.ts with comprehensive data
+- Created 2 new subscription plans: Starter (200K XAF/yr, 3 users) and Professionnel (300K XAF/yr, 10 users)
+- Created tenant Mengue & Associés (Douala) with Professionnel plan: 7 users, 7 clients, 8 cases
+- Created tenant Fotso Law Firm (Yaoundé) with Starter plan: 3 users, 5 clients, 5 cases
+- Added 13 new cases total (diverse types: civil, penal, commercial, social, administratif)
+- Added 8 tasks, 6 events, 6 invoices, 5 messages across new tenants
+- Added EUR currency alongside XAF
+- Verified root_admin pat.epee@gmail.com login works via API
+- Total DB: 3 tenants, 20 users, 29 clients, 33 cases, 3 plans, 3 subscriptions
+
+Stage Summary:
+- Database fully populated with realistic Cameroonian legal data
+- root_admin account verified functional (Admin@123)
+- All 3 cabinets have active subscriptions matching their plans
+- Each cabinet has diverse case types and statuses
