@@ -49,6 +49,14 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
+    // Prevent deactivation of root_admin
+    if (body.isActive === false) {
+      const targetUser = await db.user.findUnique({ where: { id }, select: { role: true } })
+      if (targetUser?.role === 'root_admin') {
+        return NextResponse.json({ error: 'Le compte root_admin ne peut pas être désactivé' }, { status: 403 })
+      }
+    }
+
     const user = await db.user.update({
       where: { id },
       data: {
@@ -96,6 +104,13 @@ export async function DELETE(
   const db = getDb()
   try {
     const { id } = await params
+    const targetUser = await db.user.findUnique({ where: { id }, select: { role: true, email: true } })
+    if (!targetUser) {
+      return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
+    }
+    if (targetUser.role === 'root_admin') {
+      return NextResponse.json({ error: 'Le compte root_admin ne peut pas être supprimé' }, { status: 403 })
+    }
     await db.user.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (error) {

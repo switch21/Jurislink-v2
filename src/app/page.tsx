@@ -273,6 +273,7 @@ const ADMIN_NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType 
   { view: 'admin-cabinets', label: 'Cabinets', icon: BuildingIcon },
   { view: 'admin-users', label: 'Utilisateurs', icon: UsersRound },
   { view: 'admin-plans', label: 'Abonnements', icon: CreditCardIcon },
+  { view: 'settings', label: 'Paramètres', icon: Settings },
 ]
 
 // ==================== Helpers ====================
@@ -500,7 +501,7 @@ function Header() {
   const [searchResults, setSearchResults] = useState<{_type: string; _label: string; _sub: string; _view: ViewName; _id: string}[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
-  const viewLabel = NAV_ITEMS.find(n => n.view === currentView)?.label || 'JurisLink'
+  const viewLabel = NAV_ITEMS.find(n => n.view === currentView)?.label || ADMIN_NAV_ITEMS.find(n => n.view === currentView)?.label || 'JurisLink'
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim() || !user?.tenantId) return
@@ -2176,6 +2177,8 @@ function SettingsView() {
   const isAdmin = user?.role === 'root_admin' || user?.role === 'firm_admin' || user?.role === 'associate'
   const canManagePerms = hasPermission('setting', 'manage_permissions')
   const [profileForm, setProfileForm] = useState({ fullName: user?.fullName || '', email: user?.email || '', phone: user?.phone || '' })
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [showPwForm, setShowPwForm] = useState(false)
   const [newUser, setNewUser] = useState({ fullName: '', email: '', role: 'lawyer', password: '' })
   const [newCurrency, setNewCurrency] = useState({ code: '', name: '', symbol: '' })
   const [showNewUser, setShowNewUser] = useState(false)
@@ -2244,8 +2247,22 @@ function SettingsView() {
 
   const updateProfile = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch(`/api/users/${user?.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { toast.success('Profil mis à jour'); qc.invalidateQueries({ queryKey: ['tenant'] }) },
+    onSuccess: (data) => {
+      if (data.fullName || data.email) {
+        const updated = { ...user!, fullName: data.fullName || user!.fullName, email: data.email || user!.email, phone: data.phone || user!.phone }
+        if (typeof window !== 'undefined') localStorage.setItem('jurislink_user', JSON.stringify(updated))
+        useAppStore.setState({ user: updated })
+      }
+      toast.success('Profil mis à jour'); qc.invalidateQueries({ queryKey: ['tenant'] })
+    },
     onError: () => toast.error('Erreur'),
+  })
+
+  const changePassword = useMutation({
+    mutationFn: (body: { currentPassword: string; newPassword: string }) =>
+      fetch(`/api/users/${user?.id}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: () => { toast.success('Mot de passe modifié avec succès'); setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setShowPwForm(false) },
+    onError: (e: Error) => toast.error(e.message),
   })
 
   const createUserMut = useMutation({
@@ -2333,6 +2350,26 @@ function SettingsView() {
               </div>
               <div className="space-y-1.5"><Label className="text-xs">Téléphone</Label><Input value={profileForm.phone} onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))} className="h-10" /></div>
               <Button size="sm" className="bg-[#1E5A8A] hover:bg-[#164070]" onClick={() => updateProfile.mutate(profileForm)} disabled={updateProfile.isPending}>{updateProfile.isPending ? <RefreshCw className="size-3.5 mr-1.5 animate-spin" /> : <Check className="size-3.5 mr-1.5" />}Enregistrer</Button>
+              <Separator className="my-4" />
+              <div>
+                <button onClick={() => setShowPwForm(!showPwForm)} className="flex items-center gap-2 text-sm font-semibold text-[#374151] hover:text-[#1E5A8A] transition-colors">
+                  <Lock className="size-4" />
+                  Changer mon mot de passe
+                  <ChevronDown className={cn('size-3.5 transition-transform', showPwForm && 'rotate-180')} />
+                </button>
+                {showPwForm && <div className="mt-3 space-y-3 p-4 bg-[#F9FAFB] rounded-lg border border-[#E5E7EB]">
+                  <div className="space-y-1.5"><Label className="text-xs">Mot de passe actuel</Label><Input type="password" value={pwForm.currentPassword} onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))} placeholder="••••••••" className="h-10" autoComplete="current-password" /></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5"><Label className="text-xs">Nouveau mot de passe</Label><Input type="password" value={pwForm.newPassword} onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))} placeholder="Min. 6 caractères" className="h-10" autoComplete="new-password" /></div>
+                    <div className="space-y-1.5"><Label className="text-xs">Confirmer le mot de passe</Label><Input type="password" value={pwForm.confirmPassword} onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))} placeholder="••••••••" className="h-10" autoComplete="new-password" /></div>
+                  </div>
+                  {pwForm.newPassword && pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && <p className="text-xs text-[#DC2626]">Les mots de passe ne correspondent pas</p>}
+                  <Button size="sm" className="bg-[#1E5A8A] hover:bg-[#164070]" disabled={changePassword.isPending || !pwForm.currentPassword || pwForm.newPassword.length < 6 || pwForm.newPassword !== pwForm.confirmPassword} onClick={() => changePassword.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword })}>
+                    {changePassword.isPending ? <RefreshCw className="size-3.5 mr-1.5 animate-spin" /> : <Check className="size-3.5 mr-1.5" />}
+                    Modifier le mot de passe
+                  </Button>
+                </div>}
+              </div>
             </CardContent></Card>
             {tenantInfo && <Card><CardHeader><CardTitle className="text-sm font-semibold">Mon cabinet</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">
               <div className="flex items-center gap-3 p-3 bg-[#F9FAFB] rounded-lg"><div className="size-10 rounded-lg bg-[#E8F0F8] flex items-center justify-center"><Building2 className="size-5 text-[#1E5A8A]" /></div><div><p className="font-semibold text-sm">{tenantInfo.name}</p><p className="text-[10px] text-[#6B7280]">{tenantInfo._count?.cases || 0} dossiers · {tenantInfo._count?.clients || 0} clients</p></div></div>
@@ -3455,6 +3492,9 @@ function AdminUsersView() {
   const [roleFilter, setRoleFilter] = useState('')
   const [showInactive, setShowInactive] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [pwDialogOpen, setPwDialogOpen] = useState(false)
+  const [pwTarget, setPwTarget] = useState<{ id: string; fullName: string } | null>(null)
+  const [pwForm, setPwForm] = useState({ newPassword: '', confirmPassword: '' })
   const [editing, setEditing] = useState<UserItem & { tenant?: { id: string; name: string } } | null>(null)
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', role: 'lawyer', tenantId: '', password: '', isActive: true })
   const qc = useQueryClient()
@@ -3484,6 +3524,13 @@ function AdminUsersView() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-users'] }); toast.success('Statut modifié') },
     onError: () => toast.error('Erreur')
   })
+  const adminChangePw = useMutation({
+    mutationFn: ({ userId, newPassword }: { userId: string; newPassword: string }) =>
+      fetch(`/api/users/${userId}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adminOverride: true, newPassword }) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: () => { toast.success('Mot de passe modifié'); setPwDialogOpen(false); setPwForm({ newPassword: '', confirmPassword: '' }); setPwTarget(null) },
+    onError: (e: Error) => toast.error(e.message),
+  })
+  const openPwDialog = (u: UserItem) => { setPwTarget({ id: u.id, fullName: u.fullName }); setPwForm({ newPassword: '', confirmPassword: '' }); setPwDialogOpen(true) }
   const openCreate = () => { setEditing(null); setForm({ fullName: '', email: '', phone: '', role: 'lawyer', tenantId: '', password: '', isActive: true }); setDialogOpen(true) }
   const openEdit = (u: UserItem & { tenant?: { id: string; name: string } }) => { setEditing(u); setForm({ fullName: u.fullName, email: u.email, phone: u.phone || '', role: u.role, tenantId: u.tenantId || '', password: '', isActive: u.isActive ?? true }); setDialogOpen(true) }
   return (<div className='p-6 space-y-4'>
@@ -3499,7 +3546,7 @@ function AdminUsersView() {
     {isLoading ? <div className='space-y-2'>{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className='h-12' />)}</div> :
     <Card><Table><TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Email</TableHead><TableHead>Rôle</TableHead><TableHead>Cabinet</TableHead><TableHead>Statut</TableHead><TableHead>Dernière connexion</TableHead><TableHead className='w-[100px]'>Actions</TableHead></TableRow></TableHeader><TableBody>
       {users.length === 0 ? <TableRow><TableCell colSpan={7}><EmptyState icon={UsersRound} title='Aucun utilisateur' /></TableCell></TableRow> :
-      users.map(u => (<TableRow key={u.id}><TableCell><div className='flex items-center gap-2'><Avatar className='size-7'><AvatarFallback className='bg-[#1E5A8A] text-white text-[10px]'>{initials(u.fullName)}</AvatarFallback></Avatar><span className='font-medium text-[#111827]'>{u.fullName}</span></div></TableCell><TableCell className='text-[#6B7280]'>{u.email}</TableCell><TableCell><Badge className='bg-[#F3F4F6] text-[#374151] text-xs'>{ROLE_LABELS[u.role] || u.role}</Badge></TableCell><TableCell className='text-[#6B7280]'>{u.tenant?.name || '—'}</TableCell><TableCell><Badge className={cn('text-xs', u.isActive ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#FEE2E2] text-[#991B1B]')}>{u.isActive ? 'Actif' : 'Inactif'}</Badge></TableCell><TableCell className='text-[#6B7280] text-xs'>{fmtDateTime((u as UserItem & { lastLogin?: string }).lastLogin)}</TableCell><TableCell><div className='flex items-center gap-1'><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(u as UserItem & { tenant?: { id: string; name: string } })}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className={cn('size-7', u.isActive ? 'text-[#F59E0B]' : 'text-[#059669]')} onClick={() => toggleMut.mutate(u)}><ArrowUpDown className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[#DC2626]' onClick={() => delMut.mutate(u.id)}><Trash2 className='size-3.5' /></Button></div></TableCell></TableRow>))}
+      users.map(u => (<TableRow key={u.id}><TableCell><div className='flex items-center gap-2'><Avatar className='size-7'><AvatarFallback className='bg-[#1E5A8A] text-white text-[10px]'>{initials(u.fullName)}</AvatarFallback></Avatar><span className='font-medium text-[#111827]'>{u.fullName}</span>{u.role === 'root_admin' && <Crown className='size-3.5 text-[#C8A45D]' />}</div></TableCell><TableCell className='text-[#6B7280]'>{u.email}</TableCell><TableCell><Badge className='bg-[#F3F4F6] text-[#374151] text-xs'>{ROLE_LABELS[u.role] || u.role}</Badge></TableCell><TableCell className='text-[#6B7280]'>{u.tenant?.name || '—'}</TableCell><TableCell><Badge className={cn('text-xs', u.isActive ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#FEE2E2] text-[#991B1B]')}>{u.isActive ? 'Actif' : 'Inactif'}</Badge></TableCell><TableCell className='text-[#6B7280] text-xs'>{fmtDateTime((u as UserItem & { lastLogin?: string }).lastLogin)}</TableCell><TableCell><div className='flex items-center gap-1'><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(u as UserItem & { tenant?: { id: string; name: string } })}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[#1E5A8A] hover:text-[#164070]' onClick={() => openPwDialog(u)}><Lock className='size-3.5' /></Button>{u.role !== 'root_admin' && <><Button variant='ghost' size='icon' className={cn('size-7', u.isActive ? 'text-[#F59E0B]' : 'text-[#059669]')} onClick={() => toggleMut.mutate(u)}><ArrowUpDown className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[#DC2626]' onClick={() => delMut.mutate(u.id)}><Trash2 className='size-3.5' /></Button></>}</div></TableCell></TableRow>))}
     </TableBody></Table></Card>}
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent className='max-w-lg max-h-[90vh] overflow-y-auto'><DialogHeader><DialogTitle>{editing ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}</DialogTitle></DialogHeader>
       <div className='space-y-3'>
@@ -3511,6 +3558,14 @@ function AdminUsersView() {
         <label className='flex items-center gap-2 cursor-pointer'><Switch checked={form.isActive} onCheckedChange={v => setForm({ ...form, isActive: v })} /><span className='text-sm'>Actif</span></label>
       </div>
       <DialogFooter><Button variant='outline' onClick={() => setDialogOpen(false)}>Annuler</Button><Button className='bg-[#1E5A8A] hover:bg-[#164070] text-white' disabled={(!form.fullName || !form.email || (!editing && !form.password)) || saveMut.isPending} onClick={() => saveMut.mutate(form)}>{saveMut.isPending ? <RefreshCw className='size-4 animate-spin' /> : (editing ? 'Modifier' : 'Créer')}</Button></DialogFooter>
+    </DialogContent></Dialog>
+    <Dialog open={pwDialogOpen} onOpenChange={setPwDialogOpen}><DialogContent className='max-w-sm'><DialogHeader><DialogTitle>Modifier le mot de passe</DialogTitle><DialogDescription>Pour : <span className='font-semibold'>{pwTarget?.fullName}</span></DialogDescription></DialogHeader>
+      <div className='space-y-3'>
+        <div><Label>Nouveau mot de passe *</Label><Input type='password' value={pwForm.newPassword} onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })} placeholder='Min. 6 caractères' /></div>
+        <div><Label>Confirmer *</Label><Input type='password' value={pwForm.confirmPassword} onChange={e => setPwForm({ ...pwForm, confirmPassword: e.target.value })} placeholder='••••••••' /></div>
+        {pwForm.newPassword && pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && <p className='text-xs text-[#DC2626]'>Les mots de passe ne correspondent pas</p>}
+      </div>
+      <DialogFooter><Button variant='outline' onClick={() => setPwDialogOpen(false)}>Annuler</Button><Button className='bg-[#1E5A8A] hover:bg-[#164070] text-white' disabled={adminChangePw.isPending || !pwForm.newPassword || pwForm.newPassword.length < 6 || pwForm.newPassword !== pwForm.confirmPassword} onClick={() => pwTarget && adminChangePw.mutate({ userId: pwTarget.id, newPassword: pwForm.newPassword })}>{adminChangePw.isPending ? <RefreshCw className='size-4 animate-spin' /> : <Check className='size-4 mr-1.5' />}Modifier</Button></DialogFooter>
     </DialogContent></Dialog>
   </div>)
 }
@@ -3588,6 +3643,7 @@ function AdminRouter() {
     case 'admin-cabinets': return <AdminCabinsView />
     case 'admin-users': return <AdminUsersView />
     case 'admin-plans': return <AdminPlansView />
+    case 'settings': return <SettingsView />
     default: return <AdminDashboardView />
   }
 }
