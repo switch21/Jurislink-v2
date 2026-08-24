@@ -288,7 +288,7 @@ function LoginPage() {
               <Button type="submit" className="w-full h-11 bg-slate-900 hover:bg-slate-800 dark:bg-amber-600 dark:hover:bg-amber-700 text-white" disabled={loading}>{loading ? <RefreshCw className="size-4 animate-spin" /> : 'Se connecter'}</Button>
             </form>
           </CardContent>
-          <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-slate-400 dark:text-slate-500">Compte démo</p><p className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-md">ngassa@jurislink.com / Admin@123</p></CardFooter>
+          <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-slate-400 dark:text-slate-500">Comptes démo</p><p className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-md">me.ndoki@scp-ndoki.com / Ndoki@2025</p><p className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-md">ngassa@jurislink.com / Admin@123</p></CardFooter>
         </Card>
         <p className="text-center text-xs text-slate-400 dark:text-slate-600 mt-6">© 2025 JurisLink — Tous droits réservés</p>
       </div>
@@ -316,17 +316,17 @@ function Sidebar() {
     </nav>
   )
   return (<>
-    <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full bg-slate-900 dark:bg-slate-950 text-white flex-col w-[260px]">
+    <aside className="hidden lg:flex fixed top-0 left-0 z-40 h-full bg-slate-900 dark:bg-slate-950 text-white flex-col w-[260px] overflow-hidden">
       <div className="flex items-center gap-3 px-4 h-16 border-b border-slate-700/50 shrink-0">
         <div className="size-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shrink-0"><Scale className="size-4 text-white" /></div>
         <span className="text-lg font-bold tracking-tight whitespace-nowrap"><span className="text-white">Juris</span><span className="text-amber-500">Link</span></span>
       </div>
-      <ScrollArea className="flex-1 py-4 custom-scrollbar">{navContent}</ScrollArea>
-      <div className="p-4 border-t border-slate-700/50"><div className="flex items-center gap-3"><Avatar className="size-8 shrink-0"><AvatarFallback className="bg-amber-600 text-white text-xs">{user?.name ? initials(user.name) : 'U'}</AvatarFallback></Avatar><div className="min-w-0"><p className="text-sm font-medium truncate text-white">{user?.name}</p><p className="text-xs text-slate-400 truncate">{ROLE_LABELS[user?.role || ''] || user?.role}</p></div></div></div>
+      <ScrollArea className="flex-1 min-h-0 py-4 custom-scrollbar sidebar-nav">{navContent}</ScrollArea>
+      <div className="p-4 border-t border-slate-700/50 shrink-0"><div className="flex items-center gap-3"><Avatar className="size-8 shrink-0"><AvatarFallback className="bg-amber-600 text-white text-xs">{user?.name ? initials(user.name) : 'U'}</AvatarFallback></Avatar><div className="min-w-0"><p className="text-sm font-medium truncate text-white">{user?.name}</p><p className="text-xs text-slate-400 truncate">{ROLE_LABELS[user?.role || ''] || user?.role}</p></div></div></div>
     </aside>
     <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}><SheetContent side="left" className="w-[280px] p-0 bg-slate-900 dark:bg-slate-950 text-white border-slate-700/50">
       <div className="flex items-center gap-3 px-4 h-16 border-b border-slate-700/50 shrink-0"><div className="size-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shrink-0"><Scale className="size-4 text-white" /></div><span className="text-lg font-bold tracking-tight whitespace-nowrap"><span className="text-white">Juris</span><span className="text-amber-500">Link</span></span><Button variant="ghost" size="icon" className="ml-auto text-slate-400 hover:text-white" onClick={() => setSidebarOpen(false)}><X className="size-5" /></Button></div>
-      <ScrollArea className="flex-1 py-4 custom-scrollbar">{navContent}</ScrollArea>
+      <ScrollArea className="flex-1 min-h-0 py-4 custom-scrollbar sidebar-nav">{navContent}</ScrollArea>
     </SheetContent></Sheet>
   </>)
 }
@@ -414,6 +414,7 @@ function DashboardView() {
   if (isLoading) return <div className="p-6"><Skeleton className="h-8 w-48 mb-6" /><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div></div>
   if (!stats) return null
 
+  const finData = stats.financial
   const urgencyCount = (stats.urgencies?.length || 0) + (stats.overdueInvoices?.length || 0)
   const myTaskCount = stats.myTasks?.length || 0
   const totalPending = (stats.overdueInvoices || []).reduce((s, i) => s + i.amount, 0)

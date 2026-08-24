@@ -121,6 +121,18 @@
   }
 }
 
+/* Sidebar scrollbar visibility on dark background */
+.sidebar-nav [data-slot="scroll-area-scrollbar"] {
+  width: 6px;
+}
+.sidebar-nav [data-slot="scroll-area-thumb"] {
+  background-color: oklch(0.7 0 0 / 25%);
+  border-radius: 3px;
+}
+.sidebar-nav [data-slot="scroll-area-thumb"]:hover {
+  background-color: oklch(0.7 0 0 / 45%);
+}
+
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
