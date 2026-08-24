@@ -1,48 +1,71 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import bcrypt from 'bcryptjs'
+import { getDb } from '@/lib/db'
+import { compare } from 'bcryptjs'
 
 export async function POST(request: Request) {
+  const db = getDb()
   try {
     const { email, password } = await request.json()
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+      return NextResponse.json({ error: 'Email et mot de passe sont requis' }, { status: 400 })
     }
 
     const user = await db.user.findFirst({
       where: { email },
-      include: { tenant: true },
+      include: { tenant: true, roleObj: true },
     })
 
-    if (!user || !user.password) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    if (!user) {
+      return NextResponse.json({ error: 'Identifiants incorrects' }, { status: 401 })
     }
 
     if (!user.isActive) {
-      return NextResponse.json({ error: 'Account is deactivated' }, { status: 401 })
+      return NextResponse.json({ error: 'Compte désactivé' }, { status: 401 })
     }
 
     if (user.tenant && !user.tenant.isActive) {
-      return NextResponse.json({ error: 'Tenant is deactivated' }, { status: 401 })
+      return NextResponse.json({ error: 'Cabinet désactivé' }, { status: 401 })
     }
 
-    const valid = await bcrypt.compare(password, user.password)
-    if (!valid) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    // Verify password
+    if (user.password) {
+      const valid = await compare(password, user.password)
+      if (!valid) {
+        return NextResponse.json({ error: 'Mot de passe incorrect' }, { status: 401 })
+      }
     }
 
-    // Update last login
-    await db.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    })
+    // Fetch user permissions via roleId -> role_permissions -> permission
+    let permissions: Array<{ resource: string; action: string; allowed: boolean }> = []
+    if (user.roleId) {
+      const rolePerms = await db.rolePermission.findMany({
+        where: { roleId: user.roleId },
+        include: { permission: true },
+      })
+      permissions = rolePerms.map((rp) => ({
+        resource: rp.permission.resource,
+        action: rp.permission.action,
+        allowed: rp.allowed,
+      }))
+    }
 
-    const { password: _pw, ...userWithoutPassword } = user
+    // Update last login (non-critical)
+    try {
+      await db.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      })
+    } catch {}
 
-    return NextResponse.json(userWithoutPassword)
-  } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Return user without password, with permissions
+    const { password: _, ...safeUser } = user
+    return NextResponse.json({ ...safeUser, permissions })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue'
+    console.error('Login error:', message)
+    return NextResponse.json({ error: 'Erreur de base de données' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }

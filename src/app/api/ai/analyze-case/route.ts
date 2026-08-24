@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function POST(request: Request) {
+  const db = getDb()
   try {
     const body = await request.json()
     const { tenantId, caseId } = body
@@ -13,20 +14,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch the case with all related data
     const caseData = await db.case.findUnique({
       where: { id: caseId, tenantId },
       include: {
         client: {
           select: {
-            id: true, firstName: true, lastName: true, company: true,
+            id: true, fullName: true, company: true,
             clientType: true, email: true, phone: true, address: true,
             city: true, country: true, niu: true, riskLevel: true, notes: true,
           },
         },
         assignments: {
           include: {
-            user: { select: { id: true, name: true, email: true, role: true } },
+            user: { select: { id: true, fullName: true, email: true, role: true } },
           },
         },
         events: {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
           include: {
             assignments: {
               include: {
-                user: { select: { name: true } },
+                user: { select: { fullName: true } },
               },
             },
           },
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         notes: {
           orderBy: { createdAt: 'desc' },
           include: {
-            user: { select: { name: true } },
+            author: { select: { fullName: true } },
           },
         },
         documents: {
@@ -50,16 +50,13 @@ export async function POST(request: Request) {
         },
         tasks: {
           orderBy: { dueDate: { sort: 'asc', nulls: 'last' } },
-          include: {
-            user: { select: { name: true } },
-          },
         },
         invoices: {
           orderBy: { createdAt: 'desc' },
           select: {
-            id: true, reference: true, amount: true, status: true,
-            currencyCode: true, type: true, dueDate: true, paidAmount: true,
-            notes: true, createdAt: true,
+            id: true, amount: true, status: true,
+            currency: { select: { code: true } },
+            dueDate: true, notes: true, createdAt: true,
           },
         },
         tenant: {
@@ -72,38 +69,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Case not found' }, { status: 404 })
     }
 
-    // Format for prompt
     const clientInfo = caseData.client
-      ? `${caseData.client.firstName} ${caseData.client.lastName}${caseData.client.company ? ` (${caseData.client.company})` : ''} — ${caseData.client.clientType}, ${caseData.client.city || ''} ${caseData.client.country || ''}`
+      ? `${caseData.client.fullName}${caseData.client.company ? ` (${caseData.client.company})` : ''} — ${caseData.client.clientType}, ${caseData.client.city || ''} ${caseData.client.country || ''}`
       : 'Non renseigné'
 
     const adversary = caseData.adversary || 'Non renseigné'
     const assignedLawyers = caseData.assignments
-      .map((a) => a.user.name)
+      .map((a) => a.user.fullName)
       .join(', ') || 'Non assigné'
 
     const chronologie = caseData.events
       .map((e) => {
         const dateStr = new Date(e.startTime).toLocaleDateString('fr-FR')
-        const attendees = e.assignments.map((a) => a.user.name).join(', ')
-        return `[${dateStr}] ${e.eventType.toUpperCase()}: ${e.title}${e.location ? ` — ${e.location}` : ''}${attendees ? ` (Participants: ${attendees})` : ''}`
+        const attendees = e.assignments.map((a) => a.user.fullName).join(', ')
+        return `[${dateStr}] ${e.eventType.toUpperCase()}: ${e.title}${attendees ? ` (Participants: ${attendees})` : ''}`
       })
       .join('\n') || 'Aucun événement'
 
     const notesList = caseData.notes
-      .map((n) => `[${new Date(n.createdAt).toLocaleDateString('fr-FR')}] ${n.user?.name || 'Système'}: ${n.content}`)
+      .map((n) => `[${new Date(n.createdAt).toLocaleDateString('fr-FR')}] ${n.author?.fullName || 'Système'}: ${n.content}`)
       .join('\n') || 'Aucune note'
 
     const documentsList = caseData.documents
-      .map((d) => `- ${d.name} (${d.fileType}, ${d.folder || 'Pas de dossier'}, ${d.isFinal ? 'Version finale' : `v${d.version}`})`)
+      .map((d) => `- ${d.fileName} (${d.mimeType || 'inconnu'}, ${d.folder || 'Pas de dossier'}, v${d.version})`)
       .join('\n') || 'Aucun document'
 
     const tasksList = caseData.tasks
-      .map((t) => `- [${t.status}] ${t.priority.toUpperCase()}: ${t.title}${t.dueDate ? ` (échéance: ${new Date(t.dueDate).toLocaleDateString('fr-FR')})` : ''}${t.user ? ` — ${t.user.name}` : ''}`)
+      .map((t) => `- [${t.status}] ${t.priority.toUpperCase()}: ${t.title}${t.dueDate ? ` (échéance: ${new Date(t.dueDate).toLocaleDateString('fr-FR')})` : ''}`)
       .join('\n') || 'Aucune tâche'
 
     const invoicesList = caseData.invoices
-      .map((inv) => `- ${inv.type.toUpperCase()} ${inv.reference}: ${inv.amount.toLocaleString('fr-FR')} ${inv.currencyCode} [${inv.status}]${inv.notes ? ` — ${inv.notes}` : ''}`)
+      .map((inv) => `- ${inv.amount.toLocaleString('fr-FR')} ${inv.currency?.code ?? 'XAF'} [${inv.status}]${inv.notes ? ` — ${inv.notes}` : ''}`)
       .join('\n') || 'Aucune facture'
 
     const prompt = `Tu es un assistant juridique expert. Analyse le dossier suivant et fournis une analyse structurée.
@@ -112,7 +108,7 @@ export async function POST(request: Request) {
 - Référence: ${caseData.reference}
 - Titre: ${caseData.title}
 - Description: ${caseData.description || 'Non renseignée'}
-- Type: ${caseData.type}
+- Type: ${caseData.caseType}
 - Statut: ${caseData.status}
 - Priorité: ${caseData.priority}
 - Juridiction: ${caseData.jurisdiction || 'Non renseignée'}
@@ -160,5 +156,8 @@ Fournis ton analyse sous la forme suivante:
   } catch (error) {
     console.error('Analyze case error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

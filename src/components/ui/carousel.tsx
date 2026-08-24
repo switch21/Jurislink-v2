@@ -93,16 +93,20 @@ function Carousel({
     setApi(api)
   }, [api, setApi])
 
+  const stableSelect = React.useCallback((a: typeof api) => { if (a) onSelect(a) }, [onSelect])
+
   React.useEffect(() => {
     if (!api) return
-    onSelect(api)
-    api.on("reInit", onSelect)
-    api.on("select", onSelect)
+    const handler = () => stableSelect(api)
+    handler()
+    api.on("reInit", handler)
+    api.on("select", handler)
 
     return () => {
-      api?.off("select", onSelect)
+      api?.off("reInit", handler)
+      api?.off("select", handler)
     }
-  }, [api, onSelect])
+  }, [api, stableSelect])
 
   return (
     <CarouselContext.Provider

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(request: Request) {
+  const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
     const tenantId = searchParams.get('tenantId')
@@ -26,8 +27,8 @@ export async function GET(request: Request) {
     const messages = await db.message.findMany({
       where,
       include: {
-        sender: { select: { id: true, name: true, avatarUrl: true } },
-        receiver: { select: { id: true, name: true, avatarUrl: true } },
+        sender: { select: { id: true, fullName: true, avatarUrl: true } },
+        receiver: { select: { id: true, fullName: true, avatarUrl: true } },
       },
       orderBy: { createdAt: 'asc' },
       take: 200,
@@ -37,9 +38,13 @@ export async function GET(request: Request) {
     console.error('List messages error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function POST(request: Request) {
+  const db = getDb()
   try {
     const body = await request.json()
     const message = await db.message.create({
@@ -54,5 +59,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Send message error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

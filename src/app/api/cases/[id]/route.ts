@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const caze = await db.case.findUnique({
@@ -14,12 +15,12 @@ export async function GET(
         tenant: true,
         assignments: {
           include: {
-            user: { select: { id: true, name: true, email: true } },
+            user: { select: { id: true, fullName: true, email: true } },
           },
         },
         notes: {
           include: {
-            user: { select: { id: true, name: true } },
+            author: { select: { id: true, fullName: true } },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -30,7 +31,7 @@ export async function GET(
           include: {
             assignments: {
               include: {
-                user: { select: { id: true, name: true } },
+                user: { select: { id: true, fullName: true } },
               },
             },
           },
@@ -47,12 +48,16 @@ export async function GET(
     console.error('Get case error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const body = await request.json()
@@ -62,16 +67,12 @@ export async function PUT(
         reference: body.reference,
         title: body.title,
         description: body.description,
-        type: body.type,
+        caseType: body.caseType,
         status: body.status,
         outcome: body.outcome,
         paymentStatus: body.paymentStatus,
         priority: body.priority,
         isSecret: body.isSecret,
-        nextDueDate: body.nextDueDate ? new Date(body.nextDueDate) : null,
-        closingDate: body.closingDate ? new Date(body.closingDate) : null,
-        archivableAfter: body.archivableAfter ? new Date(body.archivableAfter) : null,
-        niu: body.niu,
         adversary: body.adversary,
         jurisdiction: body.jurisdiction,
         amountInDispute: body.amountInDispute,
@@ -83,12 +84,16 @@ export async function PUT(
     console.error('Update case error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     await db.case.delete({ where: { id } })
@@ -96,5 +101,8 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete case error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

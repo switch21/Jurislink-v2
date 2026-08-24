@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
-type TaskTemplate = {
+interface TaskTemplate {
   title: string
   daysOffset: number
   priority: string
@@ -9,15 +9,17 @@ type TaskTemplate = {
 
 const WORKFLOW_TEMPLATES: Record<string, TaskTemplate[]> = {
   audience: [
-    { title: 'Vérifier dossier complet', daysOffset: -7, priority: 'normal' },
+    { title: 'Vérifier le dossier', daysOffset: -7, priority: 'normal' },
     { title: 'Préparer les pièces', daysOffset: -5, priority: 'normal' },
-    { title: 'Préparer conclusions', daysOffset: -3, priority: 'normal' },
-    { title: 'Rappel audience', daysOffset: -1, priority: 'haute' },
-    { title: 'Compte rendu audience', daysOffset: 0, priority: 'haute' },
+    { title: 'Préparer les conclusions', daysOffset: -3, priority: 'haute' },
+    { title: 'Rappel avocat', daysOffset: -1, priority: 'haute' },
   ],
   echeance: [
-    { title: 'Préparer dossier échéance', daysOffset: -3, priority: 'normal' },
-    { title: 'Dernière vérification', daysOffset: -1, priority: 'haute' },
+    { title: 'Préparer le dossier', daysOffset: -3, priority: 'normal' },
+    { title: 'Finaliser les pièces', daysOffset: -1, priority: 'haute' },
+  ],
+  rdv: [
+    { title: 'Confirmer le rendez-vous', daysOffset: -1, priority: 'normal' },
   ],
   depot: [
     { title: 'Rassembler documents', daysOffset: -2, priority: 'normal' },
@@ -26,9 +28,10 @@ const WORKFLOW_TEMPLATES: Record<string, TaskTemplate[]> = {
 }
 
 export async function POST(request: Request) {
+  const db = getDb()
   try {
     const body = await request.json()
-    const { tenantId, eventId, caseId, assigneeId } = body
+    const { tenantId, eventId, caseId } = body
 
     if (!tenantId || !eventId) {
       return NextResponse.json(
@@ -37,10 +40,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch the event to get its type and date
     const event = await db.event.findUnique({
       where: { id: eventId },
-      include: { case: { select: { id: true, reference: true } } },
+      include: { case: { select: { id: true, reference: true, title: true } } },
     })
 
     if (!event) {
@@ -55,56 +57,88 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if tasks were already generated for this event
-    const existingCount = await db.task.count({
-      where: { eventId, tenantId },
-    })
-    if (existingCount > 0) {
-      return NextResponse.json(
-        { error: 'Tasks already generated for this event' },
-        { status: 409 }
-      )
-    }
-
-    const eventDate = new Date(event.startTime)
     const linkedCaseId = caseId ?? event.caseId ?? null
+    const eventDate = new Date(event.startTime)
 
-    const tasksData = template.map((t) => {
+    // Build tasks, checking for duplicates by title + caseId + dueDate
+    const createdTasks: Array<{
+      title: string
+      priority: string
+      dueDate: Date
+    }> = []
+
+    for (const t of template) {
       const dueDate = new Date(eventDate)
       dueDate.setDate(dueDate.getDate() + t.daysOffset)
-      return {
-        title: t.title,
-        tenantId,
-        caseId: linkedCaseId,
-        eventId,
-        userId: assigneeId ?? null,
-        status: 'a_faire',
-        priority: t.priority,
-        dueDate,
+
+      // Check if task already exists
+      const existingCount = await db.task.count({
+        where: {
+          tenantId,
+          caseId: linkedCaseId,
+          title: t.title,
+          dueDate,
+        },
+      })
+
+      if (existingCount > 0) {
+        continue // Skip duplicate
       }
-    })
 
-    const createdTasks = await db.task.createMany({
-      data: tasksData,
-    })
+      const task = await db.task.create({
+        data: {
+          title: t.title,
+          tenantId,
+          caseId: linkedCaseId,
+          eventId,
+          status: 'a_faire',
+          priority: t.priority,
+          dueDate,
+        },
+      })
 
-    // Fetch created tasks with relations
+      createdTasks.push({
+        title: task.title,
+        priority: task.priority,
+        dueDate: task.dueDate,
+      })
+
+      // Create notification for each generated task
+      await db.notification.create({
+        data: {
+          title: 'Tâche générée automatiquement',
+          message: `La tâche « ${t.title} » a été créée pour l'événement « ${event.title} »${event.case ? ` (dossier ${event.case.reference})` : ''}. Échéance : ${dueDate.toLocaleDateString('fr-FR')}.`,
+          category: 'tache',
+          resourceType: 'task',
+          resourceId: task.id,
+          tenantId,
+          eventId,
+        },
+      })
+    }
+
+    // Fetch all tasks for this event to return
     const tasks = await db.task.findMany({
       where: { eventId, tenantId },
       include: {
-        user: { select: { id: true, name: true, email: true } },
         case: { select: { id: true, reference: true, title: true } },
         event: { select: { id: true, title: true } },
       },
       orderBy: { dueDate: 'asc' },
     })
 
-    return NextResponse.json({
-      count: createdTasks.count,
-      tasks,
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        createdCount: createdTasks.length,
+        skippedCount: template.length - createdTasks.length,
+        tasks,
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('Generate workflow tasks error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }

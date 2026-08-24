@@ -3,332 +3,554 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 // ==================== TENANT ====================
 model Tenant {
-  id            String   @id @default(cuid())
+  id            String   @id @default(uuid()) @db.Uuid
   name          String
   slug          String   @unique
-  logoUrl       String?
-  address       String?
+  logoUrl       String?  @map("logo_url")
+  language      String   @default("fr")
+  timezone      String   @default("Europe/Paris")
   phone         String?
   email         String?
-  plan          String   @default("starter") // starter, premium, enterprise
-  maxUsers      Int      @default(3)
-  maxStorageGb  Int      @default(5)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  address       String?
+  niu           String?
+  city          String?
+  country       String?
+  currencyCode  String   @default("XAF") @map("currency_code")
+  plan          String   @default("starter")
+  maxUsers      Int      @default(3) @map("max_users")
+  maxStorageGb  Float    @default(5) @map("max_storage_gb")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  users        User[]
-  clients      Client[]
-  cases        Case[]
-  invoices     Invoice[]
-  documents    Document[]
-  messages     Message[]
-  events       Event[]
-  auditLogs    AuditLog[]
-  notifications Notification[]
-  tasks        Task[]
+  users           User[]
+  clients         Client[]
+  cases           Case[]
+  invoices        Invoice[]
+  documents       Document[]
+  messages        Message[]
+  events          Event[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  tasks           Task[]
+  caseNotes       CaseNote[]
+  caseAssignments CaseAssignment[]
+  subscription    Subscription?
+  payments          Payment[]
+  timeEntries       TimeEntry[]
+  documentTemplates DocumentTemplate[]
+  communications    Communication[]
+
+  @@map("tenants")
 }
 
 // ==================== USER ====================
 model User {
-  id                  String   @id @default(cuid())
-  email               String
-  name                String
-  password            String?
-  role                String   @default("lawyer") // root_admin, associate, lawyer, jurist, assistant, accountant, client
-  avatarUrl           String?
-  phone               String?
-  preferredLanguage   String   @default("fr")
-  isActive            Boolean  @default(true)
-  failedLoginAttempts Int     @default(0)
-  lockedUntil         DateTime?
-  lastLoginAt         DateTime?
-  mfaEnabled          Boolean  @default(false)
-  mfaSecret           String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenantId             String?   @map("tenant_id") @db.Uuid
+  roleId               String?   @map("role_id") @db.Uuid
+  role                 String    @default("lawyer")
+  fullName             String    @map("full_name")
+  email                String    @unique
+  preferredLanguage    String    @default("fr") @map("preferred_language")
+  isActive             Boolean   @default(true) @map("is_active")
+  failedLoginAttempts  Int       @default(0) @map("failed_login_attempts")
+  lockedUntil          DateTime? @map("locked_until")
+  lastLoginAt          DateTime? @map("last_login_at")
+  lastSessionId        String?   @map("last_session_id")
+  sessionCountToday    Int       @default(0) @map("session_count_today")
+  avatarUrl            String?   @map("avatar_url")
+  phone                String?
+  password             String?
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
-  tenantId            String?
-  tenant              Tenant?  @relation(fields: [tenantId], references: [id])
-
-  assignedCases       CaseAssignment[]
-  assignedEvents      EventAssignment[]
-  sentMessages        Message[]  @relation("SentMessages")
-  receivedMessages    Message[]  @relation("ReceivedMessages")
-  createdDocuments    Document[]
-  auditLogs           AuditLog[]
-  caseNotes           CaseNote[]
+  tenant               Tenant?   @relation(fields: [tenantId], references: [id])
+  roleObj              Role?     @relation(fields: [roleId], references: [id])
+  assignedCases        CaseAssignment[]
+  assignedEvents       EventAssignment[]
+  sentMessages         Message[]  @relation("SentMessages")
+  receivedMessages     Message[]  @relation("ReceivedMessages")
+  auditLogs            AuditLog[]
+  caseNotes            CaseNote[]
   receivedNotifications Notification[] @relation("UserNotifications")
-  assignedTasks       Task[]
-  createdTasks        Task[]  @relation("TaskCreator")
+  recordedPayments     Payment[]
+  timeEntries          TimeEntry[]
+  sentCommunications   Communication[] @relation("SentCommunications")
 
-  @@unique([tenantId, email])
+  @@map("users")
+}
+
+// ==================== ROLE ====================
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  label       String
+  description String?
+  level       Int      @default(0)
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+// ==================== PERMISSION ====================
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roles       RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+// ==================== ROLE PERMISSION ====================
+model RolePermission {
+  id           String   @id @default(uuid()) @db.Uuid
+  roleId       String   @map("role_id") @db.Uuid
+  role         Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String   @map("permission_id") @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  allowed      Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ==================== SUBSCRIPTION PLAN ====================
+model SubscriptionPlan {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  slug            String   @unique
+  description     String?
+  priceAnnual     Float    @default(0) @map("price_annual")
+  priceSemiAnnual Float    @default(0) @map("price_semi_annual")
+  priceQuarterly  Float    @default(0) @map("price_quarterly")
+  priceMonthly    Float    @default(0) @map("price_monthly")
+  currencyCode    String   @default("XAF") @map("currency_code")
+  maxUsers        Int      @default(3) @map("max_users")
+  maxStorageGb    Float    @default(5) @map("max_storage_gb")
+  hasAI           Boolean  @default(false) @map("has_ai")
+  features        String   @default("[]")
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  subscriptions   Subscription[]
+
+  @@map("subscription_plans")
+}
+
+// ==================== SUBSCRIPTION ====================
+model Subscription {
+  id                  String    @id @default(uuid()) @db.Uuid
+  tenantId            String    @unique @map("tenant_id") @db.Uuid
+  tenant              Tenant    @relation(fields: [tenantId], references: [id])
+  planId              String    @map("plan_id") @db.Uuid
+  plan                SubscriptionPlan @relation(fields: [planId], references: [id])
+  status              String    @default("active")
+  billingPeriod       String    @default("annual") @map("billing_period")
+  currentPeriodStart  DateTime  @default(now()) @map("current_period_start")
+  currentPeriodEnd    DateTime  @map("current_period_end")
+  trialEndsAt         DateTime? @map("trial_ends_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("subscriptions")
 }
 
 // ==================== CLIENT ====================
 model Client {
-  id            String   @id @default(cuid())
-  firstName     String
-  lastName      String
-  company       String?
-  clientType    String   @default("particulier") // particulier, entreprise
-  niu           String?  // Numéro d'Identification Unique
-  email         String?
-  phone         String?
-  address       String?
-  city          String?
-  country       String   @default("Cameroun")
-  notes         String?
-  riskLevel     String   @default("faible") // faible, moyen, eleve
-  source        String?  // bouche_a_oreille, internet, recommandation, autre
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String    @id @default(uuid()) @db.Uuid
+  tenantId            String    @map("tenant_id") @db.Uuid
+  fullName            String    @map("full_name")
+  company             String?
+  phone               String?
+  email               String?
+  address             String?
+  city                String?
+  country             String?
+  niu                 String?
+  notes               String?
+  riskLevel           String    @default("faible") @map("risk_level")
+  source              String?
+  clientType          String?   @map("client_type")
+  status              String    @default("active")
+  isActive            Boolean   @default(true) @map("is_active")
+  responsibleLawyerId String?   @map("responsible_lawyer_id") @db.Uuid
+  lastActivityAt      DateTime? @map("last_activity_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
-  tenantId  String
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  cases     Case[]
-  invoices  Invoice[]
+  tenant              Tenant    @relation(fields: [tenantId], references: [id])
+  cases               Case[]
+  invoices            Invoice[]
+  communications      Communication[]
+
+  @@map("clients")
 }
 
 // ==================== CASE ====================
 model Case {
-  id              String   @id @default(cuid())
-  reference       String
+  id              String   @id @default(uuid()) @db.Uuid
   title           String
   description     String?
-  type            String   @default("civil") // civil, penal, commercial, social, administratif
-  status          String   @default("nouveau") // nouveau, ouvert, en_cours, en_attente, clos, archive
-  outcome         String?  // favorable, defavorable, en_negociation, abandonne
-  paymentStatus   String?  // non_paye, partiel, paye, exonere
-  priority        String   @default("normal") // basse, normal, haute, urgente
-  isSecret        Boolean  @default(false)
-  nextDueDate     DateTime?
-  closingDate     DateTime?
-  archivableAfter DateTime?
-  niu             String?
-  // New fields from objectifs.md
-  adversary       String?  // Partie adverse
-  jurisdiction    String?  // Juridiction (ex: TPI de Douala)
-  amountInDispute Float?   // Montant en jeu
-  billingType     String?  // forfait, horaire, abonnement, success_fee, provision
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  caseType        String   @default("civil") @map("case_type")
+  status          String   @default("nouveau")
+  outcome         String?
+  paymentStatus   String?  @map("payment_status")
+  priority        String   @default("normal")
+  isSecret        Boolean  @default(false) @map("is_secret")
+  reference       String?
+  adversary       String?
+  jurisdiction    String?
+  amountInDispute Float?   @map("amount_in_dispute")
+  billingType     String?  @map("billing_type")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  tenantId  String
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  clientId  String
-  client    Client  @relation(fields: [clientId], references: [id])
+  tenantId        String   @map("tenant_id") @db.Uuid
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  clientId        String   @map("client_id") @db.Uuid
+  client          Client   @relation(fields: [clientId], references: [id])
 
-  assignments   CaseAssignment[]
-  documents     Document[]
-  events        Event[]
-  invoices      Invoice[]
-  notes         CaseNote[]
-  tasks         Task[]
+  assignments     CaseAssignment[]
+  documents       Document[]
+  events          Event[]
+  invoices        Invoice[]
+  notes           CaseNote[]
+  tasks           Task[]
+  timeEntries      TimeEntry[]
+  communications   Communication[]
+
+  @@map("cases")
 }
 
 model CaseAssignment {
-  id      String @id @default(cuid())
-  userId  String
-  user    User   @relation(fields: [userId], references: [id])
-  caseId  String
-  case    Case   @relation(fields: [caseId], references: [id])
+  id       String @id @default(uuid()) @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+  user     User   @relation(fields: [userId], references: [id])
+  caseId   String @map("case_id") @db.Uuid
+  case     Case   @relation(fields: [caseId], references: [id])
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   @@unique([userId, caseId])
+  @@map("case_assignments")
 }
 
 model CaseNote {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid()) @db.Uuid
   content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
 
-  caseId  String
+  caseId   String   @map("case_id") @db.Uuid
   case     Case    @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  userId   String?
-  user     User?   @relation(fields: [userId], references: [id])
+  authorId String?  @map("author_id") @db.Uuid
+  author   User?   @relation(fields: [authorId], references: [id])
+  tenantId String   @map("tenant_id") @db.Uuid
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
 
   @@index([caseId])
+  @@map("case_notes")
 }
 
 // ==================== DOCUMENT ====================
 model Document {
-  id            String   @id @default(cuid())
-  name          String
-  fileName      String
-  fileType      String
-  fileSize      Int
-  filePath      String
-  version       Int      @default(1)
-  isFinal       Boolean  @default(false) // version officielle
-  folder        String?  // Procédure, Contrats, Pièces client, Correspondances, Décisions, Factures, Archives
-  tags          String?  // comma-separated tags for search
-  description   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String  @id @default(uuid()) @db.Uuid
+  fileName    String  @map("file_name")
+  fileSize    Int     @map("file_size")
+  filePath    String  @map("file_path")
+  version     Int     @default(1)
+  folder      String?
+  tags        String?
+  documentType String? @map("document_type")
+  mimeType    String? @map("mime_type")
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  tenantId  String
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  caseId    String?
-  case      Case?    @relation(fields: [caseId], references: [id])
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
+  tenantId    String  @map("tenant_id") @db.Uuid
+  tenant      Tenant  @relation(fields: [tenantId], references: [id])
+  caseId      String? @map("case_id") @db.Uuid
+  case        Case?   @relation(fields: [caseId], references: [id])
+
+  @@map("documents")
 }
 
 // ==================== EVENT ====================
 model Event {
-  id          String   @id @default(cuid())
+  id          String    @id @default(uuid()) @db.Uuid
   title       String
   description String?
-  startTime   DateTime
-  endTime     DateTime?
-  eventType   String   @default("audience") // audience, rdv, echeance, depot, autre
-  criticality String   @default("normal") // basse, normal, haute, urgente
-  location    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  startTime   DateTime  @map("start_time")
+  endTime     DateTime? @map("end_time")
+  eventType   String    @default("audience") @map("event_type")
+  criticality String    @default("normal")
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  tenantId  String
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  caseId    String?
-  case      Case?    @relation(fields: [caseId], references: [id])
+  tenantId    String    @map("tenant_id") @db.Uuid
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  caseId      String?   @map("case_id") @db.Uuid
+  case        Case?     @relation(fields: [caseId], references: [id])
 
   assignments   EventAssignment[]
   notifications Notification[]
   tasks         Task[]
+
+  @@map("events")
 }
 
 model EventAssignment {
-  id       String @id @default(cuid())
-  userId   String
-  user     User   @relation(fields: [userId], references: [id])
-  eventId  String
-  event    Event  @relation(fields: [eventId], references: [id])
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  user    User   @relation(fields: [userId], references: [id])
+  eventId String @map("event_id") @db.Uuid
+  event   Event  @relation(fields: [eventId], references: [id])
 
   @@unique([userId, eventId])
+  @@map("event_assignments")
 }
 
 // ==================== INVOICE ====================
 model Invoice {
-  id            String   @id @default(cuid())
-  reference     String
+  id            String    @id @default(uuid()) @db.Uuid
+  invoiceNumber String?   @map("invoice_number")
+  type          String    @default("facture") // devis, facture, avoir, recu
   amount        Float
-  status        String   @default("non_paye") // non_paye, partiel, paye, annule
-  type          String   @default("facture") // devis, facture, avoir, recu
-  dueDate       DateTime?
-  paidDate      DateTime?
-  paidAmount    Float?
+  paidAmount    Float    @default(0) @map("paid_amount")
+  status        String    @default("non_paye") // non_paye, partiel, paye, annule
+  issuedAt      DateTime? @map("issued_at")
+  dueDate       DateTime? @map("due_date")
   notes         String?
-  paymentMethod String?  // especes, virement, mobile_money, carte
-  billingType   String?  // forfait, horaire, abonnement, success_fee, provision
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  billingType   String?   @map("billing_type")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  tenantId    String
-  tenant      Tenant  @relation(fields: [tenantId], references: [id])
-  clientId    String
-  client      Client  @relation(fields: [clientId], references: [id])
-  caseId      String?
-  case        Case?    @relation(fields: [caseId], references: [id])
-  currencyCode String  @default("XAF")
+  tenantId      String    @map("tenant_id") @db.Uuid
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  clientId      String    @map("client_id") @db.Uuid
+  client        Client    @relation(fields: [clientId], references: [id])
+  caseId        String?   @map("case_id") @db.Uuid
+  case          Case?     @relation(fields: [caseId], references: [id])
+  currencyId    String?   @map("currency_id") @db.Uuid
+  currency      Currency? @relation(fields: [currencyId], references: [id])
 
+  lineItems     InvoiceLineItem[]
+  payments      Payment[]
+
+  @@map("invoices")
+}
+
+// ==================== INVOICE LINE ITEM ====================
+model InvoiceLineItem {
+  id          String  @id @default(uuid()) @db.Uuid
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Float   @map("unit_price")
+  total       Float
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  invoiceId   String  @map("invoice_id") @db.Uuid
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_line_items")
+}
+
+// ==================== PAYMENT ====================
+model Payment {
+  id            String    @id @default(uuid()) @db.Uuid
+  amount        Float
+  method        String    @default("virement") // especes, virement, mobile_money, carte, cheque
+  reference     String?
+  status        String    @default("complet") // complet, partiel, annule
+  paidAt        DateTime  @default(now()) @map("paid_at")
+ notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  tenantId      String    @map("tenant_id") @db.Uuid
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  invoiceId     String    @map("invoice_id") @db.Uuid
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  recordedBy    String?   @map("recorded_by") @db.Uuid
+  recorder      User?     @relation(fields: [recordedBy], references: [id])
+
+  @@map("payments")
 }
 
 // ==================== MESSAGE ====================
 model Message {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid()) @db.Uuid
   content   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  tenantId  String   @map("tenant_id") @db.Uuid
+  senderId  String   @map("sender_id") @db.Uuid
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId String   @map("receiver_id") @db.Uuid
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
 
-  tenantId    String
-  tenant      Tenant  @relation(fields: [tenantId], references: [id])
-  senderId    String
-  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId  String
-  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@map("messages")
 }
 
 // ==================== NOTIFICATION ====================
 model Notification {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid()) @db.Uuid
   title        String
   message      String
-  category     String   @default("dossier") // dossier, echeance, document, facture, message, securite, tache
-  priority     String   @default("info") // info, warning, urgent, critical
-  isRead       Boolean  @default(false)
-  resourceType String?
-  resourceId   String?
-  createdAt    DateTime @default(now())
+  category     String   @default("dossier")
+  read         Boolean  @default(false)
+  resourceType String?  @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  tenantId  String
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  userId    String?
-  user      User?   @relation("UserNotifications", fields: [userId], references: [id])
-  eventId   String?
-  event     Event?  @relation(fields: [eventId], references: [id])
+  tenantId     String   @map("tenant_id") @db.Uuid
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  userId       String?  @map("user_id") @db.Uuid
+  user         User?    @relation("UserNotifications", fields: [userId], references: [id])
+  eventId      String?  @map("event_id") @db.Uuid
+  event        Event?   @relation(fields: [eventId], references: [id])
+
+  @@map("notifications")
 }
 
 // ==================== TASK ====================
 model Task {
-  id          String   @id @default(cuid())
+  id          String    @id @default(uuid()) @db.Uuid
   title       String
   description String?
-  status      String   @default("a_faire") // a_faire, en_cours, terminee, annulee
-  priority    String   @default("normal") // basse, normal, haute, urgente
-  dueDate     DateTime?
-  completedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      String    @default("a_faire")
+  priority    String    @default("normal")
+  dueDate     DateTime? @map("due_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  tenantId  String
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  caseId    String?
-  case      Case?    @relation(fields: [caseId], references: [id])
-  userId    String?  // assignee
-  user      User?    @relation(fields: [userId], references: [id])
-  creatorId String?
-  creator   User?    @relation("TaskCreator", fields: [creatorId], references: [id])
-  eventId   String?  // auto-generated from event workflow
-  event     Event?  @relation(fields: [eventId], references: [id])
+  tenantId    String    @map("tenant_id") @db.Uuid
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  caseId      String?   @map("case_id") @db.Uuid
+  case        Case?     @relation(fields: [caseId], references: [id])
+  eventId     String?   @map("event_id") @db.Uuid
+  event       Event?    @relation(fields: [eventId], references: [id])
 
   @@index([caseId])
-  @@index([userId])
   @@index([status])
+  @@map("tasks")
 }
-
-
 
 // ==================== AUDIT LOG ====================
 model AuditLog {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid()) @db.Uuid
   action       String
-  resourceType String?
-  resourceId   String?
-  metadata     String?  // JSON string
-  ipAddress    String?
-  userAgent    String?
-  createdAt    DateTime @default(now())
+  resourceType String?  @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  metadata     String?
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  timestamp    DateTime @default(now())
 
-  tenantId  String
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  userId    String?
-  user      User?   @relation(fields: [userId], references: [id])
+  tenantId     String   @map("tenant_id") @db.Uuid
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  userId       String?  @map("user_id") @db.Uuid
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
 }
 
+// ==================== TIME ENTRY ====================
+model TimeEntry {
+  id          String    @id @default(uuid()) @db.Uuid
+  description String
+  startTime   DateTime  @map("start_time")
+  endTime     DateTime? @map("end_time")
+  duration    Int       @default(0) // in seconds
+  isBillable  Boolean   @default(true) @map("is_billable")
+  hourlyRate  Float?    @map("hourly_rate")
+  totalAmount Float?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  userId   String @map("user_id") @db.Uuid
+  user     User   @relation(fields: [userId], references: [id])
+  caseId   String? @map("case_id") @db.Uuid
+  case     Case?  @relation(fields: [caseId], references: [id])
+
+  @@index([tenantId, userId])
+  @@index([caseId])
+  @@map("time_entries")
+}
+
+// ==================== DOCUMENT TEMPLATE ====================
+model DocumentTemplate {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  category    String   @default("general")
+  description String?
+  content     String
+  variables   String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("document_templates")
+}
+
+// ==================== COMMUNICATION ====================
+model Communication {
+  id             String    @id @default(uuid()) @db.Uuid
+  type           String    @default("email")
+  subject        String?
+  content        String
+  status         String    @default("pending")
+  recipientEmail String?   @map("recipient_email")
+  recipientPhone String?   @map("recipient_phone")
+  sentAt         DateTime? @map("sent_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  tenantId  String  @map("tenant_id") @db.Uuid
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  caseId    String? @map("case_id") @db.Uuid
+  case      Case?  @relation(fields: [caseId], references: [id])
+  clientId  String? @map("client_id") @db.Uuid
+  client    Client? @relation(fields: [clientId], references: [id])
+  sentById  String? @map("sent_by_id") @db.Uuid
+  sentBy    User?   @relation("SentCommunications", fields: [sentById], references: [id])
+
+  @@index([tenantId, type])
+  @@index([caseId])
+  @@map("communications")
+}
 
 // ==================== CURRENCY ====================
 model Currency {
-  id     String @id @default(cuid())
-  code   String @unique
-  name   String
-  symbol String
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique
+  name      String
+  symbol    String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoices  Invoice[]
+
+  @@map("currencies")
 }

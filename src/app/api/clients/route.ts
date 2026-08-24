@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(request: Request) {
+  const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
     const tenantId = searchParams.get('tenantId')
@@ -14,8 +15,7 @@ export async function GET(request: Request) {
     if (status === 'inactive') where.isActive = false
     if (search) {
       where.OR = [
-        { firstName: { contains: search } },
-        { lastName: { contains: search } },
+        { fullName: { contains: search } },
         { company: { contains: search } },
         { email: { contains: search } },
       ]
@@ -34,15 +34,18 @@ export async function GET(request: Request) {
     console.error('List clients error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function POST(request: Request) {
+  const db = getDb()
   try {
     const body = await request.json()
     const client = await db.client.create({
       data: {
-        firstName: body.firstName,
-        lastName: body.lastName,
+        fullName: body.fullName,
         company: body.company,
         clientType: body.clientType,
         niu: body.niu,
@@ -54,7 +57,9 @@ export async function POST(request: Request) {
         notes: body.notes,
         riskLevel: body.riskLevel,
         source: body.source,
+        status: body.status ?? 'active',
         isActive: body.isActive ?? true,
+        responsibleLawyerId: body.responsibleLawyerId,
         tenantId: body.tenantId,
       },
     })
@@ -62,5 +67,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Create client error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

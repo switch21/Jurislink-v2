@@ -1,225 +1,108 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-
-const ROLES = [
-  'root_admin',
-  'associate',
-  'firm_admin',
-  'lawyer',
-  'jurist',
-  'assistant',
-  'accountant',
-  'client',
-]
-
-const RESOURCES = [
-  'case',
-  'client',
-  'document',
-  'invoice',
-  'task',
-  'event',
-  'audit',
-  'user',
-  'payment',
-  'report',
-  'setting',
-]
-
-const ACTIONS = [
-  'view',
-  'create',
-  'edit',
-  'delete',
-  'export',
-  'manage_permissions',
-]
-
-// Default permission matrix: true = allowed
-const DEFAULT_PERMISSIONS: Record<string, Record<string, Record<string, boolean>>> = {
-  root_admin: {
-    case:           { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    client:         { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    document:       { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    invoice:        { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    task:           { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    event:          { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    audit:          { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    user:           { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    payment:        { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    report:         { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-    setting:        { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: true },
-  },
-  associate: {
-    case:           { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    client:         { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    document:       { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: false },
-    invoice:        { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    task:           { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    event:          { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    audit:          { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    user:           { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    payment:        { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    report:         { view: true, create: true, edit: false, delete: false, export: true, manage_permissions: false },
-    setting:        { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-  },
-  firm_admin: {
-    case:           { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    client:         { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    document:       { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: false },
-    invoice:        { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    task:           { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    event:          { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    audit:          { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    user:           { view: true, create: true, edit: true, delete: false, export: false, manage_permissions: false },
-    payment:        { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    report:         { view: true, create: true, edit: false, delete: false, export: true, manage_permissions: false },
-    setting:        { view: true, create: false, edit: true, delete: false, export: false, manage_permissions: false },
-  },
-  lawyer: {
-    case:           { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    client:         { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    document:       { view: true, create: true, edit: true, delete: true, export: true, manage_permissions: false },
-    invoice:        { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    task:           { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    event:          { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    audit:          { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    user:           { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    payment:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    report:         { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    setting:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-  },
-  jurist: {
-    case:           { view: true, create: false, edit: true, delete: false, export: true, manage_permissions: false },
-    client:         { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    document:       { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    invoice:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    task:           { view: true, create: false, edit: true, delete: false, export: true, manage_permissions: false },
-    event:          { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    audit:          { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    user:           { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    payment:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    report:         { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    setting:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-  },
-  assistant: {
-    case:           { view: true, create: false, edit: true, delete: false, export: true, manage_permissions: false },
-    client:         { view: true, create: false, edit: true, delete: false, export: true, manage_permissions: false },
-    document:       { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    invoice:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    task:           { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    event:          { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    audit:          { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    user:           { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    payment:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    report:         { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    setting:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-  },
-  accountant: {
-    case:           { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    client:         { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    document:       { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    invoice:        { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    task:           { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    event:          { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    audit:          { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    user:           { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    payment:        { view: true, create: true, edit: true, delete: false, export: true, manage_permissions: false },
-    report:         { view: true, create: true, edit: false, delete: false, export: true, manage_permissions: false },
-    setting:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-  },
-  client: {
-    case:           { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    client:         { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    document:       { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    invoice:        { view: true, create: false, edit: false, delete: false, export: true, manage_permissions: false },
-    task:           { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    event:          { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    audit:          { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    user:           { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    payment:        { view: true, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    report:         { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-    setting:        { view: false, create: false, edit: false, delete: false, export: false, manage_permissions: false },
-  },
-}
-
-function getDefaultMatrix() {
-  const matrix: Array<{
-    role: string
-    resource: string
-    action: string
-    allowed: boolean
-  }> = []
-  for (const role of ROLES) {
-    for (const resource of RESOURCES) {
-      for (const action of ACTIONS) {
-        matrix.push({
-          role,
-          resource,
-          action,
-          allowed: DEFAULT_PERMISSIONS[role]?.[resource]?.[action] ?? false,
-        })
-      }
-    }
-  }
-  return matrix
-}
+import { getDb } from '@/lib/db'
 
 export async function GET(request: Request) {
+  const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
-    const role = searchParams.get('role')
+    const roleId = searchParams.get('roleId')
 
-    const where: Record<string, unknown> = {}
-    if (role) where.role = role
+    if (roleId) {
+      // Return a specific role's permissions
+      const rolePermissions = await db.rolePermission.findMany({
+        where: { roleId },
+        include: { permission: true },
+      })
 
-    const count = await db.permission.count()
+      const permissions = rolePermissions.map((rp) => ({
+        id: rp.permission.id,
+        name: rp.permission.name,
+        resource: rp.permission.resource,
+        action: rp.permission.action,
+        allowed: rp.allowed,
+      }))
 
-    // If no permissions exist in DB, return default matrix
-    if (count === 0) {
-      const defaults = getDefaultMatrix()
-      return NextResponse.json({ source: 'default', permissions: defaults })
+      return NextResponse.json({ roleId, permissions })
     }
 
-    const permissions = await db.permission.findMany({ where })
-    return NextResponse.json({ source: 'database', permissions })
-  } catch (error) {
-    console.error('List permissions error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Full permission matrix
+    const [roles, permissions, allRolePermissions] = await Promise.all([
+      db.role.findMany({ orderBy: { level: 'desc' } }),
+      db.permission.findMany({ orderBy: [{ resource: 'asc' }, { action: 'asc' }] }),
+      db.rolePermission.findMany(),
+    ])
+
+    // Build matrix: { [roleId]: { [permissionId]: boolean } }
+    const matrix: Record<string, Record<string, boolean>> = {}
+
+    for (const role of roles) {
+      matrix[role.id] = {}
+      for (const perm of permissions) {
+        matrix[role.id][perm.id] = false
+      }
+    }
+
+    for (const rp of allRolePermissions) {
+      if (matrix[rp.roleId]) {
+        matrix[rp.roleId][rp.permissionId] = rp.allowed
+      }
+    }
+
+    return NextResponse.json({ roles, permissions, matrix })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue'
+    console.error('Erreur lors de la récupération des permissions:', message)
+    return NextResponse.json(
+      { error: 'Erreur lors de la récupération des permissions' },
+      { status: 500 }
+    )
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }
 
 export async function POST(request: Request) {
+  const db = getDb()
   try {
     const body = await request.json()
-    const { role, resource, action, allowed } = body
+    const { roleId, permissions } = body
 
-    if (!role || !resource || !action) {
+    if (!roleId || !permissions || typeof permissions !== 'object') {
       return NextResponse.json(
-        { error: 'role, resource, and action are required' },
+        { error: 'Le roleId et les permissions sont requis' },
         { status: 400 }
       )
     }
 
-    // Upsert: if exists, update; if not, create
-    const permission = await db.permission.upsert({
-      where: {
-        role_resource_action: { role, resource, action },
-      },
-      update: {
-        allowed: allowed ?? false,
-      },
-      create: {
-        role,
-        resource,
-        action,
-        allowed: allowed ?? false,
-      },
-    })
+    const role = await db.role.findUnique({ where: { id: roleId } })
+    if (!role) {
+      return NextResponse.json({ error: 'Rôle introuvable' }, { status: 404 })
+    }
 
-    return NextResponse.json(permission)
-  } catch (error) {
-    console.error('Upsert permission error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Upsert each permission entry
+    const entries = Object.entries(permissions) as [string, boolean][]
+
+    await db.$transaction(
+      entries.map(([permissionId, allowed]) =>
+        db.rolePermission.upsert({
+          where: {
+            roleId_permissionId: { roleId, permissionId },
+          },
+          create: { roleId, permissionId, allowed },
+          update: { allowed },
+        })
+      )
+    )
+
+    return NextResponse.json({ success: true, updated: entries.length })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue'
+    console.error('Erreur lors de la mise à jour des permissions:', message)
+    return NextResponse.json(
+      { error: 'Erreur lors de la mise à jour des permissions' },
+      { status: 500 }
+    )
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }

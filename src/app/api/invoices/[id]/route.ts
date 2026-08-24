@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const invoice = await db.invoice.findUnique({
@@ -13,6 +14,14 @@ export async function GET(
         client: true,
         case: { select: { id: true, reference: true, title: true } },
         tenant: true,
+        currency: true,
+        lineItems: { orderBy: { sortOrder: 'asc' } },
+        payments: {
+          include: {
+            recorder: { select: { id: true, fullName: true } },
+          },
+          orderBy: { paidAt: 'desc' },
+        },
       },
     })
     if (!invoice) {
@@ -22,6 +31,8 @@ export async function GET(
   } catch (error) {
     console.error('Get invoice error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }
 
@@ -29,26 +40,98 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const body = await request.json()
-    const invoice = await db.invoice.update({
+
+    const existing = await db.invoice.findUnique({
       where: { id },
-      data: {
-        reference: body.reference,
-        amount: body.amount,
-        status: body.status,
-        dueDate: body.dueDate ? new Date(body.dueDate) : null,
-        paidDate: body.paidDate ? new Date(body.paidDate) : null,
-        paidAmount: body.paidAmount,
-        notes: body.notes,
-        currencyCode: body.currencyCode,
-      },
+      select: { id: true },
     })
+    if (!existing) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
+
+    // Handle lineItems replacement
+    const { lineItems: rawLineItems } = body
+    let total = body.amount != null ? parseFloat(body.amount) : undefined
+    let lineItemsData: Array<{
+      description: string
+      quantity: number
+      unitPrice: number
+      total: number
+      sortOrder: number
+    }> | undefined
+
+    if (Array.isArray(rawLineItems)) {
+      total = 0
+      lineItemsData = rawLineItems.map(
+        (
+          item: { description?: string; quantity?: number; unitPrice?: number },
+          index: number
+        ) => {
+          const qty = parseInt(String(item.quantity)) || 1
+          const price = parseFloat(String(item.unitPrice)) || 0
+          const lineTotal = Math.round(qty * price * 100) / 100
+          total! += lineTotal
+          return {
+            description: item.description || '',
+            quantity: qty,
+            unitPrice: price,
+            total: lineTotal,
+            sortOrder: index,
+          }
+        }
+      )
+      total = Math.round(total! * 100) / 100
+    }
+
+    const invoice = await db.$transaction(async (tx) => {
+      // If lineItems provided, delete existing ones and create new
+      if (lineItemsData) {
+        await tx.invoiceLineItem.deleteMany({ where: { invoiceId: id } })
+      }
+
+      return tx.invoice.update({
+        where: { id },
+        data: {
+          ...(total != null ? { amount: total } : {}),
+          ...(body.status ? { status: body.status } : {}),
+          ...(body.dueDate != null
+            ? { dueDate: body.dueDate ? new Date(body.dueDate) : null }
+            : {}),
+          ...(body.notes !== undefined ? { notes: body.notes } : {}),
+          ...(body.billingType !== undefined ? { billingType: body.billingType } : {}),
+          ...(body.currencyId ? { currencyId: body.currencyId } : {}),
+          ...(body.type ? { type: body.type } : {}),
+          ...(lineItemsData
+            ? {
+                lineItems: { create: lineItemsData },
+              }
+            : {}),
+        },
+        include: {
+          client: true,
+          case: { select: { id: true, reference: true, title: true } },
+          currency: true,
+          lineItems: { orderBy: { sortOrder: 'asc' } },
+          payments: {
+            include: {
+              recorder: { select: { id: true, fullName: true } },
+            },
+            orderBy: { paidAt: 'desc' },
+          },
+        },
+      })
+    })
+
     return NextResponse.json(invoice)
   } catch (error) {
     console.error('Update invoice error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }
 
@@ -56,6 +139,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     await db.invoice.delete({ where: { id } })
@@ -63,5 +147,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete invoice error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }

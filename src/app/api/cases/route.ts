@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(request: Request) {
+  const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
     const tenantId = searchParams.get('tenantId')
     const search = searchParams.get('search')
     const status = searchParams.get('status')
-    const type = searchParams.get('type')
+    const caseType = searchParams.get('caseType')
     const priority = searchParams.get('priority')
 
     const where: Record<string, unknown> = {}
     if (tenantId) where.tenantId = tenantId
     if (status) where.status = status
-    if (type) where.type = type
+    if (caseType) where.caseType = caseType
     if (priority) where.priority = priority
     if (search) {
       where.OR = [
@@ -26,10 +27,10 @@ export async function GET(request: Request) {
     const cases = await db.case.findMany({
       where,
       include: {
-        client: { select: { id: true, firstName: true, lastName: true } },
+        client: { select: { id: true, fullName: true } },
         assignments: {
           include: {
-            user: { select: { id: true, name: true } },
+            user: { select: { id: true, fullName: true } },
           },
         },
       },
@@ -41,9 +42,13 @@ export async function GET(request: Request) {
     console.error('List cases error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function POST(request: Request) {
+  const db = getDb()
   try {
     const body = await request.json()
     const caze = await db.case.create({
@@ -51,11 +56,10 @@ export async function POST(request: Request) {
         reference: body.reference,
         title: body.title,
         description: body.description,
-        type: body.type,
+        caseType: body.caseType,
         status: body.status,
         priority: body.priority,
         isSecret: body.isSecret,
-        nextDueDate: body.nextDueDate ? new Date(body.nextDueDate) : null,
         tenantId: body.tenantId,
         clientId: body.clientId,
         adversary: body.adversary,
@@ -68,5 +72,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Create case error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

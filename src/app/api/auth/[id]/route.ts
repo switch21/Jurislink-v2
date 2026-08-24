@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
 
@@ -13,7 +14,7 @@ export async function GET(
       select: {
         id: true,
         email: true,
-        name: true,
+        fullName: true,
         role: true,
         avatarUrl: true,
         phone: true,
@@ -22,7 +23,6 @@ export async function GET(
         failedLoginAttempts: true,
         lockedUntil: true,
         lastLoginAt: true,
-        mfaEnabled: true,
         createdAt: true,
         updatedAt: true,
         tenantId: true,
@@ -37,5 +37,7 @@ export async function GET(
   } catch (error) {
     console.error('Get user error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }

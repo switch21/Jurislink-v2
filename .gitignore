@@ -59,3 +59,4 @@ tool-results/
 agent-ctx/
 download/
 dev.log
+db/*.db

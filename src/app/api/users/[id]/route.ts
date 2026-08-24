@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import bcrypt from 'bcryptjs'
+import { getDb } from '@/lib/db'
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const user = await db.user.findUnique({
@@ -13,7 +13,7 @@ export async function GET(
       select: {
         id: true,
         email: true,
-        name: true,
+        fullName: true,
         role: true,
         avatarUrl: true,
         phone: true,
@@ -22,7 +22,6 @@ export async function GET(
         failedLoginAttempts: true,
         lockedUntil: true,
         lastLoginAt: true,
-        mfaEnabled: true,
         createdAt: true,
         updatedAt: true,
         tenantId: true,
@@ -36,38 +35,36 @@ export async function GET(
     console.error('Get user error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const body = await request.json()
 
-    const data: Record<string, unknown> = {
-      email: body.email,
-      name: body.name,
-      role: body.role,
-      avatarUrl: body.avatarUrl,
-      phone: body.phone,
-      preferredLanguage: body.preferredLanguage,
-      isActive: body.isActive,
-      mfaEnabled: body.mfaEnabled,
-    }
-
-    if (body.password) {
-      data.password = await bcrypt.hash(body.password, 10)
-    }
-
     const user = await db.user.update({
       where: { id },
-      data,
+      data: {
+        email: body.email,
+        fullName: body.fullName,
+        role: body.role,
+        avatarUrl: body.avatarUrl,
+        phone: body.phone,
+        preferredLanguage: body.preferredLanguage,
+        isActive: body.isActive,
+        tenantId: body.tenantId,
+      },
       select: {
         id: true,
         email: true,
-        name: true,
+        fullName: true,
         role: true,
         avatarUrl: true,
         phone: true,
@@ -76,10 +73,10 @@ export async function PUT(
         failedLoginAttempts: true,
         lockedUntil: true,
         lastLoginAt: true,
-        mfaEnabled: true,
         createdAt: true,
         updatedAt: true,
         tenantId: true,
+        tenant: { select: { id: true, name: true, slug: true, plan: true } },
       },
     })
     return NextResponse.json(user)
@@ -87,12 +84,16 @@ export async function PUT(
     console.error('Update user error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     await db.user.delete({ where: { id } })
@@ -100,5 +101,8 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete user error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

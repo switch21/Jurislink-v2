@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(request: Request) {
+  const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
     const tenantId = searchParams.get('tenantId')
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
       include: {
         assignments: {
           include: {
-            user: { select: { id: true, name: true } },
+            user: { select: { id: true, fullName: true } },
           },
         },
         case: { select: { id: true, reference: true, title: true } },
@@ -40,9 +41,13 @@ export async function GET(request: Request) {
     console.error('List events error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function POST(request: Request) {
+  const db = getDb()
   try {
     const body = await request.json()
     const event = await db.event.create({
@@ -53,14 +58,51 @@ export async function POST(request: Request) {
         endTime: body.endTime ? new Date(body.endTime) : null,
         eventType: body.eventType,
         criticality: body.criticality,
-        location: body.location,
         tenantId: body.tenantId,
         caseId: body.caseId,
       },
+      include: {
+        assignments: {
+          include: {
+            user: { select: { id: true, fullName: true } },
+          },
+        },
+        case: { select: { id: true, reference: true, title: true } },
+      },
     })
+
+    // Handle assignments if provided
+    if (Array.isArray(body.assignments) && body.assignments.length > 0) {
+      const assignmentData = body.assignments.map((userId: string) => ({
+        userId,
+        eventId: event.id,
+      }))
+      await db.eventAssignment.createMany({
+        data: assignmentData,
+        skipDuplicates: true,
+      })
+
+      // Re-fetch with assignments included
+      const eventWithAssignments = await db.event.findUnique({
+        where: { id: event.id },
+        include: {
+          assignments: {
+            include: {
+              user: { select: { id: true, fullName: true } },
+            },
+          },
+          case: { select: { id: true, reference: true, title: true } },
+        },
+      })
+      return NextResponse.json(eventWithAssignments, { status: 201 })
+    }
+
     return NextResponse.json(event, { status: 201 })
   } catch (error) {
     console.error('Create event error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

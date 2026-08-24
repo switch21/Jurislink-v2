@@ -1,19 +1,24 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
+// Messages no longer have isRead field. This endpoint is a no-op.
 export async function PUT(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
-    const message = await db.message.update({
-      where: { id },
-      data: { isRead: true },
-    })
+    const message = await db.message.findUnique({ where: { id } })
+    if (!message) {
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+    }
     return NextResponse.json(message)
   } catch (error) {
     console.error('Mark message as read error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

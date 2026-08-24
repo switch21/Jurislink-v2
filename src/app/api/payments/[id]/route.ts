@@ -1,33 +1,28 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
-async function recalcInvoiceStatus(invoiceId: string) {
+async function recalcInvoiceStatus(db: ReturnType<typeof getDb>, invoiceId: string) {
+  const payments = await db.payment.findMany({
+    where: { invoiceId, status: { not: 'annule' } },
+    select: { amount: true },
+  })
+  const paidAmount = payments.reduce((sum, p) => sum + p.amount, 0)
+
   const invoice = await db.invoice.findUnique({ where: { id: invoiceId } })
   if (!invoice) return
 
-  // Sum all validated payments for this invoice
-  const paymentsAgg = await db.payment.aggregate({
-    where: { invoiceId, status: 'valide' },
-    _sum: { amount: true },
-  })
-  const totalPaid = paymentsAgg._sum.amount ?? 0
-
   let newStatus = invoice.status
-  if (totalPaid >= invoice.amount) {
-    newStatus = 'paye'
-  } else if (totalPaid > 0) {
-    newStatus = 'partiel'
-  } else {
+  if (paidAmount <= 0) {
     newStatus = 'non_paye'
+  } else if (paidAmount >= invoice.amount) {
+    newStatus = 'paye'
+  } else {
+    newStatus = 'partiel'
   }
 
   await db.invoice.update({
     where: { id: invoiceId },
-    data: {
-      paidAmount: totalPaid,
-      status: newStatus,
-      paidDate: newStatus === 'paye' ? new Date() : null,
-    },
+    data: { paidAmount, status: newStatus },
   })
 }
 
@@ -35,36 +30,29 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const payment = await db.payment.findUnique({
       where: { id },
       include: {
         invoice: {
-          select: { id: true, reference: true, amount: true, status: true, currencyCode: true },
+          include: {
+            client: { select: { id: true, fullName: true, company: true } },
+          },
         },
-        client: { select: { id: true, firstName: true, lastName: true, company: true } },
-        user: { select: { id: true, name: true, email: true } },
+        recorder: { select: { id: true, fullName: true } },
       },
     })
-
     if (!payment) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 })
     }
-
-    let validatedByUser = null
-    if (payment.validatedBy) {
-      const validator = await db.user.findUnique({
-        where: { id: payment.validatedBy },
-        select: { id: true, name: true, email: true },
-      })
-      validatedByUser = validator
-    }
-
-    return NextResponse.json({ ...payment, validatedByUser })
+    return NextResponse.json(payment)
   } catch (error) {
     console.error('Get payment error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }
 
@@ -72,69 +60,45 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const body = await request.json()
+    const { amount, method, reference, notes, status } = body
 
     const existing = await db.payment.findUnique({ where: { id } })
     if (!existing) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 })
     }
 
-    const updateData: Record<string, unknown> = {}
-    if (body.amount !== undefined) updateData.amount = parseFloat(body.amount)
-    if (body.method !== undefined) updateData.method = body.method
-    if (body.status !== undefined) updateData.status = body.status
-    if (body.reference !== undefined) updateData.reference = body.reference ?? null
-    if (body.notes !== undefined) updateData.notes = body.notes ?? null
-    if (body.receivedAt !== undefined) {
-      updateData.receivedAt = body.receivedAt ? new Date(body.receivedAt) : new Date()
-    }
-    if (body.clientId !== undefined) updateData.clientId = body.clientId ?? null
-    if (body.userId !== undefined) updateData.userId = body.userId ?? null
-    if (body.validatedBy !== undefined) {
-      updateData.validatedBy = body.validatedBy ?? null
-      if (body.validatedBy) {
-        updateData.validatedAt = new Date()
-      }
-    }
-
     const payment = await db.payment.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...(amount != null ? { amount: parseFloat(amount) } : {}),
+        ...(method ? { method } : {}),
+        ...(reference !== undefined ? { reference } : {}),
+        ...(notes !== undefined ? { notes } : {}),
+        ...(status ? { status } : {}),
+      },
       include: {
         invoice: {
-          select: { id: true, reference: true, amount: true, status: true, currencyCode: true },
+          include: {
+            client: { select: { id: true, fullName: true, company: true } },
+          },
         },
-        client: { select: { id: true, firstName: true, lastName: true, company: true } },
-        user: { select: { id: true, name: true, email: true } },
+        recorder: { select: { id: true, fullName: true } },
       },
     })
 
-    // Re-calculate invoice status if invoiceId changed or amount changed
-    const needsRecalc =
-      (body.invoiceId !== undefined && body.invoiceId !== existing.invoiceId) ||
-      body.amount !== undefined ||
-      body.status !== undefined
-
-    if (needsRecalc) {
-      // If invoiceId changed, recalc old and new invoice
-      if (body.invoiceId !== undefined && body.invoiceId !== existing.invoiceId) {
-        if (existing.invoiceId) {
-          await recalcInvoiceStatus(existing.invoiceId)
-        }
-      }
-      // Always recalc current invoice
-      const currentInvoiceId = body.invoiceId !== undefined ? body.invoiceId : existing.invoiceId
-      if (currentInvoiceId) {
-        await recalcInvoiceStatus(currentInvoiceId)
-      }
-    }
+    // Recalculate invoice status after payment update
+    await recalcInvoiceStatus(db, existing.invoiceId)
 
     return NextResponse.json(payment)
   } catch (error) {
     console.error('Update payment error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }
 
@@ -142,25 +106,24 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
-    const payment = await db.payment.findUnique({ where: { id } })
-    if (!payment) {
+    const existing = await db.payment.findUnique({ where: { id } })
+    if (!existing) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 })
     }
 
-    const invoiceId = payment.invoiceId
-
     await db.payment.delete({ where: { id } })
 
-    // Re-calculate invoice status after payment removal
-    if (invoiceId) {
-      await recalcInvoiceStatus(invoiceId)
-    }
+    // Recalculate invoice status after payment deletion
+    await recalcInvoiceStatus(db, existing.invoiceId)
 
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Delete payment error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const client = await db.client.findUnique({
@@ -12,6 +13,22 @@ export async function GET(
       include: {
         _count: { select: { cases: true, invoices: true } },
         tenant: true,
+        cases: {
+          select: { id: true, reference: true, title: true, status: true, caseType: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
+        invoices: {
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            createdAt: true,
+            currency: { select: { code: true, symbol: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
       },
     })
     if (!client) {
@@ -22,20 +39,23 @@ export async function GET(
     console.error('Get client error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     const body = await request.json()
     const client = await db.client.update({
       where: { id },
       data: {
-        firstName: body.firstName,
-        lastName: body.lastName,
+        fullName: body.fullName,
         company: body.company,
         clientType: body.clientType,
         niu: body.niu,
@@ -47,7 +67,9 @@ export async function PUT(
         notes: body.notes,
         riskLevel: body.riskLevel,
         source: body.source,
+        status: body.status,
         isActive: body.isActive,
+        responsibleLawyerId: body.responsibleLawyerId,
       },
     })
     return NextResponse.json(client)
@@ -55,12 +77,16 @@ export async function PUT(
     console.error('Update client error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+  finally {
+    await db.$disconnect().catch(() => {})
+  }
 }
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const db = getDb()
   try {
     const { id } = await params
     await db.client.delete({ where: { id } })
@@ -68,5 +94,8 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete client error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }

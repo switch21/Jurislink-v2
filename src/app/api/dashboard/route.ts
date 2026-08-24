@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 
 export async function GET(request: Request) {
+  const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
     const tenantId = searchParams.get('tenantId')
@@ -12,6 +13,11 @@ export async function GET(request: Request) {
     }
 
     const where = { tenantId }
+    const now = new Date()
+
+    // Current month boundaries
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
 
     const [totalCases, activeCases, totalClients, unpaidInvoices, paidInvoices] =
       await Promise.all([
@@ -36,12 +42,12 @@ export async function GET(request: Request) {
     const upcomingEvents = await db.event.findMany({
       where: {
         ...where,
-        startTime: { gte: new Date() },
+        startTime: { gte: now },
       },
       include: {
         assignments: {
           include: {
-            user: { select: { id: true, name: true } },
+            user: { select: { id: true, fullName: true } },
           },
         },
         case: { select: { id: true, reference: true, title: true } },
@@ -61,56 +67,25 @@ export async function GET(request: Request) {
     }
 
     const casesByTypeRaw = await db.case.groupBy({
-      by: ['type'],
+      by: ['caseType'],
       where,
-      _count: { type: true },
+      _count: { caseType: true },
     })
     const casesByType: Record<string, number> = {}
     for (const item of casesByTypeRaw) {
-      casesByType[item.type] = item._count.type
+      casesByType[item.caseType] = item._count.caseType
     }
 
     const recentActivity = await db.auditLog.findMany({
       where,
       include: {
-        user: { select: { id: true, name: true } },
+        user: { select: { id: true, fullName: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { timestamp: 'desc' },
       take: 10,
     })
 
     // === Enhanced dashboard data ===
-
-    // Urgencies: cases with nextDueDate within 2 days
-    const now = new Date()
-    const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000)
-    const urgencies = await db.case.findMany({
-      where: {
-        ...where,
-        nextDueDate: {
-          lte: twoDaysFromNow,
-          gte: now,
-        },
-        status: { notIn: ['clos', 'archive'] },
-      },
-      include: {
-        client: { select: { firstName: true, lastName: true } },
-      },
-      orderBy: { nextDueDate: 'asc' },
-    })
-    const urgenciesFormatted = urgencies.map((c) => {
-      const daysRemaining = Math.ceil(
-        (c.nextDueDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      )
-      return {
-        id: c.id,
-        reference: c.reference,
-        title: c.title,
-        clientName: `${c.client.firstName} ${c.client.lastName}`,
-        nextDueDate: c.nextDueDate,
-        daysRemaining,
-      }
-    })
 
     // Overdue invoices: dueDate < now and status non_paye or partiel
     const overdueInvoices = await db.invoice.findMany({
@@ -120,7 +95,7 @@ export async function GET(request: Request) {
         status: { in: ['non_paye', 'partiel'] },
       },
       include: {
-        client: { select: { firstName: true, lastName: true } },
+        client: { select: { fullName: true } },
       },
       orderBy: { dueDate: 'asc' },
     })
@@ -130,10 +105,9 @@ export async function GET(request: Request) {
       )
       return {
         id: inv.id,
-        reference: inv.reference,
-        clientName: `${inv.client.firstName} ${inv.client.lastName}`,
+        clientName: inv.client.fullName,
         amount: inv.amount,
-        currencyCode: inv.currencyCode,
+        currencyCode: inv.currency?.code ?? 'XAF',
         dueDate: inv.dueDate,
         status: inv.status,
         daysOverdue,
@@ -149,7 +123,6 @@ export async function GET(request: Request) {
       },
       include: {
         case: { select: { reference: true } },
-        user: { select: { name: true } },
       },
       orderBy: { dueDate: { sort: 'asc', nulls: 'last' } },
     })
@@ -160,7 +133,6 @@ export async function GET(request: Request) {
       status: t.status,
       dueDate: t.dueDate,
       caseReference: t.case?.reference ?? null,
-      assigneeName: t.user?.name ?? null,
     }))
 
     // Upcoming events: next 7 days
@@ -177,7 +149,7 @@ export async function GET(request: Request) {
         case: { select: { reference: true } },
         assignments: {
           include: {
-            user: { select: { name: true } },
+            user: { select: { fullName: true } },
           },
         },
       },
@@ -191,15 +163,14 @@ export async function GET(request: Request) {
       endTime: e.endTime,
       eventType: e.eventType,
       criticality: e.criticality,
-      location: e.location,
       caseReference: e.case?.reference ?? null,
       assignments: e.assignments.map((a) => ({
         userId: a.userId,
-        userName: a.user.name,
+        userName: a.user.fullName,
       })),
     }))
 
-    // My tasks (if userId provided)
+    // === myTasks: tasks relevant to the current user ===
     let myTasks: Array<{
       id: string
       title: string
@@ -209,16 +180,53 @@ export async function GET(request: Request) {
       caseReference: string | null
     }> = []
     if (userId) {
+      // Get case IDs assigned to this user
+      const userCaseAssignments = await db.caseAssignment.findMany({
+        where: { userId, tenantId },
+        select: { caseId: true },
+      })
+      const userCaseIds = userCaseAssignments.map((a) => a.caseId)
+
+      const taskWhere: Record<string, unknown> = {
+        ...where,
+        status: { not: 'terminee' },
+      }
+      if (userCaseIds.length > 0) {
+        taskWhere.OR = [
+          { caseId: { in: userCaseIds } },
+          { caseId: null },
+        ]
+      }
+
       const tasks = await db.task.findMany({
-        where: {
-          tenantId,
-          userId,
-          status: { not: 'terminee' },
-        },
+        where: taskWhere,
         include: {
           case: { select: { reference: true } },
         },
-        orderBy: { dueDate: { sort: 'asc', nulls: 'last' } },
+        orderBy: {
+          dueDate: { sort: 'asc', nulls: 'last' },
+        },
+        take: 20,
+      })
+      myTasks = tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        priority: t.priority,
+        status: t.status,
+        dueDate: t.dueDate,
+        caseReference: t.case?.reference ?? null,
+      }))
+    } else {
+      // No userId: return all tenant tasks not completed
+      const tasks = await db.task.findMany({
+        where: { ...where, status: { not: 'terminee' } },
+        include: {
+          case: { select: { reference: true } },
+        },
+        orderBy: {
+          dueDate: { sort: 'asc', nulls: 'last' },
+        },
+        take: 20,
       })
       myTasks = tasks.map((t) => ({
         id: t.id,
@@ -229,6 +237,107 @@ export async function GET(request: Request) {
         caseReference: t.case?.reference ?? null,
       }))
     }
+
+    // === Financial enhancements ===
+
+    // toRecover: sum of unpaid (non_paye) + partial (partiel) invoice amounts
+    const toRecoverResult = await db.invoice.aggregate({
+      where: {
+        ...where,
+        status: { in: ['non_paye', 'partiel'] },
+      },
+      _sum: { amount: true },
+    })
+    const toRecover = toRecoverResult._sum.amount ?? 0
+
+    // overdueInvoicesCount: count where dueDate < now AND status in non_paye/partiel
+    const overdueInvoicesCount = await db.invoice.count({
+      where: {
+        ...where,
+        dueDate: { lt: now },
+        status: { in: ['non_paye', 'partiel'] },
+      },
+    })
+
+    // newClientsThisMonth
+    const newClientsThisMonth = await db.client.count({
+      where: {
+        ...where,
+        createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth },
+      },
+    })
+
+    // newCasesThisMonth
+    const newCasesThisMonth = await db.case.count({
+      where: {
+        ...where,
+        createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth },
+      },
+    })
+
+    // === Payment data ===
+
+    // paymentsThisMonth: total payments received this month
+    const paymentsThisMonthResult = await db.payment.aggregate({
+      where: {
+        ...where,
+        paidAt: { gte: firstDayOfMonth, lte: lastDayOfMonth },
+        status: { not: 'annule' },
+      },
+      _sum: { amount: true },
+    })
+    const paymentsThisMonth = paymentsThisMonthResult._sum.amount ?? 0
+
+    // overduePayments: count of invoices where dueDate < now AND status in (non_paye, partiel)
+    const overduePayments = await db.invoice.count({
+      where: {
+        ...where,
+        dueDate: { lt: now },
+        status: { in: ['non_paye', 'partiel'] },
+      },
+    })
+
+    // === activityCounts (current month) ===
+    const [
+      dossiersOuverts,
+      dossiersCloses,
+      nouveauxClients,
+      audiences,
+      facturesEmises,
+    ] = await Promise.all([
+      db.case.count({
+        where: {
+          ...where,
+          createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth },
+        },
+      }),
+      db.case.count({
+        where: {
+          ...where,
+          status: 'ferme',
+          updatedAt: { gte: firstDayOfMonth, lte: lastDayOfMonth },
+        },
+      }),
+      db.client.count({
+        where: {
+          ...where,
+          createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth },
+        },
+      }),
+      db.event.count({
+        where: {
+          ...where,
+          eventType: 'audience',
+          startTime: { gte: firstDayOfMonth, lte: lastDayOfMonth },
+        },
+      }),
+      db.invoice.count({
+        where: {
+          ...where,
+          createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth },
+        },
+      }),
+    ])
 
     return NextResponse.json({
       totalCases,
@@ -242,8 +351,7 @@ export async function GET(request: Request) {
       casesByType,
       recentActivity,
       upcomingEventsList: upcomingEvents,
-      // Enhanced fields
-      urgencies: urgenciesFormatted,
+      urgencies: [],
       overdueInvoices: overdueInvoicesFormatted,
       urgentTasks: urgentTasksFormatted,
       upcomingEventsEnhanced: upcomingEventsFormatted,
@@ -253,15 +361,29 @@ export async function GET(request: Request) {
         revenueLastMonth: 0,
         collectedThisMonth: totalRevenue,
         collectedLastMonth: 0,
-        toRecover: 0,
-        overdueInvoicesCount: unpaidInvoices,
+        toRecover,
+        overdueInvoicesCount,
+        paymentsThisMonth,
+        overduePayments,
+        newClientsThisMonth,
+        newCasesThisMonth,
         topClients: [],
         monthlyRevenue: [],
         methodBreakdown: [],
+      },
+      activityCounts: {
+        dossiersOuverts,
+        dossiersCloses,
+        nouveauxClients,
+        audiences,
+        facturesEmises,
       },
     })
   } catch (error) {
     console.error('Dashboard stats error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+  finally {
+    await db.$disconnect().catch(() => {})
   }
 }
