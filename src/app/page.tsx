@@ -93,7 +93,7 @@ interface InvoiceLineItem { id: string; description: string; quantity: number; u
 interface Payment {
   id: string; amount: number; method: string; reference?: string | null; status: string; paidAt: string; notes?: string | null; createdAt: string;
   tenantId: string; invoiceId: string; recordedBy?: string | null; recorder?: UserItem;
-  invoice?: { id: string; invoiceNumber?: string | null; client?: { fullName: string } };
+  invoice?: { id: string; invoiceNumber?: string | null; client?: { id: string; fullName: string } };
 }
 interface Invoice {
   id: string; invoiceNumber?: string | null; type: string; amount: number; paidAmount: number; status: string; dueDate?: string | null;
@@ -285,7 +285,18 @@ function fmtDateTime(d: string | null | undefined) {
   if (!d) return '—'
   try { return format(parseISO(d), 'dd/MM/yyyy HH:mm', { locale: fr }) } catch { return '—' }
 }
-function fmtMoney(amount: number, code: string = 'XAF') {
+function fmtMoney(amount: number, code: string = 'XAF', compact = false) {
+  if (compact) {
+    if (amount >= 1000000) {
+      const m = amount / 1000000
+      return m % 1 === 0 ? `${m} M ${code}` : `${m.toFixed(1)} M ${code}`
+    }
+    if (amount >= 1000) {
+      const k = amount / 1000
+      return k % 1 === 0 ? `${k} K ${code}` : `${k.toFixed(0)} K ${code}`
+    }
+    return `${amount} ${code}`
+  }
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: code, minimumFractionDigits: 0 }).format(amount)
 }
 function fmtFileSize(bytes: number) {
@@ -598,6 +609,18 @@ function DashboardView() {
     queryFn: () => fetch(`/api/dashboard?tenantId=${user!.tenantId}&userId=${user!.id}`).then(r => r.json()),
     enabled: !!user?.tenantId, refetchInterval: 60000
   })
+
+  const { data: subData } = useQuery({
+    queryKey: ['subscription', user?.tenantId],
+    queryFn: () => fetch(`/api/subscriptions?tenantId=${user?.tenantId}`).then(r => r.json()),
+    enabled: !!user?.tenantId,
+  })
+  const subscriptionAlert = useMemo(() => {
+    if (!subData?.currentPeriodEnd) return null
+    const days = differenceInDays(new Date(subData.currentPeriodEnd), new Date())
+    if (days > 30) return null
+    return { daysLeft: days, planName: subData.plan?.name || 'Starter', endDate: new Date(subData.currentPeriodEnd).toLocaleDateString('fr-FR') }
+  }, [subData])
   const now = new Date()
   const greeting = now.getHours() < 12 ? 'Bonjour' : now.getHours() < 18 ? 'Bon après-midi' : 'Bonsoir'
   const hour = new Date().getHours()
@@ -616,6 +639,18 @@ function DashboardView() {
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
+      {/* Subscription expiry alert */}
+      {subscriptionAlert && (
+        <div className={cn('rounded-xl p-4 border-l-4 flex items-center gap-3', subscriptionAlert.daysLeft <= 0 ? 'border-l-[#DC2626] bg-[#FEF2F2]' : subscriptionAlert.daysLeft <= 5 ? 'border-l-[#DC2626] bg-[#FEE2E2]' : 'border-l-[#D97706] bg-[#FEF3C7]')}>
+          {subscriptionAlert.daysLeft <= 0 ? <AlertOctagon className="size-5 text-[#DC2626] shrink-0" /> : <AlertTriangle className="size-5 text-[#D97706] shrink-0" />}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold">{subscriptionAlert.daysLeft <= 0 ? 'Abonnement expiré' : `Abonnement expire dans ${subscriptionAlert.daysLeft} jour${subscriptionAlert.daysLeft > 1 ? 's' : ''}`}</p>
+            <p className="text-xs text-[#6B7280]">Votre abonnement {subscriptionAlert.planName} se termine le {subscriptionAlert.endDate}. {subscriptionAlert.daysLeft <= 0 ? 'Votre cabinet a été désactivé. Contactez l\'administrateur.' : 'Renouvelez-le dans les Paramètres > Abonnement.'}</p>
+          </div>
+          {subscriptionAlert.daysLeft > 0 && <Button size="sm" variant="outline" className="shrink-0" onClick={() => setCurrentView('settings')}>Renouveler</Button>}
+        </div>
+      )}
+
       {/* Welcome + Aujourd'hui section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
@@ -625,22 +660,22 @@ function DashboardView() {
               <div className="flex gap-2"><Button size="sm" onClick={() => setCurrentView('cases')} className="hidden sm:flex"><Plus className="size-4 mr-1" />Nouveau dossier</Button><Button size="sm" variant="outline" onClick={() => setCurrentView('invoices')} className="hidden sm:flex"><Receipt className="size-4 mr-1" />Nouvelle facture</Button></div>
             </div>
             <Separator className="mb-4" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className={cn('rounded-xl p-4 border-l-4', urgencyCount > 0 ? 'border-l-[#EF4444] bg-[#FEF2F2]' : 'border-l-[#059669] bg-[#ECFDF5]')}>
-                <p className="text-xs font-medium text-[#6B7280] mb-1">Aujourd'hui</p>
-                <p className="text-2xl font-bold text-[#111827]">{urgencyCount > 0 ? <><span className="text-[#DC2626]">{urgencyCount}</span> <span className="text-sm font-normal">urgence{urgencyCount > 1 ? 's' : ''}</span></> : <><CheckCircle2 className="size-6 text-[#059669] inline" /> <span className="text-sm font-normal text-[#059669]">Tout va bien</span></>}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className={cn('rounded-xl p-3 border-l-4', urgencyCount > 0 ? 'border-l-[#EF4444] bg-[#FEF2F2]' : 'border-l-[#059669] bg-[#ECFDF5]')}>
+                <p className="text-[10px] sm:text-xs font-medium text-[#6B7280] mb-1">Aujourd'hui</p>
+                <p className="text-lg sm:text-xl font-bold text-[#111827]">{urgencyCount > 0 ? <><span className="text-[#DC2626]">{urgencyCount}</span> <span className="text-xs sm:text-sm font-normal">urgence{urgencyCount > 1 ? 's' : ''}</span></> : <><CheckCircle2 className="size-5 sm:size-6 text-[#059669] inline" /> <span className="text-xs sm:text-sm font-normal text-[#059669]">Tout va bien</span></>}</p>
               </div>
-              <div className="rounded-xl p-4 border-l-4 border-l-[#C8A45D] bg-[#FEF3C7]">
-                <p className="text-xs font-medium text-[#6B7280] mb-1">Actions à faire</p>
-                <p className="text-2xl font-bold text-[#111827]">{myTaskCount} <span className="text-sm font-normal text-[#6B7280]">tâche{myTaskCount > 1 ? 's' : ''}</span></p>
+              <div className="rounded-xl p-3 border-l-4 border-l-[#C8A45D] bg-[#FEF3C7]">
+                <p className="text-[10px] sm:text-xs font-medium text-[#6B7280] mb-1">Actions à faire</p>
+                <p className="text-lg sm:text-xl font-bold text-[#111827]">{myTaskCount} <span className="text-xs sm:text-sm font-normal text-[#6B7280]">tâche{myTaskCount > 1 ? 's' : ''}</span></p>
               </div>
-              <div className="rounded-xl p-4 border-l-4 border-l-[#1E5A8A] bg-[#E8F0F8]">
-                <p className="text-xs font-medium text-[#6B7280] mb-1">Dossiers actifs</p>
-                <p className="text-2xl font-bold text-[#111827]">{stats.activeCases}</p>
+              <div className="rounded-xl p-3 border-l-4 border-l-[#1E5A8A] bg-[#E8F0F8]">
+                <p className="text-[10px] sm:text-xs font-medium text-[#6B7280] mb-1">Dossiers actifs</p>
+                <p className="text-lg sm:text-xl font-bold text-[#111827]">{stats.activeCases}</p>
               </div>
-              <div className="rounded-xl p-4 border-l-4 border-l-[#D97706] bg-[#FEF3C7]">
-                <p className="text-xs font-medium text-[#6B7280] mb-1">Honoraires en attente</p>
-                <p className="text-2xl font-bold text-[#D97706]">{fmtMoney(totalPending, 'XAF')}</p>
+              <div className="rounded-xl p-3 border-l-4 border-l-[#D97706] bg-[#FEF3C7] min-w-0 overflow-hidden">
+                <p className="text-[10px] sm:text-xs font-medium text-[#6B7280] mb-1">Honoraires en attente</p>
+                <p className="text-lg sm:text-xl font-bold text-[#D97706] truncate" title={fmtMoney(totalPending, 'XAF')}>{fmtMoney(totalPending, 'XAF', true)}</p>
               </div>
             </div>
           </CardContent>
@@ -678,24 +713,24 @@ function DashboardView() {
                 {stats.activityCounts.facturesEmises != null && <div className="rounded-xl p-3 border-l-4 border-l-[#DC2626] bg-[#FEF2F2]"><p className="text-[10px] text-[#6B7280]">Factures émises</p><p className="text-lg font-bold text-[#DC2626]">{stats.activityCounts.facturesEmises}</p></div>}
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-xl p-4 border-l-4 border-l-[#059669] bg-[#ECFDF5]">
-                <p className="text-xs text-[#6B7280] mb-1">CA ce mois</p>
-                <p className="text-lg font-bold">{fmtMoney(finData.revenueThisMonth || 0)}</p>
-                {finData.revenueLastMonth > 0 && <p className={cn("text-xs mt-1", (finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "text-[#059669]" : "text-[#DC2626]")}>{(finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "↑" : "↓"} vs mois dernier ({fmtMoney(finData.revenueLastMonth)})</p>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[#ECFDF5] min-w-0 overflow-hidden">
+                <p className="text-[10px] sm:text-xs text-[#6B7280] mb-1">CA ce mois</p>
+                <p className="text-base sm:text-lg font-bold truncate" title={fmtMoney(finData.revenueThisMonth || 0)}>{fmtMoney(finData.revenueThisMonth || 0, 'XAF', true)}</p>
+                {finData.revenueLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "text-[#059669]" : "text-[#DC2626]")}>{(finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "↑" : "↓"} vs mois dernier</p>}
               </div>
-              <div className="rounded-xl p-4 border-l-4 border-l-[#059669] bg-[#ECFDF5]">
-                <p className="text-xs text-[#6B7280] mb-1">Encaissé</p>
-                <p className="text-lg font-bold">{fmtMoney(finData.collectedThisMonth || 0)}</p>
-                {finData.collectedLastMonth > 0 && <p className={cn("text-xs mt-1", (finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "text-[#059669]" : "text-[#DC2626]")}>{(finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "↑" : "↓"} vs mois dernier</p>}
+              <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[#ECFDF5] min-w-0 overflow-hidden">
+                <p className="text-[10px] sm:text-xs text-[#6B7280] mb-1">Encaissé</p>
+                <p className="text-base sm:text-lg font-bold truncate" title={fmtMoney(finData.collectedThisMonth || 0)}>{fmtMoney(finData.collectedThisMonth || 0, 'XAF', true)}</p>
+                {finData.collectedLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "text-[#059669]" : "text-[#DC2626]")}>{(finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "↑" : "↓"} vs mois dernier</p>}
               </div>
-              <div className="rounded-xl p-4 border-l-4 border-l-[#DC2626] bg-[#FEF2F2]">
-                <p className="text-xs text-[#6B7280] mb-1">À recouvrer</p>
-                <p className="text-lg font-bold text-[#DC2626]">{fmtMoney(finData.toRecover || 0)}</p>
+              <div className="rounded-xl p-3 border-l-4 border-l-[#DC2626] bg-[#FEF2F2] min-w-0 overflow-hidden">
+                <p className="text-[10px] sm:text-xs text-[#6B7280] mb-1">À recouvrer</p>
+                <p className="text-base sm:text-lg font-bold text-[#DC2626] truncate" title={fmtMoney(finData.toRecover || 0)}>{fmtMoney(finData.toRecover || 0, 'XAF', true)}</p>
               </div>
-              <div className="rounded-xl p-4 border-l-4 border-l-[#C8A45D] bg-[#FEF3C7]">
-                <p className="text-xs text-[#6B7280] mb-1">Impayés</p>
-                <p className="text-lg font-bold text-[#926B2D]">{finData.overdueInvoicesCount || 0}</p>
+              <div className="rounded-xl p-3 border-l-4 border-l-[#C8A45D] bg-[#FEF3C7]">
+                <p className="text-[10px] sm:text-xs text-[#6B7280] mb-1">Impayés</p>
+                <p className="text-base sm:text-lg font-bold text-[#926B2D]">{finData.overdueInvoicesCount || 0} <span className="text-xs font-normal text-[#6B7280]">facture{finData.overdueInvoicesCount > 1 ? 's' : ''}</span></p>
               </div>
             </div>
           </CardContent>
@@ -898,7 +933,8 @@ function CasesView() {
   const [editing, setEditing] = useState<CaseItem | null>(null)
   const [selectedCase, setSelectedCase] = useState<CaseItem | null>(null)
   const [conflicts, setConflicts] = useState<ConflictResult[]>([])
-  const [form, setForm] = useState({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '' })
+  const [form, setForm] = useState({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', isSecret: false })
+  const [selectedCollabs, setSelectedCollabs] = useState<string[]>([])
 
   const { data: cases, isLoading } = useQuery({
     queryKey: ['cases', user?.tenantId, statusFilter, typeFilter, priorityFilter, search],
@@ -956,15 +992,16 @@ function CasesView() {
     onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
-  const resetForm = () => { setForm({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '' }); setEditing(null); setConflicts([]) }
+  const resetForm = () => { setForm({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', isSecret: false }); setEditing(null); setConflicts([]); setSelectedCollabs([]) }
   const openEdit = (c: CaseItem) => {
     setEditing(c)
-    setForm({ title: c.title, description: c.description || '', caseType: c.caseType, status: c.status, priority: c.priority, clientId: c.clientId, reference: c.reference, adversary: c.adversary || '', jurisdiction: c.jurisdiction || '', amountInDispute: c.amountInDispute?.toString() || '', billingType: c.billingType || '', nextDueDate: '' })
+    setForm({ title: c.title, description: c.description || '', caseType: c.caseType, status: c.status, priority: c.priority, clientId: c.clientId, reference: c.reference, adversary: c.adversary || '', jurisdiction: c.jurisdiction || '', amountInDispute: c.amountInDispute?.toString() || '', billingType: c.billingType || '', nextDueDate: '', isSecret: c.isSecret || false })
+    setSelectedCollabs(c.assignments?.map(a => a.userId) || [])
     setDialogOpen(true)
   }
   const handleSubmit = () => {
     if (!form.title.trim() || !form.clientId) return
-    const payload = { title: form.title, description: form.description || null, caseType: form.caseType, status: form.status, priority: form.priority, clientId: form.clientId, reference: form.reference, tenantId: user?.tenantId, adversary: form.adversary || null, jurisdiction: form.jurisdiction || null, amountInDispute: form.amountInDispute ? parseFloat(form.amountInDispute) : null, billingType: form.billingType || null }
+    const payload = { title: form.title, description: form.description || null, caseType: form.caseType, status: form.status, priority: form.priority, clientId: form.clientId, reference: form.reference, tenantId: user?.tenantId, adversary: form.adversary || null, jurisdiction: form.jurisdiction || null, amountInDispute: form.amountInDispute ? parseFloat(form.amountInDispute) : null, billingType: form.billingType || null, isSecret: form.isSecret || false, assignments: selectedCollabs }
     if (editing) { updateMut.mutate({ id: editing.id, ...payload }) } else { createMut.mutate(payload) }
   }
 
@@ -1694,7 +1731,7 @@ function InvoicesView() {
 
   const handlePrint = async () => {
     if (!selectedInvoice) return
-    try { const res = await fetch(`/api/invoices/${selectedInvoice.id}/print?tenantId=${user?.tenantId}`); const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${selectedInvoice.invoiceNumber || 'facture'}.pdf`; a.click(); URL.revokeObjectURL(url) } catch { toast.error('Erreur impression') }
+    try { const res = await fetch(`/api/invoices/${selectedInvoice.id}/pdf`); if (!res.ok) throw new Error(); const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${selectedInvoice.invoiceNumber || 'facture'}.pdf`; a.click(); URL.revokeObjectURL(url) } catch { toast.error('Erreur lors de la génération du PDF') }
   }
 
   const openDetail = (inv: Invoice) => { setSelectedInvoice(inv); setDetailOpen(true); setShowPayForm(false) }
@@ -2045,18 +2082,44 @@ function ReportsView() {
     return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 10)
   }, [filteredInvoices])
 
+  const exportReportCSV = useCallback(() => {
+    const rows = [['Période', 'Métrique', 'Valeur']]
+    rows.push([period, 'CA total', String(stats.totalRevenue)])
+    rows.push([period, 'CA ce mois', String(stats.monthRevenue)])
+    rows.push([period, 'Factures payées', String(stats.paidCount)])
+    rows.push([period, 'Factures en attente', String(stats.pendingCount)])
+    rows.push([period, 'Nouveaux clients', String(stats.newClientsCount)])
+    rows.push([period, 'Dossiers actifs', String(stats.activeCases)])
+    rows.push([])
+    rows.push(['Mois', 'Revenus'])
+    for (const m of monthlyData) rows.push([m.label, String(m.revenue)])
+    rows.push([])
+    rows.push(['#', 'Client', 'Revenu total', 'Factures'])
+    topClients.forEach((c, i) => rows.push([String(i + 1), c.name, String(c.total), String(c.count)]))
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `rapport_${format(new Date(), 'yyyy-MM-dd')}.csv`; a.click()
+    URL.revokeObjectURL(url)
+  }, [period, stats, monthlyData, topClients])
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-lg font-semibold">Rapports</h2>
-        <Tabs value={period} onValueChange={setPeriod}>
-          <TabsList className="h-8 text-xs"><TabsTrigger value="month" className="text-xs px-3">Ce mois</TabsTrigger><TabsTrigger value="quarter" className="text-xs px-3">Ce trimestre</TabsTrigger><TabsTrigger value="year" className="text-xs px-3">Cette année</TabsTrigger><TabsTrigger value="all" className="text-xs px-3">Tout</TabsTrigger></TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <Tabs value={period} onValueChange={setPeriod}>
+            <TabsList className="h-8 text-xs"><TabsTrigger value="month" className="text-xs px-3">Ce mois</TabsTrigger><TabsTrigger value="quarter" className="text-xs px-3">Ce trimestre</TabsTrigger><TabsTrigger value="year" className="text-xs px-3">Cette année</TabsTrigger><TabsTrigger value="all" className="text-xs px-3">Tout</TabsTrigger></TabsList>
+          </Tabs>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportReportCSV}><Download className="size-3 mr-1" />CSV</Button>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => window.print()}><Printer className="size-3 mr-1" />PDF</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">CA total</p><p className="text-lg font-bold text-[#1E5A8A] mt-1">{fmtMoney(stats.totalRevenue)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">CA ce mois</p><p className="text-lg font-bold text-[#059669] mt-1">{fmtMoney(stats.monthRevenue)}</p></CardContent></Card>
+        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-[#6B7280]">CA total</p><p className="text-base sm:text-lg font-bold text-[#1E5A8A] mt-1 truncate" title={fmtMoney(stats.totalRevenue)}>{fmtMoney(stats.totalRevenue, 'XAF', true)}</p></CardContent></Card>
+        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-[#6B7280]">CA ce mois</p><p className="text-base sm:text-lg font-bold text-[#059669] mt-1 truncate" title={fmtMoney(stats.monthRevenue)}>{fmtMoney(stats.monthRevenue, 'XAF', true)}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Factures payées</p><p className="text-lg font-bold text-[#059669] mt-1">{stats.paidCount}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Factures en attente</p><p className="text-lg font-bold text-[#D97706] mt-1">{stats.pendingCount}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Nouveaux clients</p><p className="text-lg font-bold text-[#1E5A8A] mt-1">{stats.newClientsCount}</p></CardContent></Card>
@@ -2183,7 +2246,7 @@ function SettingsView() {
   const [newCurrency, setNewCurrency] = useState({ code: '', name: '', symbol: '' })
   const [showNewUser, setShowNewUser] = useState(false)
   const [showNewCurrency, setShowNewCurrency] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<'profil'|'equipe'|'permissions'|'abonnement'|'devises'>('profil')
+  const [settingsTab, setSettingsTab] = useState<'profil'|'cabinet'|'equipe'|'permissions'|'abonnement'|'devises'>('profil')
 
   const { data: tenantData } = useQuery({
     queryKey: ['tenant', user?.tenantId],
@@ -2244,6 +2307,25 @@ function SettingsView() {
     onSuccess: () => { toast.success('Abonnement mis à jour'); qc.invalidateQueries({ queryKey: ['subscription'] }) },
     onError: () => toast.error('Erreur lors de la mise à jour'),
   })
+
+  const updateTenant = useMutation({
+    mutationFn: (body: Record<string, unknown>) => fetch(`/api/tenants/${user?.tenantId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+    onSuccess: () => { toast.success('Cabinet mis à jour'); qc.invalidateQueries({ queryKey: ['tenant'] }) },
+    onError: () => toast.error('Erreur lors de la mise à jour du cabinet'),
+  })
+
+  const uploadLogo = useMutation({
+    mutationFn: async ({ file }: { file: File }) => {
+      const fd = new FormData()
+      fd.append('logo', file)
+      fd.append('tenantId', user!.tenantId!)
+      return fetch('/api/tenants/logo', { method: 'POST', body: fd }).then(r => r.json())
+    },
+    onSuccess: () => { toast.success('Logo mis à jour'); qc.invalidateQueries({ queryKey: ['tenant'] }) },
+    onError: () => toast.error('Erreur lors de l\'upload du logo'),
+  })
+
+  const [cabinetForm, setCabinetForm] = useState({ name: '', email: '', phone: '', address: '', city: '', country: '', niu: '', language: 'fr', timezone: 'Africa/Douala', currencyCode: 'XAF' })
 
   const updateProfile = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch(`/api/users/${user?.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
@@ -2330,6 +2412,7 @@ function SettingsView() {
       <Tabs value={settingsTab} onValueChange={(v: string) => setSettingsTab(v as typeof settingsTab)}>
         <TabsList className="bg-[#F3F4F6] flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="profil" className="data-[state=active]:bg-white data-[state=active]:text-[#1E5A8A] data-[state=active]:shadow-sm text-xs">Mon profil</TabsTrigger>
+          {user?.tenantId && <TabsTrigger value="cabinet" className="data-[state=active]:bg-white data-[state=active]:text-[#1E5A8A] data-[state=active]:shadow-sm text-xs">Mon cabinet</TabsTrigger>}
           {isAdmin && <TabsTrigger value="equipe" className="data-[state=active]:bg-white data-[state=active]:text-[#1E5A8A] data-[state=active]:shadow-sm text-xs">Équipe</TabsTrigger>}
           {canManagePerms && <TabsTrigger value="permissions" className="data-[state=active]:bg-white data-[state=active]:text-[#1E5A8A] data-[state=active]:shadow-sm text-xs">Permissions RBAC</TabsTrigger>}
           {isAdmin && <TabsTrigger value="abonnement" className="data-[state=active]:bg-white data-[state=active]:text-[#1E5A8A] data-[state=active]:shadow-sm text-xs">Abonnement</TabsTrigger>}
@@ -2382,6 +2465,47 @@ function SettingsView() {
               </div>
             </CardContent></Card>}
           </div>
+        </TabsContent>
+
+        {/* CABINET */}
+        <TabsContent value="cabinet">
+          {tenantInfo && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="lg:col-span-2"><CardHeader><CardTitle className="text-sm font-semibold">Informations du cabinet</CardTitle></CardHeader><CardContent className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5"><Label className="text-xs">Nom du cabinet</Label><Input value={cabinetForm.name || tenantInfo.name} onChange={e => setCabinetForm(f => ({ ...f, name: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input value={cabinetForm.email || tenantInfo.email || ''} onChange={e => setCabinetForm(f => ({ ...f, email: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Téléphone</Label><Input value={cabinetForm.phone || tenantInfo.phone || ''} onChange={e => setCabinetForm(f => ({ ...f, phone: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">NIU</Label><Input value={cabinetForm.niu || tenantInfo.niu || ''} onChange={e => setCabinetForm(f => ({ ...f, niu: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Adresse</Label><Input value={cabinetForm.address || tenantInfo.address || ''} onChange={e => setCabinetForm(f => ({ ...f, address: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Ville</Label><Input value={cabinetForm.city || tenantInfo.city || ''} onChange={e => setCabinetForm(f => ({ ...f, city: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Pays</Label><Input value={cabinetForm.country || tenantInfo.country || ''} onChange={e => setCabinetForm(f => ({ ...f, country: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Devise</Label><Input value={cabinetForm.currencyCode || tenantInfo.currencyCode || 'XAF'} onChange={e => setCabinetForm(f => ({ ...f, currencyCode: e.target.value }))} className="h-10" /></div>
+              </div>
+              <Button size="sm" className="bg-[#1E5A8A] hover:bg-[#164070]" disabled={updateTenant.isPending} onClick={() => updateTenant.mutate(cabinetForm)}>
+                {updateTenant.isPending ? <RefreshCw className="size-3.5 mr-1.5 animate-spin" /> : <Check className="size-3.5 mr-1.5" />}
+                Enregistrer les modifications
+              </Button>
+            </CardContent></Card>
+            <Card><CardHeader><CardTitle className="text-sm font-semibold">Logo du cabinet</CardTitle></CardHeader><CardContent className="space-y-4">
+              <div className="flex items-center justify-center p-6 border-2 border-dashed border-[#D1D5DB] rounded-xl">
+                {tenantInfo.logoUrl ? (
+                  <img src={tenantInfo.logoUrl} alt="Logo" className="max-h-32 max-w-full object-contain" />
+                ) : (
+                  <div className="text-center"><Building2 className="size-12 mx-auto text-[#D1D5DB] mb-2" /><p className="text-xs text-[#9CA3AF]">Aucun logo</p></div>
+                )}
+              </div>
+              <label className="flex items-center justify-center gap-2 cursor-pointer rounded-lg border border-[#D1D5DB] p-3 hover:bg-[#F9FAFB] transition-colors">
+                <Upload className="size-4 text-[#6B7280]" />
+                <span className="text-sm text-[#374151]">Choisir un logo</span>
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) uploadLogo.mutate({ file })
+                }} />
+              </label>
+              <p className="text-[10px] text-[#9CA3AF] text-center">PNG, JPEG, WebP ou SVG — max 2 Mo — 400×400px</p>
+              {tenantInfo.logoUrl && <Button variant="outline" size="sm" className="w-full text-xs text-[#DC2626]" onClick={() => updateTenant.mutate({ logoUrl: null })}>Supprimer le logo</Button>}
+            </CardContent></Card>
+          </div>}
         </TabsContent>
 
         {/* EQUIPE */}
@@ -2560,14 +2684,76 @@ function FinancesView() {
     }))
   }, [overdueInvoices])
 
+  const [periodFilter, setPeriodFilter] = useState('ce_mois')
+  const [clientFilter, setClientFilter] = useState('all')
+  const [statusFilterFin, setStatusFilterFin] = useState('all')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+
+  const { data: finClients } = useQuery({
+    queryKey: ['fin-clients', user?.tenantId],
+    queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : d.clients || []),
+    enabled: !!user?.tenantId,
+  })
+
+  const dateRange = useMemo(() => {
+    const n = new Date()
+    switch (periodFilter) {
+      case 'ce_mois': return { start: startOfMonth(n).toISOString(), end: n.toISOString() }
+      case 'ce_trimestre': {
+        const q = Math.floor(n.getMonth() / 3);
+        return { start: new Date(n.getFullYear(), q * 3, 1).toISOString(), end: n.toISOString() }
+      }
+      case 'ce_semestre': {
+        const s = n.getMonth() < 6 ? 0 : 6;
+        return { start: new Date(n.getFullYear(), s, 1).toISOString(), end: n.toISOString() }
+      }
+      case 'cette_annee': return { start: new Date(n.getFullYear(), 0, 1).toISOString(), end: n.toISOString() }
+      case 'personnalise': return { start: customStart || undefined, end: customEnd || undefined }
+      default: return {}
+    }
+  }, [periodFilter, customStart, customEnd])
+
+  const filteredPayments = useMemo(() => {
+    let result = payments
+    if (dateRange.start) result = result.filter(p => p.paidAt && parseISO(p.paidAt) >= parseISO(dateRange.start!))
+    if (dateRange.end) result = result.filter(p => p.paidAt && parseISO(p.paidAt) <= parseISO(dateRange.end!))
+    if (clientFilter !== 'all') result = result.filter(p => p.invoice?.client?.id === clientFilter)
+    return result
+  }, [payments, dateRange, clientFilter])
+
   const methodBreakdown = useMemo(() => {
     const map: Record<string, number> = {}
-    for (const p of payments) {
+    for (const p of filteredPayments) {
       if (!map[p.method]) map[p.method] = 0
       map[p.method] += p.amount
     }
     return Object.entries(map).sort((a, b) => b[1] - a[1])
-  }, [payments])
+  }, [filteredPayments])
+
+  const filteredTotal = useMemo(() => filteredPayments.reduce((s, p) => s + p.amount, 0), [filteredPayments])
+
+  const exportCSV = useCallback(() => {
+    const rows = [['Date', 'Client', 'Facture', 'Montant', 'Méthode', 'Enregistré par']]
+    for (const p of filteredPayments) {
+      rows.push([
+        p.paidAt ? format(parseISO(p.paidAt), 'yyyy-MM-dd') : '',
+        p.invoice?.client?.fullName || '',
+        p.invoice?.invoiceNumber || '',
+        String(p.amount),
+        PAYMENT_METHOD_LABELS[p.method] || p.method,
+        p.recorder?.fullName || '',
+      ])
+    }
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `finances_${format(new Date(), 'yyyy-MM-dd')}.csv`; a.click()
+    URL.revokeObjectURL(url)
+  }, [filteredPayments])
+
+  const exportPDF = useCallback(() => { window.print() }, [])
 
   const isLoading = dashLoading || payLoading || odLoading
 
@@ -2575,12 +2761,46 @@ function FinancesView() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <h2 className="text-lg font-semibold">Finances</h2>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-lg font-semibold">Finances</h2>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Select value={periodFilter} onValueChange={setPeriodFilter}>
+          <SelectTrigger className="w-[170px] h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ce_mois">Ce mois</SelectItem>
+            <SelectItem value="ce_trimestre">Ce trimestre</SelectItem>
+            <SelectItem value="ce_semestre">Ce semestre</SelectItem>
+            <SelectItem value="cette_annee">Cette année</SelectItem>
+            <SelectItem value="personnalise">Personnalisé</SelectItem>
+          </SelectContent>
+        </Select>
+        {periodFilter === 'personnalise' && (
+          <>
+            <Input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="h-8 text-xs w-[140px]" />
+            <Input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="h-8 text-xs w-[140px]" />
+          </>
+        )}
+        <Select value={clientFilter} onValueChange={setClientFilter}>
+          <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Tous les clients" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les clients</SelectItem>
+            {(finClients || []).map((c: Client) => (
+              <SelectItem key={c.id} value={c.id}>{c.fullName}{c.company ? ` (${c.company})` : ''}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="ml-auto flex gap-2">
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportCSV}><Download className="size-3 mr-1" />CSV</Button>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportPDF}><Printer className="size-3 mr-1" />PDF</Button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#E8F0F8] flex items-center justify-center"><TrendingUp className="size-5 text-[#1E5A8A]" /></div><div><p className="text-xs text-[#6B7280]">CA du mois</p><p className="text-lg font-bold text-[#1E5A8A]">{fmtMoney(fin?.revenueThisMonth || 0)}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#ECFDF5] flex items-center justify-center"><Banknote className="size-5 text-[#059669]" /></div><div><p className="text-xs text-[#6B7280]">Encaissé ce mois</p><p className="text-lg font-bold text-[#059669]">{fmtMoney(fin?.paymentsThisMonth || 0)}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#FEF3C7] flex items-center justify-center"><Clock className="size-5 text-[#D97706]" /></div><div><p className="text-xs text-[#6B7280]">À recouvrer</p><p className="text-lg font-bold text-[#D97706]">{fmtMoney(fin?.toRecover || 0)}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#E8F0F8] flex items-center justify-center shrink-0"><TrendingUp className="size-5 text-[#1E5A8A]" /></div><div className="min-w-0"><p className="text-xs text-[#6B7280]">Encaissé (filtré)</p><p className="text-base sm:text-lg font-bold text-[#1E5A8A] truncate" title={fmtMoney(filteredTotal)}>{fmtMoney(filteredTotal, 'XAF', true)}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#ECFDF5] flex items-center justify-center"><Banknote className="size-5 text-[#059669]" /></div><div><p className="text-xs text-[#6B7280]">Nb paiements</p><p className="text-lg font-bold text-[#059669]">{filteredPayments.length}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#FEF3C7] flex items-center justify-center shrink-0"><Clock className="size-5 text-[#D97706]" /></div><div className="min-w-0"><p className="text-xs text-[#6B7280]">À recouvrer</p><p className="text-base sm:text-lg font-bold text-[#D97706] truncate" title={fmtMoney(fin?.toRecover || 0)}>{fmtMoney(fin?.toRecover || 0, 'XAF', true)}</p></div></div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#FEF2F2] flex items-center justify-center"><AlertCircle className="size-5 text-[#DC2626]" /></div><div><p className="text-xs text-[#6B7280]">Impayés</p><p className="text-lg font-bold text-[#DC2626]">{fin?.overdueInvoicesCount || 0} facture{(fin?.overdueInvoicesCount || 0) !== 1 ? 's' : ''}</p></div></div></CardContent></Card>
       </div>
 
@@ -2588,10 +2808,10 @@ function FinancesView() {
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><CreditCard className="size-4 text-[#1E5A8A]" />Paiements récents</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0">
-            {payments.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun paiement</p> : (
+            {filteredPayments.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun paiement</p> : (
               <div className="max-h-96 overflow-y-auto">
                 <Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Client</TableHead><TableHead className="hidden sm:table-cell">Facture</TableHead><TableHead className="text-right">Montant</TableHead><TableHead className="hidden md:table-cell">Méthode</TableHead><TableHead className="hidden lg:table-cell">Enregistré par</TableHead></TableRow></TableHeader><TableBody>
-                  {payments.slice(0, 10).map((p: Payment) => (
+                  {filteredPayments.slice(0, 20).map((p: Payment) => (
                     <TableRow key={p.id}>
                       <TableCell className="text-sm text-[#6B7280]">{fmtDate(p.paidAt)}</TableCell>
                       <TableCell className="text-sm font-medium">{p.invoice?.client?.fullName || '—'}</TableCell>
@@ -2613,7 +2833,7 @@ function FinancesView() {
             {methodBreakdown.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune donnée</p> : (
               <div className="space-y-3">
                 {methodBreakdown.map(([method, amount]) => {
-                  const pct = payments.reduce((s, p) => s + p.amount, 0) > 0 ? (amount / payments.reduce((s, p) => s + p.amount, 0)) * 100 : 0
+                  const pct = filteredTotal > 0 ? (amount / filteredTotal) * 100 : 0
                   return (
                     <div key={method} className="space-y-1">
                       <div className="flex items-center justify-between text-sm"><div className="flex items-center gap-2"><span className={cn('size-3 rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-[#6B7280]')} /><span className="text-xs font-medium">{PAYMENT_METHOD_LABELS[method] || method}</span></div><span className="text-xs font-semibold">{fmtMoney(amount)}</span></div>
@@ -2911,7 +3131,7 @@ function TimeTrackingView() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Total heures (sem.)</p><p className="text-xl font-bold text-[#1E5A8A] mt-1">{fmtDuration(sum?.totalSeconds || 0)}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Heures facturables</p><p className="text-xl font-bold text-[#059669] mt-1">{fmtDuration(sum?.totalBillableSeconds || 0)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Montant estimé</p><p className="text-xl font-bold text-[#C8A45D] mt-1">{fmtMoney(sum?.totalAmount || 0)}</p></CardContent></Card>
+        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-[#6B7280]">Montant estimé</p><p className="text-lg sm:text-xl font-bold text-[#C8A45D] mt-1 truncate" title={fmtMoney(sum?.totalAmount || 0)}>{fmtMoney(sum?.totalAmount || 0, 'XAF', true)}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Entrées cette semaine</p><p className="text-xl font-bold mt-1">{sum?.totalEntries || 0}</p></CardContent></Card>
       </div>
 
