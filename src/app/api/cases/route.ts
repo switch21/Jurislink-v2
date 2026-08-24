@@ -59,14 +59,18 @@ export async function POST(request: Request) {
         caseType: body.caseType,
         status: body.status,
         priority: body.priority,
-        isSecret: body.isSecret,
+        isSecret: body.isSecret || false,
         tenantId: body.tenantId,
         clientId: body.clientId,
         adversary: body.adversary,
         jurisdiction: body.jurisdiction,
         amountInDispute: body.amountInDispute,
         billingType: body.billingType,
+        assignments: body.assignments?.length
+          ? { create: (body.assignments as string[]).map((userId: string) => ({ userId, tenantId: body.tenantId })) }
+          : undefined,
       },
+      include: { client: { select: { id: true, fullName: true } }, assignments: { include: { user: { select: { id: true, fullName: true } } } } },
     })
     return NextResponse.json(caze, { status: 201 })
   } catch (error) {

@@ -1036,7 +1036,7 @@ function CasesView() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
           {(cases || []).map(c => (
             <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true) }}>
-              <CardHeader className="pb-2"><div className="flex items-start justify-between"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
+              <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[#D97706]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-2">
                 <p className="text-xs text-[#6B7280]"><Users className="size-3 inline mr-1" />{getClientName(c)}</p>
                 {c.adversary && <p className="text-xs text-[#6B7280]"><Scale className="size-3 inline mr-1" />Contre : {c.adversary}</p>}
@@ -1078,6 +1078,24 @@ function CasesView() {
               <div><Label>Montant en jeu</Label><Input type="number" value={form.amountInDispute} onChange={e => setForm(f => ({ ...f, amountInDispute: e.target.value }))} placeholder="0" /></div>
               <div><Label>Facturation</Label><Select value={form.billingType} onValueChange={v => setForm(f => ({ ...f, billingType: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="forfait">Forfait</SelectItem><SelectItem value="horaire">Horaire</SelectItem><SelectItem value="abonnement">Abonnement</SelectItem><SelectItem value="success_fee">Success fee</SelectItem><SelectItem value="provision">Provision</SelectItem></SelectContent></Select></div>
               <div><Label>Prochaine échéance</Label><Input type="date" value={form.nextDueDate} onChange={e => setForm(f => ({ ...f, nextDueDate: e.target.value }))} /></div>
+            </div>
+            <div className="flex items-center gap-6 mt-2">
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => setForm(f => ({ ...f, isSecret: !f.isSecret }))}>
+                <div className={cn('size-5 rounded border-2 flex items-center justify-center transition-colors', form.isSecret ? 'bg-[#1E5A8A] border-[#1E5A8A]' : 'border-[#D1D5DB]')}>{form.isSecret && <Check className="size-3 text-white" />}</div>
+                <Label className="cursor-pointer text-sm flex items-center gap-1.5"><Lock className="size-3.5" />Dossier confidentiel</Label>
+              </div>
+            </div>
+            <div className="mt-3">
+              <Label className="text-xs mb-1.5 block">Collaborateurs du dossier</Label>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 border rounded-lg bg-[#F9FAFB]">
+                {users && users.map(u => (
+                  <label key={u.id} className={cn('flex items-center gap-1 px-2 py-1 rounded-md text-xs cursor-pointer transition-colors', selectedCollabs.includes(u.id) ? 'bg-[#1E5A8A] text-white' : 'bg-white border border-[#D1D5DB] hover:bg-[#E8F0F8]')}>
+                    <input type="checkbox" className="hidden" checked={selectedCollabs.includes(u.id)} onChange={e => { if (e.target.checked) setSelectedCollabs(prev => [...prev, u.id]); else setSelectedCollabs(prev => prev.filter(id => id !== u.id)) }} />
+                    <Avatar className="size-4 mr-1"><AvatarFallback className="text-[7px] bg-[#E8F0F8] text-[#374151]">{initials(u.fullName)}</AvatarFallback></Avatar>
+                    <span className="truncate max-w-[100px]">{u.fullName}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button><Button onClick={handleSubmit} disabled={!form.title.trim() || !form.clientId || createMut.isPending}>{editing ? 'Enregistrer' : 'Créer'}</Button></DialogFooter>
@@ -1131,7 +1149,7 @@ function CasesView() {
             <TabsContent value="documents" className="mt-4 space-y-2 overflow-y-auto max-h-[50vh]">
               {(caseDetail?.documents || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun document</p> :
                 (caseDetail?.documents || []).map(d => (
-                  <div key={d.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F9FAFB]"><FileText className="size-4 text-[#9CA3AF] shrink-0" /><div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{d.fileName}</p><p className="text-[10px] text-[#9CA3AF]">{d.mimeType || 'fichier'} • {fmtFileSize(d.fileSize)}</p></div></div>
+                  <div key={d.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F9FAFB]"><FileText className="size-4 text-[#9CA3AF] shrink-0" /><div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{d.fileName}</p><p className="text-[10px] text-[#9CA3AF]">{d.mimeType || 'fichier'} • {fmtFileSize(d.fileSize)}</p></div><a href={`/api/documents/${d.id}/download`} onClick={e => e.stopPropagation()} className="shrink-0 text-xs text-[#1E5A8A] hover:underline flex items-center gap-1"><Download className="size-3" />Télécharger</a></div>
                 ))}
             </TabsContent>
             <TabsContent value="taches" className="mt-4 overflow-y-auto max-h-[50vh]">
