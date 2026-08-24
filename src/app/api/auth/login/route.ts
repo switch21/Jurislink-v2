@@ -48,6 +48,15 @@ export async function POST(request: Request) {
         action: rp.permission.action,
         allowed: rp.allowed,
       }))
+    } else {
+      // Fallback: grant all permissions for users without roleId (no RBAC setup)
+      const allResources = ['case', 'client', 'task', 'document', 'event', 'invoice', 'message', 'report', 'notification', 'audit', 'time_entry', 'communication', 'document_template', 'subscription', 'role', 'user']
+      const allActions = ['view', 'create', 'update', 'delete', 'manage']
+      for (const resource of allResources) {
+        for (const action of allActions) {
+          permissions.push({ resource, action, allowed: true })
+        }
+      }
     }
 
     // Update last login (non-critical)
