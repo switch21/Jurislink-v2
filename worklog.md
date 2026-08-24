@@ -1,27 +1,21 @@
+# JurisLink Worklog
+
 ---
 Task ID: 1
 Agent: Main
-Task: Replace sonner with @radix-ui/react-toast to fix React #185 hydration error
+Task: Fix sidebar scrolling, dashboard crash, calendar/messages views, seed data
 
 Work Log:
-- Diagnosed root cause: sonner's __insertCSS() async injects <style> into <head>, causing DOM mismatch in React 19 (error #185 is fatal, not a warning)
-- Updated src/hooks/use-toast.ts: TOAST_LIMIT=5, TOAST_REMOVE_DELAY=5000, added toast.success/error/info/warning/dismiss methods (sonner-compatible API)
-- Updated src/components/ui/toast.tsx: added success (green) and warning (amber) variants with rich colors, moved viewport to top-right
-- Updated src/components/ui/toaster.tsx: added icons (CheckCircle, AlertCircle, Info, AlertTriangle), swipe direction left
-- Updated src/app/layout.tsx: replaced `import { Toaster } from 'sonner'` with `import { Toaster } from '@/components/ui/toaster'`
-- Updated src/app/page.tsx: replaced `import { toast } from 'sonner'` with `import { toast } from '@/hooks/use-toast'`, removed `<Toaster>` JSX from page, removed sonner import
-- Deleted src/components/ui/sonner.tsx
-- Removed sonner from package.json dependencies
+- Fixed sidebar scroll: added `min-h-0` to ScrollArea in flex container (both desktop and mobile Sheet), added `overflow-hidden` to aside, added `shrink-0` to footer
+- Added `.sidebar-nav` CSS for Radix ScrollArea scrollbar visibility on dark backgrounds
+- Fixed DashboardView crash: `finData` variable was used but never defined (comment said 'comes from stats.financial' but no assignment). Added `const finData = stats.financial`
+- Calendar and Messages views no longer crash - they were broken because the DashboardView crash triggered the React error boundary
+- Created comprehensive seed for SCP NDOKI & ASSOCIES: 1 tenant, 9 users, 15 clients, 20 cases, 12 events, 18 tasks, 10 invoices, 12 messages
+- Updated login page demo credentials to show SCP NDOKI account
+- Verified all views work via agent-browser: Dashboard, Calendar, Messages, sidebar scroll
 
 Stage Summary:
-- **ROOT CAUSE FIXED**: sonner removed entirely from the project. No more __insertCSS() injection into <head>
-- All 25+ toast.success() and toast.error() calls in page.tsx now use the Radix-based toast system
-- Agent-browser verification: page loads with HTTP 200, zero console errors, zero hydration errors
-- The fix is clean: @radix-ui/react-toast renders CSS via Tailwind classes on DOM elements (not injected into <head>)
-- Dev server confirmed: `GET / 200` with no errors in any compilation
-
----
-Project Status
-- **State**: STABLE - hydration error #185 is fixed
-- **Pending**: Deploy to Vercel to confirm production fix
-- **Risk**: None - Radix toast is a well-established shadcn/ui component
+- Sidebar scrolling works correctly (verified with 400px viewport: viewportScrollHeight 480px > viewportHeight 235px)
+- All views (Dashboard, Calendar, Messages) render without errors
+- SCP NDOKI seed data populates the app with realistic legal data
+- Committed and pushed to remote as bbd6dba
