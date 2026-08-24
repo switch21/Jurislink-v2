@@ -250,4 +250,27 @@ Stage Summary:
   - 5-hotfix: Calendar/Messages crash fix, task status humanization, Admin KPIs, seed data ✅
 - Total: ~3700 lines in page.tsx, 30+ API routes, 19 Prisma models
 - 11 tenants, 37+ users, 20 NDOKI cases, 15 NDOKI clients
-- Code quality: zero lint errors, compiles successfully
+- Code quality: zero lint errors, compiles successfully---
+Task ID: 1
+Agent: Main
+Task: Restore root_admin, implement password management, protect root_admin
+
+Work Log:
+- Created root_admin pat.epee@gmail.com with password Admin@123 in PostgreSQL
+- Created /api/users/[id]/password/route.ts (PUT endpoint with self-change + adminOverride modes)
+- Protected root_admin from DELETE (403) and deactivation (403) in /api/users/[id]/route.ts
+- Added password change form in SettingsView > Mon profil (collapsible section)
+- Added changePassword mutation with current password verification
+- AdminUsersView: added Lock icon button for password change dialog per user
+- AdminUsersView: hidden delete/toggle buttons for root_admin, added Crown icon
+- Added 'settings' to ADMIN_NAV_ITEMS and AdminRouter switch
+- Updated AdminHeader viewLabel to resolve from both NAV_ITEMS and ADMIN_NAV_ITEMS
+- Updated updateProfile mutation to sync localStorage on name/email change
+- All changes verified via agent-browser (login, password form, admin users, settings)
+
+Stage Summary:
+- root_admin account restored and protected from deletion/deactivation
+- All users can change their own password in Settings > Mon profil
+- root_admin can change any user's password from Admin > Utilisateurs (Lock icon)
+- Admin sidebar now includes Paramètres menu
+- Committed locally: fc25ac1
