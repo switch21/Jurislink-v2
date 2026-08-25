@@ -54,7 +54,8 @@ import {
   UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save,
   Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, Zap as ZapIcon,
   FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen,
-  Crown, UsersRound, Building as BuildingIcon, CreditCard as CreditCardIcon, ShieldCheck, UserPlus, ArrowUpDown
+  Crown, UsersRound, Building as BuildingIcon, CreditCard as CreditCardIcon, ShieldCheck, UserPlus, ArrowUpDown,
+  FileSpreadsheet
 } from 'lucide-react'
 
 // ==================== Types ====================
@@ -2771,7 +2772,37 @@ function FinancesView() {
     URL.revokeObjectURL(url)
   }, [filteredPayments])
 
-  const exportPDF = useCallback(() => { window.print() }, [])
+  const exportExcel = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ tenantId: user?.tenantId || '' })
+      if (dateRange.start) params.set('start', dateRange.start)
+      if (dateRange.end) params.set('end', dateRange.end)
+      if (clientFilter !== 'all') params.set('clientId', clientFilter)
+      const res = await fetch(`/api/finances/export/excel?${params}`)
+      if (!res.ok) throw new Error()
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `finances_${format(new Date(), 'yyyy-MM-dd')}.xlsx`; a.click()
+      URL.revokeObjectURL(url)
+    } catch { toast.error('Erreur export Excel') }
+  }, [user?.tenantId, dateRange, clientFilter])
+
+  const exportFinPDF = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ tenantId: user?.tenantId || '' })
+      if (dateRange.start) params.set('start', dateRange.start)
+      if (dateRange.end) params.set('end', dateRange.end)
+      if (clientFilter !== 'all') params.set('clientId', clientFilter)
+      const res = await fetch(`/api/finances/export/pdf?${params}`)
+      if (!res.ok) throw new Error()
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `rapport_financier_${format(new Date(), 'yyyy-MM-dd')}.pdf`; a.click()
+      URL.revokeObjectURL(url)
+    } catch { toast.error('Erreur export PDF') }
+  }, [user?.tenantId, dateRange, clientFilter])
 
   const isLoading = dashLoading || payLoading || odLoading
 
@@ -2811,7 +2842,8 @@ function FinancesView() {
         </Select>
         <div className="ml-auto flex gap-2">
           <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportCSV}><Download className="size-3 mr-1" />CSV</Button>
-          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportPDF}><Printer className="size-3 mr-1" />PDF</Button>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportExcel}><FileSpreadsheet className="size-3 mr-1" />Excel</Button>
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={exportFinPDF}><FileText className="size-3 mr-1" />PDF</Button>
         </div>
       </div>
 
