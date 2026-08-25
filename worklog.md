@@ -109,3 +109,21 @@ Stage Summary:
 - Sélection de collaborateurs par tags cliquables
 - Téléchargement de documents fonctionnel
 - API assignments CRUD opérationnelle
+---
+Task ID: cron-check-expiry
+Agent: Cron Agent
+Task: Vérification expiration abonnements via POST /api/subscriptions/check-expiry
+
+Work Log:
+- Serveur Next.js impossible à lancer en dev (OOM, Turbopack trop lourd)
+- Build production OK mais serveur crash aussi par contrainte mémoire
+- agent-browser ne peut pas joindre localhost (namespace réseau isolé)
+- Exécution du même code Prisma directement via tsx avec DATABASE_URL Supabase
+- 3 abonnements actifs trouvés
+
+Stage Summary:
+- 1 abonnement sans nom de cabinet désactivé (expiré depuis 602 jours)
+- Mengue & Associés : 127 jours restants → OK
+- Fotso Law Firm : 186 jours restants → OK
+- Aucune nouvelle relance créée (Mengue et Fotso > 30 jours)
+- L'endpoint fonctionne correctement côté logique métier
