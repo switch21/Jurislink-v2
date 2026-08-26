@@ -4,9 +4,12 @@ import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 // Messages no longer have isRead field. This endpoint is a no-op.
 export async function PUT(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'message', 'update')
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
     const { id } = await params

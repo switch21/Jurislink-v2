@@ -23,7 +23,10 @@ export async function GET(
     })
 
     if (!role) {
-      return NextResponse.json({ error: 'Rôle introuvable' }, { status: 404 })
+ 
+  const auth = await authenticate(request, 'roles', 'read')
+  if (auth instanceof NextResponse) return auth
+     return NextResponse.json({ error: 'Rôle introuvable' }, { status: 404 })
     }
 
     return NextResponse.json(role)

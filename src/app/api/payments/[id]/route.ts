@@ -28,9 +28,12 @@ async function recalcInvoiceStatus(db: ReturnType<typeof getDb>, invoiceId: stri
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'invoice', 'read')
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
     const { id } = await params
@@ -61,6 +64,9 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'invoice', 'update')
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
     const { id } = await params
@@ -104,9 +110,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'invoice', 'delete')
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
     const { id } = await params

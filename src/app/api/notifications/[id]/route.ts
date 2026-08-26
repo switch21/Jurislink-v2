@@ -3,9 +3,12 @@ import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function PUT(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'notification', 'update')
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
     const { id } = await params

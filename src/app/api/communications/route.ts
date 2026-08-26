@@ -16,7 +16,10 @@ export async function GET(request: Request) {
     const status = searchParams.get('status')
 
     if (!tenantId) {
-      return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
+  
+  const auth = await authenticate(request, 'communication', 'read')
+  if (auth instanceof NextResponse) return auth
+    return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
     }
 
     const where: Prisma.CommunicationWhereInput = { tenantId }

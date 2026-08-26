@@ -3,9 +3,12 @@ import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'case', 'read')
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
     const { id } = await params
@@ -27,6 +30,9 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'case', 'create')
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
     const { id } = await params
@@ -54,6 +60,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'case', 'delete')
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
     const { id } = await params

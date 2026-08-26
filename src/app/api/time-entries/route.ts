@@ -16,6 +16,9 @@ export async function GET(request: Request) {
     const toDate = searchParams.get('toDate')
 
     if (!tenantId) {
+
+  const auth = await authenticate(request, 'time_entry', 'read')
+  if (auth instanceof NextResponse) return auth
       return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
     }
 
