@@ -138,7 +138,7 @@ interface AdminDashboardData {
 }
 interface AdminTenant extends TenantItem {
   _count: { users: number; clients: number; cases: number; invoices: number; documents: number };
-  subscription?: { id: string; status: string; billingPeriod: string; plan: { id: string; name: string; slug: string } } | null;
+  subscription?: { id: string; status: string; billingPeriod: string; currentPeriodStart: string; currentPeriodEnd: string; plan: { id: string; name: string; slug: string; maxUsers: number; maxStorageGb: number } } | null;
 }
 interface TaskItem {
   id: string; title: string; description?: string | null; status: string; priority: string;
@@ -3647,10 +3647,19 @@ function AdminDashboardView() {
   </div>)
 }
 
+function TenantRow({ t, subDaysLeft, openSubDialog, openEdit, delMut }: { t: AdminTenant; subDaysLeft: (t: AdminTenant) => number | null; openSubDialog: (t: AdminTenant) => void; openEdit: (t: AdminTenant) => void; delMut: { mutate: (id: string) => void } }) {
+  const dl = subDaysLeft(t)
+  return (<TableRow className='cursor-pointer hover:bg-[#F9FAFB]'><TableCell><div className='flex items-center gap-2'><div className={cn('size-2 rounded-full shrink-0', t.isActive ? 'bg-[#059669]' : 'bg-[#D1D5DB]')} /><div><span className='font-medium text-[#111827]'>{t.name}</span>{t.city && <p className='text-[10px] text-[#9CA3AF]'>{t.city}{t.country ? `, ${t.country}` : ''}</p>}</div></div></TableCell><TableCell className='hidden sm:table-cell'><div className='flex flex-col gap-1'><div className='flex items-center gap-1.5'><Badge className='bg-[#E8F0F8] text-[#1E5A8A] text-[10px]'>{t.subscription?.plan?.name || t.plan}</Badge>{dl !== null && <span className={cn('text-[10px] font-medium', dl <= 0 ? 'text-[#DC2626]' : dl <= 15 ? 'text-[#D97706]' : 'text-[#059669]')}>{dl <= 0 ? 'Expiré' : dl + 'j restants'}</span>}</div>{t.subscription?.currentPeriodEnd && <p className='text-[10px] text-[#9CA3AF]'>Fin : {new Date(t.subscription.currentPeriodEnd).toLocaleDateString('fr-FR')}</p>}</div></TableCell><TableCell><div className='flex items-center gap-1.5'><Users className='size-3 text-[#9CA3AF]' /><span className='text-sm font-medium'>{t._count?.users ?? 0}</span></div></TableCell><TableCell><div className='flex items-center gap-1.5'><Briefcase className='size-3 text-[#9CA3AF]' /><span className='text-sm font-medium'>{t._count?.cases ?? 0}</span></div></TableCell><TableCell className='hidden md:table-cell text-sm text-[#6B7280]'>{t._count?.clients ?? 0}</TableCell><TableCell className='hidden lg:table-cell text-sm text-[#6B7280]'>{t._count?.invoices ?? 0}</TableCell><TableCell className='hidden lg:table-cell text-xs text-[#6B7280]'>{fmtDate(t.createdAt)}</TableCell><TableCell><div className='flex items-center gap-0.5'><Button variant='ghost' size='icon' className='size-7 text-[#1E5A8A] hover:text-[#164070] hover:bg-[#E8F0F8]' onClick={() => openSubDialog(t)} title={"Gérer l'abonnement"}><CreditCard className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(t)}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[#DC2626]' onClick={() => delMut.mutate(t.id)}><Trash2 className='size-3.5' /></Button></div></TableCell></TableRow>)
+}
+
 function AdminCabinsView() {
   const [search, setSearch] = useState('')
   const [showInactive, setShowInactive] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [subDialogOpen, setSubDialogOpen] = useState(false)
+  const [subTarget, setSubTarget] = useState<AdminTenant | null>(null)
+  const [subPlanId, setSubPlanId] = useState('')
+  const [subPeriod, setSubPeriod] = useState('annual')
   const [editing, setEditing] = useState<AdminTenant | null>(null)
   const [form, setForm] = useState({ name: '', slug: '', email: '', phone: '', address: '', city: '', country: '', niu: '', plan: 'starter', maxUsers: 5, maxStorageGb: 5, isActive: true })
   const qc = useQueryClient()
@@ -3678,6 +3687,30 @@ function AdminCabinsView() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-tenants'] }); toast.success('Cabinet supprimé') },
     onError: () => toast.error('Erreur lors de la suppression')
   })
+  const { data: plans } = useQuery<Array<{ id: string; name: string; slug: string; priceAnnual: number; priceSemiAnnual: number; priceQuarterly: number; priceMonthly: number; maxUsers: number; maxStorageGb: number; isActive: boolean }>>({ queryKey: ['admin-plans-subs'], queryFn: () => fetch('/api/subscription-plans').then(r => r.json()) })
+  const subMut = useMutation({
+    mutationFn: (body: { tenantId: string; planId: string; billingPeriod: string; action: string }) =>
+      fetch('/api/subscriptions/admin', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => { if (!r.ok) throw new Error(); return r.json() }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-tenants'] }); toast.success('Abonnement mis à jour'); setSubDialogOpen(false) },
+    onError: () => toast.error('Erreur lors de la mise à jour de l\'abonnement')
+  })
+  const openSubDialog = (t: AdminTenant) => {
+    setSubTarget(t)
+    setSubPlanId(t.subscription?.plan?.id || '')
+    setSubPeriod(t.subscription?.billingPeriod || 'annual')
+    setSubDialogOpen(true)
+  }
+  const handleSubAction = (action: string) => {
+    if (!subTarget || !subPlanId) return
+    subMut.mutate({ tenantId: subTarget.id, planId: subPlanId, billingPeriod: subPeriod, action })
+  }
+  const subDaysLeft = (t: AdminTenant) => {
+    if (!t.subscription?.currentPeriodEnd) return null
+    const end = new Date(t.subscription.currentPeriodEnd)
+    const diff = Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    return diff
+  }
+  const periodLabels: Record<string, string> = { monthly: 'Mensuel', quarterly: 'Trimestriel', semi_annual: 'Semestriel', annual: 'Annuel' }
   const openCreate = () => { setEditing(null); setForm({ name: '', slug: '', email: '', phone: '', address: '', city: '', country: '', niu: '', plan: 'starter', maxUsers: 5, maxStorageGb: 5, isActive: true }); setDialogOpen(true) }
   const openEdit = (t: AdminTenant) => { setEditing(t); setForm({ name: t.name, slug: t.slug, email: t.email || '', phone: t.phone || '', address: t.address || '', city: t.city || '', country: t.country || '', niu: t.niu || '', plan: t.plan, maxUsers: t.maxUsers, maxStorageGb: t.maxStorageGb, isActive: t.isActive }); setDialogOpen(true) }
   const genSlug = (name: string) => name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -3737,9 +3770,9 @@ function AdminCabinsView() {
       <label className='flex items-center gap-2 text-sm text-[#374151] cursor-pointer'><Switch checked={showInactive} onCheckedChange={setShowInactive} /><span>Voir inactifs</span></label>
     </div>
     {isLoading ? <div className='space-y-2'>{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className='h-12' />)}</div> :
-    <Card><CardContent className='p-0'><div className='max-h-[480px] overflow-y-auto'><Table><TableHeader><TableRow><TableHead>Nom</TableHead><TableHead className='hidden sm:table-cell'>Plan</TableHead><TableHead>Utilisateurs</TableHead><TableHead>Dossiers</TableHead><TableHead className='hidden md:table-cell'>Clients</TableHead><TableHead className='hidden lg:table-cell'>Factures</TableHead><TableHead className='hidden lg:table-cell'>Créé le</TableHead><TableHead className='w-[80px]'>Actions</TableHead></TableRow></TableHeader><TableBody>
+    <Card><CardContent className='p-0'><div className='max-h-[480px] overflow-y-auto'><Table><TableHeader><TableRow><TableHead>Nom</TableHead><TableHead className='hidden sm:table-cell'>Abonnement</TableHead><TableHead>Utilisateurs</TableHead><TableHead>Dossiers</TableHead><TableHead className='hidden md:table-cell'>Clients</TableHead><TableHead className='hidden lg:table-cell'>Factures</TableHead><TableHead className='hidden lg:table-cell'>Créé le</TableHead><TableHead className='w-[100px]'>Actions</TableHead></TableRow></TableHeader><TableBody>
       {tenants.length === 0 ? <TableRow><TableCell colSpan={8}><EmptyState icon={BuildingIcon} title='Aucun cabinet' /></TableCell></TableRow> :
-      tenants.map(t => (<TableRow key={t.id} className='cursor-pointer hover:bg-[#F9FAFB]'><TableCell><div className='flex items-center gap-2'><div className={cn('size-2 rounded-full shrink-0', t.isActive ? 'bg-[#059669]' : 'bg-[#D1D5DB]')} /><div><span className='font-medium text-[#111827]'>{t.name}</span>{t.city && <p className='text-[10px] text-[#9CA3AF]'>{t.city}{t.country ? `, ${t.country}` : ''}</p>}</div></div></TableCell><TableCell className='hidden sm:table-cell'><Badge className='bg-[#E8F0F8] text-[#1E5A8A] text-xs'>{t.subscription?.plan?.name || t.plan}</Badge></TableCell><TableCell><div className='flex items-center gap-1.5'><Users className='size-3 text-[#9CA3AF]' /><span className='text-sm font-medium'>{t._count?.users ?? 0}</span></div></TableCell><TableCell><div className='flex items-center gap-1.5'><Briefcase className='size-3 text-[#9CA3AF]' /><span className='text-sm font-medium'>{t._count?.cases ?? 0}</span></div></TableCell><TableCell className='hidden md:table-cell text-sm text-[#6B7280]'>{t._count?.clients ?? 0}</TableCell><TableCell className='hidden lg:table-cell text-sm text-[#6B7280]'>{t._count?.invoices ?? 0}</TableCell><TableCell className='hidden lg:table-cell text-xs text-[#6B7280]'>{fmtDate(t.createdAt)}</TableCell><TableCell><div className='flex items-center gap-1'><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(t)}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[#DC2626]' onClick={() => delMut.mutate(t.id)}><Trash2 className='size-3.5' /></Button></div></TableCell></TableRow>))}
+      tenants.map(t => (<TenantRow key={t.id} t={t} subDaysLeft={subDaysLeft} openSubDialog={openSubDialog} openEdit={openEdit} delMut={delMut} />))}
     </TableBody></Table></div></CardContent></Card>}
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent className='max-w-lg max-h-[90vh] overflow-y-auto'><DialogHeader><DialogTitle>{editing ? 'Modifier le cabinet' : 'Nouveau cabinet'}</DialogTitle></DialogHeader>
       <div className='space-y-3'>
@@ -3753,6 +3786,39 @@ function AdminCabinsView() {
         <label className='flex items-center gap-2 cursor-pointer'><Switch checked={form.isActive} onCheckedChange={v => setForm({ ...form, isActive: v })} /><span className='text-sm'>Actif</span></label>
       </div>
       <DialogFooter><Button variant='outline' onClick={() => setDialogOpen(false)}>Annuler</Button><Button className='bg-[#1E5A8A] hover:bg-[#164070] text-white' disabled={!form.name || saveMut.isPending} onClick={() => saveMut.mutate(form)}>{saveMut.isPending ? <RefreshCw className='size-4 animate-spin' /> : (editing ? 'Modifier' : 'Créer')}</Button></DialogFooter>
+    </DialogContent></Dialog>
+    {/* Subscription Management Dialog */}
+    <Dialog open={subDialogOpen} onOpenChange={setSubDialogOpen}><DialogContent className='max-w-lg max-h-[90vh] overflow-y-auto'><DialogHeader><DialogTitle className='flex items-center gap-2'><CreditCard className='size-5 text-[#1E5A8A]' />Gérer l'abonnement</DialogTitle><DialogDescription>{subTarget?.name}</DialogDescription></DialogHeader>
+      {subTarget && (<div className='space-y-4'>
+        {/* Current subscription summary */}
+        {subTarget.subscription && (<Card className='border border-[#E5E7EB]'><CardContent className='p-3 space-y-2'>
+          <div className='flex items-center justify-between'><span className='text-xs text-[#9CA3AF]'>Forfait actuel</span><Badge className='bg-[#E8F0F8] text-[#1E5A8A] text-xs'>{subTarget.subscription.plan.name}</Badge></div>
+          <div className='flex items-center justify-between'><span className='text-xs text-[#9CA3AF]'>Statut</span><Badge className={cn('text-xs', subTarget.subscription.status === 'active' ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#FEE2E2] text-[#991B1B]')}>{subTarget.subscription.status === 'active' ? 'Actif' : subTarget.subscription.status === 'expired' ? 'Expiré' : subTarget.subscription.status}</Badge></div>
+          <div className='flex items-center justify-between'><span className='text-xs text-[#9CA3AF]'>Période</span><span className='text-xs font-medium text-[#374151]'>{periodLabels[subTarget.subscription.billingPeriod] || subTarget.subscription.billingPeriod}</span></div>
+          {subTarget.subscription.currentPeriodEnd && (<>
+            <div className='flex items-center justify-between'><span className='text-xs text-[#9CA3AF]'>Fin le</span><span className='text-xs font-medium text-[#374151]'>{new Date(subTarget.subscription.currentPeriodEnd).toLocaleDateString('fr-FR')}</span></div>
+            <div className='flex items-center justify-between'><span className='text-xs text-[#9CA3AF]'>Jours restants</span><span className={cn('text-xs font-bold', (subDaysLeft(subTarget) ?? 0) <= 0 ? 'text-[#DC2626]' : (subDaysLeft(subTarget) ?? 0) <= 15 ? 'text-[#D97706]' : 'text-[#059669]')}>{subDaysLeft(subTarget) !== null ? (subDaysLeft(subTarget)! <= 0 ? 'Expiré' : subDaysLeft(subTarget) + ' jours') : '—'}</span></div>
+          </>)}
+          {!subTarget.isActive && (<div className='mt-2 p-2 rounded-lg bg-[#FEE2E2] border border-[#FECACA]'><p className='text-xs text-[#991B1B] font-medium flex items-center gap-1.5'><AlertOctagon className='size-3.5' />Ce cabinet est désactivé. Toute action réactivera le cabinet.</p></div>)}
+        </CardContent></Card>)}
+        {!subTarget.subscription && (<div className='p-3 rounded-lg bg-[#FEF3C7] border border-[#FDE68A]'><p className='text-xs text-[#92400E] flex items-center gap-1.5'><AlertTriangle className='size-3.5' />Aucun abonnement actif. Sélectionnez un forfait ci-dessous.</p></div>)}
+
+        {/* Plan selection */}
+        <div className='space-y-1.5'><Label className='text-xs font-medium'>Nouveau forfait</Label><Select value={subPlanId} onValueChange={setSubPlanId}><SelectTrigger className='h-9'><SelectValue placeholder='Sélectionner un forfait…' /></SelectTrigger><SelectContent>{(plans || []).filter(p => p.isActive).map(p => (<SelectItem key={p.id} value={p.id}><div className='flex items-center justify-between gap-4 w-full'><span>{p.name}</span><span className='text-[10px] text-[#9CA3AF]'>{fmtMoney(p.priceAnnual)}/an · {p.maxUsers} users</span></div></SelectItem>))}</SelectContent></Select></div>
+
+        {/* Billing period */}
+        <div className='space-y-1.5'><Label className='text-xs font-medium'>Période de facturation</Label><div className='grid grid-cols-2 gap-2'>{Object.entries(periodLabels).map(([k, v]) => (<button key={k} type='button' onClick={() => setSubPeriod(k)} className={cn('p-2.5 rounded-lg border text-xs font-medium transition-all text-center', subPeriod === k ? 'border-[#1E5A8A] bg-[#E8F0F8] text-[#1E5A8A]' : 'border-[#E5E7EB] text-[#6B7280] hover:border-[#9CA3AF]')}>{v}</button>))}</div></div>
+
+        {/* Action buttons */}
+        <div className='space-y-2 pt-2'>
+          <p className='text-xs text-[#9CA3AF] font-medium'>Choisir une action :</p>
+          <div className='grid grid-cols-1 gap-2'>
+            <Button className='bg-[#059669] hover:bg-[#047857] text-white w-full justify-start gap-2 h-10' disabled={!subPlanId || subMut.isPending} onClick={() => handleSubAction('renew')}>{subMut.isPending ? <RefreshCw className='size-4 animate-spin' /> : <RefreshCw className='size-4' />}<div className='text-left'><div className='text-sm font-medium'>Renouveler</div><div className='text-[10px] opacity-80'>Prolonge la période actuelle (même forfait, durée ajoutée)</div></div></Button>
+            <Button className='bg-[#1E5A8A] hover:bg-[#164070] text-white w-full justify-start gap-2 h-10' disabled={!subPlanId || subMut.isPending} onClick={() => handleSubAction('change')}>{subMut.isPending ? <RefreshCw className='size-4 animate-spin' /> : <ArrowUpDown className='size-4' />}<div className='text-left'><div className='text-sm font-medium'>Changer de forfait</div><div className='text-[10px] opacity-80'>Nouveau forfait, nouvelle période depuis aujourd'hui</div></div></Button>
+            <Button className='bg-[#C8A45D] hover:bg-[#B08D3F] text-white w-full justify-start gap-2 h-10' disabled={!subPlanId || subMut.isPending} onClick={() => handleSubAction('upgrade')}>{subMut.isPending ? <RefreshCw className='size-4 animate-spin' /> : <ArrowUpRight className='size-4' />}<div className='text-left'><div className='text-sm font-medium'>Upgrader</div><div className='text-[10px] opacity-80'>Forfait supérieur, période prolongée depuis la fin actuelle</div></div></Button>
+          </div>
+        </div>
+      </div>)}
     </DialogContent></Dialog>
   </div>)
 }
