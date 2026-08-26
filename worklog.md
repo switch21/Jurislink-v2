@@ -127,3 +127,24 @@ Stage Summary:
 - Fotso Law Firm : 186 jours restants → OK
 - Aucune nouvelle relance créée (Mengue et Fotso > 30 jours)
 - L'endpoint fonctionne correctement côté logique métier
+
+---
+Task ID: subscription-management
+Agent: Main
+Task: Gestion abonnements depuis interface Cabinets root_admin
+
+Work Log:
+- Créé PUT /api/subscriptions/admin avec 3 actions : renew, change, upgrade
+- renew/upgrade prolongent depuis la date de fin actuelle ; change démarre depuis aujourd'hui
+- Toute action réactive le cabinet si désactivé (isActive = true)
+- Mis à jour type AdminTenant avec currentPeriodStart, currentPeriodEnd, maxUsers, maxStorageGb
+- Ajouté colonne 'Abonnement' dans la table Cabinets (remplace 'Plan') : badge forfait + jours restants colorés + date de fin
+- Ajouté bouton CreditCard (bleu) par ligne pour ouvrir le dialog de gestion
+- Dialog avec résumé abonnement actuel, sélecteur forfait, sélecteur période (4 options), 3 boutons d'action
+- Extrait composant TenantRow pour résoudre problème parsing Turbopack
+- Build OK, poussé sur GitHub (9386b9d)
+
+Stage Summary:
+- root_admin peut maintenant renouveler, changer ou upgrader tout abonnement depuis la vue Cabinets
+- Indicateurs visuels : vert (>15j), orange (1-15j), rouge (expiré) dans le tableau
+- Cabinet désactivé automatiquement réactivé lors d'une action d'abonnement
