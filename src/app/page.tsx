@@ -973,6 +973,11 @@ function CasesView() {
   const [conflicts, setConflicts] = useState<ConflictResult[]>([])
   const [form, setForm] = useState({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', isSecret: false })
   const [selectedCollabs, setSelectedCollabs] = useState<string[]>([])
+  const [timelineFilter, setTimelineFilter] = useState<Set<string>>(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice']))
+  const [showInlineNote, setShowInlineNote] = useState(false)
+  const [showInlineEvent, setShowInlineEvent] = useState(false)
+  const [inlineNote, setInlineNote] = useState('')
+  const [inlineEvent, setInlineEvent] = useState({ title: '', description: '', eventType: 'autre', startTime: '' })
 
   const { data: cases, isLoading } = useQuery({
     queryKey: ['cases', user?.tenantId, statusFilter, typeFilter, priorityFilter, search],
@@ -1035,6 +1040,18 @@ function CasesView() {
     onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
+  const createNoteMut = useMutation({
+    mutationFn: (body: { content: string }) => fetch(`/api/cases/${selectedCase!.id}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: body.content, authorId: user?.id, tenantId: user?.tenantId }) }).then(r => r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Note ajoutée'); setInlineNote(''); setShowInlineNote(false) },
+    onError: () => toast.error('Erreur lors de l\'ajout de la note'),
+  })
+
+  const createEventMut = useMutation({
+    mutationFn: (body: { title: string; description?: string; eventType: string; startTime: string }) => fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, caseId: selectedCase?.id, tenantId: user?.tenantId }) }).then(r => r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Événement ajouté'); setInlineEvent({ title: '', description: '', eventType: 'autre', startTime: '' }); setShowInlineEvent(false) },
+    onError: () => toast.error('Erreur lors de l\'ajout de l\'événement'),
+  })
+
   const resetForm = () => { setForm({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', isSecret: false }); setEditing(null); setConflicts([]); setSelectedCollabs([]) }
   const openEdit = (c: CaseItem) => {
     setEditing(c)
@@ -1050,13 +1067,113 @@ function CasesView() {
 
   const timeline = useMemo(() => {
     if (!caseDetail) return []
-    const items: Array<{ date: string; type: 'event' | 'note' | 'doc' | 'task' | 'payment'; icon: React.ElementType; title: string; description: string; color: string }> = []
-    for (const e of (caseDetail.events || [])) { items.push({ date: e.startTime, type: 'event', icon: Calendar, title: e.title, description: `${EVENT_TYPE_LABELS[e.eventType] || e.eventType}${e.description ? ` — ${e.description}` : ''}`, color: CRIT_COLORS[e.criticality] || CRIT_COLORS.normal }) }
-    for (const n of (caseDetail.notes || [])) { items.push({ date: n.createdAt, type: 'note', icon: MessageSquare, title: 'Note', description: n.content, color: '#6366F1' }) }
-    for (const d of (caseDetail.documents || [])) { items.push({ date: d.createdAt, type: 'doc', icon: FileText, title: d.fileName, description: `${d.mimeType || 'fichier'} • ${fmtFileSize(d.fileSize)}`, color: '#059669' }) }
-    for (const t of (caseTasks || [])) { items.push({ date: t.createdAt, type: 'task', icon: ClipboardList, title: `Tâche: ${t.title}`, description: `${taskStatusLabel(t.status)} • ${PRIORITY_LABELS[t.priority] || t.priority}`, color: t.priority === 'urgente' ? '#EF4444' : t.priority === 'haute' ? '#D97706' : '#C8A45D' }) }
+    const items: Array<{
+      id: string; date: string; type: string; icon: React.ElementType;
+      title: string; description: string; color: string; bgColor: string;
+      author?: string; amount?: number; currency?: string; status?: string;
+      metadata?: Record<string, unknown>;
+    }> = []
+    // Events
+    for (const e of (caseDetail.events || [])) {
+      const dotColor = e.criticality === 'urgente' ? '#EF4444' : e.criticality === 'haute' ? '#F59E0B' : e.criticality === 'basse' ? '#9CA3AF' : '#C8A45D'
+      items.push({
+        id: `event-${e.id}`, date: e.startTime, type: 'event', icon: Calendar,
+        title: e.title,
+        description: `${EVENT_TYPE_LABELS[e.eventType] || e.eventType}${e.description ? ` — ${e.description}` : ''}`,
+        color: dotColor, bgColor: '',
+        metadata: { eventType: e.eventType, criticality: e.criticality },
+      })
+    }
+    // Notes
+    for (const n of (caseDetail.notes || [])) {
+      items.push({
+        id: `note-${n.id}`, date: n.createdAt, type: 'note', icon: MessageSquare,
+        title: 'Note',
+        description: n.content.length > 200 ? n.content.slice(0, 200) + '…' : n.content,
+        color: '#6366F1', bgColor: '',
+        author: n.author?.fullName,
+      })
+    }
+    // Documents
+    for (const d of (caseDetail.documents || [])) {
+      items.push({
+        id: `doc-${d.id}`, date: d.createdAt, type: 'doc', icon: FileText,
+        title: d.fileName,
+        description: `${d.mimeType || 'fichier'} • ${fmtFileSize(d.fileSize)}${d.folder ? ` • ${d.folder}` : ''}`,
+        color: '#059669', bgColor: '',
+      })
+    }
+    // Tasks
+    for (const t of (caseTasks || [])) {
+      const dotColor = t.priority === 'urgente' ? '#EF4444' : t.priority === 'haute' ? '#D97706' : '#C8A45D'
+      items.push({
+        id: `task-${t.id}`, date: t.createdAt, type: 'task', icon: ClipboardList,
+        title: t.title,
+        description: `${taskStatusLabel(t.status)} • ${PRIORITY_LABELS[t.priority] || t.priority}${t.dueDate ? ` • Échéance: ${fmtDate(t.dueDate)}` : ''}`,
+        color: dotColor, bgColor: '',
+        status: t.status,
+      })
+    }
+    // Invoices
+    for (const inv of (caseInvoices || [])) {
+      items.push({
+        id: `invoice-${inv.id}`, date: inv.createdAt, type: 'invoice', icon: Receipt,
+        title: `${INVOICE_TYPE_LABELS[inv.type] || inv.type}${inv.invoiceNumber ? ` ${inv.invoiceNumber}` : ''}`,
+        description: `${fmtMoney(inv.amount, inv.currency?.code || 'XAF')}${inv.status === 'non_paye' ? ' • Non payé' : inv.status === 'partiel' ? ` • Payé: ${fmtMoney(inv.paidAmount, inv.currency?.code || 'XAF')}` : ' • Payé'}`,
+        color: '#926B2D', bgColor: '',
+        amount: inv.amount, currency: inv.currency?.code || 'XAF',
+        status: inv.status,
+      })
+    }
+    // Payments
+    for (const inv of (caseInvoices || [])) {
+      for (const p of (inv.payments || [])) {
+        items.push({
+          id: `payment-${p.id}`, date: p.paidAt, type: 'payment', icon: Wallet,
+          title: `Paiement ${PAYMENT_METHOD_LABELS[p.method] || p.method}`,
+          description: `${fmtMoney(p.amount, 'XAF')}${p.reference ? ` • Réf: ${p.reference}` : ''}${p.recorder?.fullName ? ` par ${p.recorder.fullName}` : ''}`,
+          color: '#059669', bgColor: '',
+          amount: p.amount,
+        })
+      }
+    }
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [caseDetail, caseTasks])
+  }, [caseDetail, caseTasks, caseInvoices])
+
+  // Group timeline by date
+  const timelineGrouped = useMemo(() => {
+    const filtered = timeline.filter(item => timelineFilter.has(item.type))
+    const groups: Array<{ key: string; label: string; items: typeof filtered }> = []
+    let currentKey = ''
+    for (const item of filtered) {
+      const d = new Date(item.date)
+      const today = new Date()
+      const key = format(d, 'yyyy-MM-dd')
+      const isToday = isSameDay(d, today)
+      const yesterday = addDays(today, -1)
+      const isYesterday = isSameDay(d, yesterday)
+      let label = ''
+      if (isToday) label = "Aujourd'hui"
+      else if (isYesterday) label = 'Hier'
+      else label = format(d, 'EEEE d MMMM yyyy', { locale: fr })
+      if (key !== currentKey) {
+        groups.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1), items: [item] })
+        currentKey = key
+      } else {
+        groups[groups.length - 1].items.push(item)
+      }
+    }
+    return groups
+  }, [timeline, timelineFilter])
+
+  const toggleTimelineFilter = (type: string) => {
+    setTimelineFilter(prev => {
+      const next = new Set(prev)
+      if (next.has(type)) { if (next.size > 1) next.delete(type) }
+      else next.add(type)
+      return next
+    })
+  }
 
   const getClientName = (c: CaseItem) => c.client ? c.client.fullName : '—'
 
@@ -1078,7 +1195,7 @@ function CasesView() {
         (cases || []).length === 0 ? <EmptyState icon={Briefcase} title="Aucun dossier" description="Créez votre premier dossier" /> :
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
           {(cases || []).map(c => (
-            <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true) }}>
+            <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice'])); setShowInlineNote(false); setShowInlineEvent(false) }}>
               <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[#D97706]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-2">
                 <p className="text-xs text-[#6B7280]"><Users className="size-3 inline mr-1" />{getClientName(c)}</p>
@@ -1146,7 +1263,7 @@ function CasesView() {
       </Dialog>
 
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">{selectedCase?.reference} — {selectedCase?.title}</DialogTitle>
             {(caseDetail?.assignments || []).length > 0 && (
@@ -1168,21 +1285,141 @@ function CasesView() {
                 <div className="col-span-2"><span className="text-[#6B7280]">Description :</span><p className="mt-1 text-sm text-[#374151] whitespace-pre-wrap">{caseDetail?.description || 'Aucune description'}</p></div>
               </div>
             </TabsContent>
-            <TabsContent value="timeline" className="mt-4 overflow-y-auto max-h-[50vh]">
-              {timeline.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune activité</p> :
-              <div className="relative pl-6">
-                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-[#E5E7EB]" />
-                {timeline.map((item, i) => {
-                  const Icon = item.icon
-                  const typeLabel: Record<string, string> = { event: 'Événement', note: 'Note', doc: 'Document', task: 'Tâche' }
+            <TabsContent value="timeline" className="mt-3 overflow-y-auto max-h-[50vh]">
+              {/* Filter bar */}
+              <div className="flex flex-wrap items-center gap-1.5 mb-4 pb-3 border-b border-[#E5E7EB]">
+                <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mr-1">Filtrer :</span>
+                {[
+                  { type: 'event', label: 'Événements', icon: Calendar, color: '#C8A45D' },
+                  { type: 'note', label: 'Notes', icon: MessageSquare, color: '#6366F1' },
+                  { type: 'doc', label: 'Documents', icon: FileText, color: '#059669' },
+                  { type: 'task', label: 'Tâches', icon: ClipboardList, color: '#D97706' },
+                  { type: 'invoice', label: 'Factures', icon: Receipt, color: '#926B2D' },
+                  { type: 'payment', label: 'Paiements', icon: Wallet, color: '#059669' },
+                ].map(f => {
+                  const active = timelineFilter.has(f.type)
+                  const FI = f.icon
                   return (
-                    <div key={i} className="relative pb-4">
-                      <div className="absolute -left-6 top-1 size-[15px] rounded-full bg-white border-2 flex items-center justify-center" style={{ borderColor: item.color }}><Icon className="size-2.5" style={{ color: item.color }} /></div>
-                      <div><p className="text-xs text-[#9CA3AF]">{fmtDateTime(item.date)}</p><p className="text-sm font-medium mt-0.5">{item.title}</p><div className="flex items-center gap-2 mt-0.5"><span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: item.color + '18', color: item.color }}>{typeLabel[item.type] || item.type}</span>{item.description && <p className="text-xs text-[#6B7280]">{item.description}</p>}</div></div>
-                    </div>
+                    <button key={f.type} onClick={() => toggleTimelineFilter(f.type)} className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border', active ? 'border-current/20 shadow-sm' : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#9CA3AF] hover:bg-[#F3F4F6]')} style={active ? { backgroundColor: f.color + '12', color: f.color, borderColor: f.color + '30' } : undefined}>
+                      <FI className="size-3" />
+                      <span>{f.label}</span>
+                      <span className={cn('text-[9px] ml-0.5', active ? 'opacity-70' : 'text-[#D1D5DB]')}>{timeline.filter(t => t.type === f.type).length}</span>
+                    </button>
                   )
                 })}
-              </div>}
+              </div>
+              {/* Inline creation buttons */}
+              <div className="flex gap-2 mb-4">
+                <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => { setShowInlineNote(v => !v); setShowInlineEvent(false) }}>
+                  <Plus className="size-3" />Note
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => { setShowInlineEvent(v => !v); setShowInlineNote(false) }}>
+                  <CalendarPlus className="size-3" />Événement
+                </Button>
+              </div>
+              {/* Inline note form */}
+              {showInlineNote && (
+                <div className="border border-[#6366F1]/30 bg-[#6366F1]/[0.03] rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="size-4 text-[#6366F1]" />
+                    <span className="text-xs font-semibold text-[#6366F1]">Nouvelle note</span>
+                  </div>
+                  <Textarea value={inlineNote} onChange={e => setInlineNote(e.target.value)} placeholder="Écrivez votre note…" rows={2} className="text-sm mb-2 resize-none" autoFocus />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setShowInlineNote(false); setInlineNote('') }}>Annuler</Button>
+                    <Button size="sm" className="text-xs h-7 bg-[#6366F1] hover:bg-[#6366F1]/90" disabled={!inlineNote.trim() || createNoteMut.isPending} onClick={() => createNoteMut.mutate({ content: inlineNote })}>{createNoteMut.isPending ? '…' : 'Ajouter'}</Button>
+                  </div>
+                </div>
+              )}
+              {/* Inline event form */}
+              {showInlineEvent && (
+                <div className="border border-[#C8A45D]/30 bg-[#C8A45D]/[0.03] rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="size-4 text-[#C8A45D]" />
+                    <span className="text-xs font-semibold text-[#926B2D]">Nouvel événement</span>
+                  </div>
+                  <div className="space-y-2">
+                    <Input value={inlineEvent.title} onChange={e => setInlineEvent(f => ({ ...f, title: e.target.value }))} placeholder="Titre de l'événement" className="text-sm h-8" autoFocus />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select value={inlineEvent.eventType} onValueChange={v => setInlineEvent(f => ({ ...f, eventType: v }))}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="audience">Audience</SelectItem><SelectItem value="rdv">Rendez-vous</SelectItem><SelectItem value="echeance">Échéance</SelectItem><SelectItem value="depot">Dépôt</SelectItem><SelectItem value="autre">Autre</SelectItem></SelectContent>
+                      </Select>
+                      <Input type="datetime-local" value={inlineEvent.startTime} onChange={e => setInlineEvent(f => ({ ...f, startTime: e.target.value }))} className="text-xs h-8" />
+                    </div>
+                    <Textarea value={inlineEvent.description} onChange={e => setInlineEvent(f => ({ ...f, description: e.target.value }))} placeholder="Description (optionnel)" rows={1} className="text-sm resize-none" />
+                  </div>
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setShowInlineEvent(false); setInlineEvent({ title: '', description: '', eventType: 'autre', startTime: '' }) }}>Annuler</Button>
+                    <Button size="sm" className="text-xs h-7 bg-[#926B2D] hover:bg-[#926B2D]/90" disabled={!inlineEvent.title.trim() || !inlineEvent.startTime || createEventMut.isPending} onClick={() => createEventMut.mutate({ title: inlineEvent.title, description: inlineEvent.description || undefined, eventType: inlineEvent.eventType, startTime: inlineEvent.startTime })}>{createEventMut.isPending ? '…' : 'Ajouter'}</Button>
+                  </div>
+                </div>
+              )}
+              {/* Timeline content */}
+              {timelineGrouped.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-[#9CA3AF]">
+                  <Activity className="size-8 mb-2 opacity-40" />
+                  <p className="text-sm">Aucune activité{timelineFilter.size < 6 ? ' pour les filtres sélectionnés' : ''}</p>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {timelineGrouped.map(group => (
+                    <div key={group.key}>
+                      {/* Date header */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="size-2 rounded-full bg-[#1E5A8A]" />
+                        <span className="text-[11px] font-bold text-[#374151] tracking-wide">{group.label}</span>
+                        <div className="flex-1 h-px bg-[#E5E7EB]" />
+                        <span className="text-[10px] text-[#9CA3AF]">{group.items.length} élément{group.items.length > 1 ? 's' : ''}</span>
+                      </div>
+                      {/* Timeline items */}
+                      <div className="relative pl-8">
+                        {/* Vertical line */}
+                        <div className="absolute left-[11px] top-1 bottom-1 w-[2px] bg-gradient-to-b from-[#E5E7EB] via-[#D1D5DB] to-[#E5E7EB] rounded-full" />
+                        {group.items.map(item => {
+                          const Icon = item.icon
+                          const typeLabels: Record<string, string> = { event: 'Événement', note: 'Note', doc: 'Document', task: 'Tâche', payment: 'Paiement', invoice: 'Facture' }
+                          const isTaskDone = item.type === 'task' && item.status === 'terminee'
+                          return (
+                            <div key={item.id} className="relative pb-4 last:pb-0 group/item">
+                              {/* Timeline dot */}
+                              <div className="absolute -left-8 top-1.5 flex items-center justify-center">
+                                <div className="size-[22px] rounded-full bg-white border-2 flex items-center justify-center shadow-sm" style={{ borderColor: item.color }}>
+                                  <Icon className="size-2.5" style={{ color: item.color }} />
+                                </div>
+                              </div>
+                              {/* Content card */}
+                              <div className={cn('rounded-lg border p-3 transition-colors hover:bg-[#FAFAFA] ml-1', isTaskDone && 'opacity-60')}
+                                style={{ borderColor: item.color + '20' }}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className={cn('text-sm font-medium', isTaskDone && 'line-through')}>{item.title}</p>
+                                      {item.amount != null && (
+                                        <span className="text-xs font-bold" style={{ color: item.type === 'payment' ? '#059669' : item.status === 'non_paye' ? '#EF4444' : '#374151' }}>
+                                          {fmtMoney(item.amount, item.currency || 'XAF')}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {item.author && <p className="text-[10px] text-[#9CA3AF] mt-0.5">par {item.author}</p>}
+                                    <p className="text-xs text-[#6B7280] mt-1 leading-relaxed">{item.description}</p>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                    <span className="text-[10px] text-[#9CA3AF]">{relativeTime(item.date)}</span>
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap" style={{ backgroundColor: item.color + '15', color: item.color }}>{typeLabels[item.type] || item.type}</span>
+                                  </div>
+                                </div>
+                                {/* Full time on hover */}
+                                <p className="text-[9px] text-[#D1D5DB] mt-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">{fmtDateTime(item.date)}</p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="notes" className="mt-4 space-y-3 overflow-y-auto max-h-[50vh]">
               {(caseDetail?.notes || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune note</p> :
