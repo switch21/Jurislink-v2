@@ -19,6 +19,10 @@ export async function GET(request: Request) {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
 
+    // Last month boundaries
+    const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+
     const [totalCases, activeCases, totalClients, unpaidInvoices, paidInvoices] =
       await Promise.all([
         db.case.count({ where }),
@@ -34,10 +38,30 @@ export async function GET(request: Request) {
       ])
 
     const revenueResult = await db.invoice.aggregate({
-      where: { ...where, status: 'paye' },
+      where: { ...where, status: 'paye', issuedAt: { gte: firstDayOfMonth, lte: lastDayOfMonth } },
       _sum: { amount: true },
     })
-    const totalRevenue = revenueResult._sum.amount ?? 0
+    const revenueThisMonth = revenueResult._sum.amount ?? 0
+
+    const revenueLastMonthResult = await db.invoice.aggregate({
+      where: { ...where, status: 'paye', issuedAt: { gte: firstDayOfLastMonth, lte: lastDayOfLastMonth } },
+      _sum: { amount: true },
+    })
+    const revenueLastMonth = revenueLastMonthResult._sum.amount ?? 0
+
+    const totalRevenue = revenueThisMonth
+
+    // Collected this month vs last month (payments)
+    const collectedThisMonthResult = await db.payment.aggregate({
+      where: { ...where, paidAt: { gte: firstDayOfMonth, lte: lastDayOfMonth }, status: { not: 'annule' } },
+      _sum: { amount: true },
+    })
+    const collectedThisMonth = collectedThisMonthResult._sum.amount ?? 0
+    const collectedLastMonthResult = await db.payment.aggregate({
+      where: { ...where, paidAt: { gte: firstDayOfLastMonth, lte: lastDayOfLastMonth }, status: { not: 'annule' } },
+      _sum: { amount: true },
+    })
+    const collectedLastMonth = collectedLastMonthResult._sum.amount ?? 0
 
     const upcomingEvents = await db.event.findMany({
       where: {
@@ -416,10 +440,10 @@ export async function GET(request: Request) {
         assignments: e.assignments.map(a => ({ userName: a.user.fullName })),
       })),
       financial: {
-        revenueThisMonth: totalRevenue,
-        revenueLastMonth: 0,
-        collectedThisMonth: totalRevenue,
-        collectedLastMonth: 0,
+        revenueThisMonth,
+        revenueLastMonth,
+        collectedThisMonth,
+        collectedLastMonth,
         toRecover,
         overdueInvoicesCount,
         paymentsThisMonth,

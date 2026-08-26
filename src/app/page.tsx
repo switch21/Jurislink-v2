@@ -1152,11 +1152,13 @@ function CasesView() {
                   <div key={n.id} className="border rounded-lg p-3"><div className="flex items-center justify-between mb-1"><span className="text-xs font-medium">{n.author?.fullName || '—'}</span><span className="text-[10px] text-[#9CA3AF]">{fmtDateTime(n.createdAt)}</span></div><p className="text-sm text-[#374151] whitespace-pre-wrap">{n.content}</p></div>
                 ))}
             </TabsContent>
-            <TabsContent value="documents" className="mt-4 space-y-2 overflow-y-auto max-h-[50vh]">
-              {(caseDetail?.documents || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun document</p> :
-                (caseDetail?.documents || []).map(d => (
-                  <div key={d.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F9FAFB]"><FileText className="size-4 text-[#9CA3AF] shrink-0" /><div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{d.fileName}</p><p className="text-[10px] text-[#9CA3AF]">{d.mimeType || 'fichier'} • {fmtFileSize(d.fileSize)}</p></div><a href={`/api/documents/${d.id}/download`} onClick={e => e.stopPropagation()} className="shrink-0 text-xs text-[#1E5A8A] hover:underline flex items-center gap-1"><Download className="size-3" />Télécharger</a></div>
-                ))}
+            <TabsContent value="documents" className="mt-4 overflow-y-auto max-h-[50vh]">
+              {(() => {
+                const docs = caseDetail?.documents || []
+                const folderGroups: Record<string, typeof docs> = {}
+                for (const d of docs) { const f = d.folder || 'Général'; if (!folderGroups[f]) folderGroups[f] = []; folderGroups[f].push(d) }
+                const folders = Object.keys(folderGroups).sort()
+                return <>{folders.length > 1 && <div className="flex flex-wrap gap-1.5 mb-3">{folders.map(f => <details key={f} className="group"><summary className="text-xs px-2.5 py-1 rounded-full bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB] cursor-pointer list-none marker-none">📁 {f} ({folderGroups[f].length})</summary><div className="hidden group-open:contents space-y-2 ml-1">{folderGroups[f].map(d => (<div key={d.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F9FAFB] border border-[#F3F4F6]"><FileText className="size-4 text-[#9CA3AF] shrink-0" /><div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{d.fileName}</p><p className="text-[10px] text-[#9CA3AF]">{d.mimeType || 'fichier'} • {fmtFileSize(d.fileSize)}</p></div><a href={`/api/documents/${d.id}/download`} onClick={e => e.stopPropagation()} className="shrink-0 text-xs text-[#1E5A8A] hover:underline flex items-center gap-1"><Download className="size-3" />Télécharger</a></div>))}</div></details>)}<div className="inline-flex items-center gap-1 text-[10px] text-[#6B7280] mb-3">Sans dossier : {docs.filter(d => !d.folder).length} document{docs.filter(d => !d.folder).length > 1 ? 's' : ''}</div></div>}
             </TabsContent>
             <TabsContent value="taches" className="mt-4 overflow-y-auto max-h-[50vh]">
               {(caseTasks || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune tâche</p> :
