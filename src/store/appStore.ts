@@ -32,6 +32,7 @@ export type ViewName =
   | 'reports'
   | 'settings'
   | 'finances'
+  | 'impayes'
   | 'notifications'
   | 'audit-logs'
   | 'archives'
