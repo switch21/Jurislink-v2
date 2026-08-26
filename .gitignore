@@ -60,3 +60,4 @@ agent-ctx/
 download/
 dev.log
 db/*.db
+.env
