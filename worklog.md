@@ -171,18 +171,25 @@ Stage Summary:
 - Les cabinets dont les données ont été effacées doivent être re-remplis manuellement
 
 ---
-Task ID: 2-a
-Agent: Backend
-Task: Populate dashboard urgencies API
+Task ID: dashboard-comparison-rbac
+Agent: Main
+Task: Dashboard comparaison mensuelle réelle + utilitaire RBAC
 
 Work Log:
-- Added query after `upcomingEventsEnhanced` block to find cases with events in the next 3 days
-- Query filters by active case statuses (nouveau, ouvert, en_cours, en_attente) and events with startTime within [now, now+3days]
-- Includes client fullName and the earliest upcoming event per case (take: 1, orderBy: asc)
-- Maps results to urgencies array with id, reference, title, clientName, nextDueDate, daysRemaining
-- Changed `urgencies: []` to `urgencies` in the return statement
+- Modifié /api/dashboard/route.ts pour calculer le CA facturé et les encaissements du mois précédent
+- Ajouté les bornes temporelles du mois précédent (firstDayOfLastMonth, lastDayOfLastMonth)
+- Remplacé revenueLastMonth: 0 et collectedLastMonth: 0 par des valeurs réelles depuis la DB
+- CA filtré par issuedAt dans le mois courant vs mois précédent
+- Encaissements filtrés par paidAt dans le mois courant vs mois précédent
+- Créé src/lib/rbac.ts avec hasPermission(), requirePermission(), getUserPermissions(), clearPermissionCache()
+- hasPermission: vérifie si un rôle a une permission resource:action autorisée
+- Cache en mémoire Map pour éviter les requêtes répétées dans une même requête API
+- root_admin (sans roleId) a toujours accès (retourne true)
+- getUserPermissions retourne un Set de "resource:action" pour un rôle donné
+- Commit 553b15e poussé sur GitHub
 
 Stage Summary:
-- Dashboard API now returns populated urgencies array with cases having events within the next 3 days
-- Each urgency entry includes case info, client name, next event date, and days remaining
-- Limited to 10 most urgent cases
+- Les tuiles "CA ce mois" et "Encaissé" affichent maintenant ↑/↓ vs mois dernier
+- L'utilitaire RBAC est prêt à être appliqué progressivement aux routes API sensibles
+- Aucune modification frontend nécessaire pour la comparaison (le code existant attendait déjà ces données)
+- L'erreur ESLint à la ligne 1162 de page.tsx est pré-existente (Turbopack/fragment JSX)
