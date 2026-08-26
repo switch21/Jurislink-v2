@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 // AnimatePresence removed to save memory
+import { motion, AnimatePresence } from 'framer-motion'
 // Charts replaced with lightweight CSS visualizations to reduce memory
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -56,7 +57,7 @@ import {
   Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, Zap as ZapIcon,
   FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen,
   Crown, UsersRound, Building as BuildingIcon, CreditCard as CreditCardIcon, ShieldCheck, UserPlus, ArrowUpDown,
-  FileSpreadsheet
+  FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2
 } from 'lucide-react'
 
 // ==================== Types ====================
@@ -973,11 +974,14 @@ function CasesView() {
   const [conflicts, setConflicts] = useState<ConflictResult[]>([])
   const [form, setForm] = useState({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', isSecret: false })
   const [selectedCollabs, setSelectedCollabs] = useState<string[]>([])
-  const [timelineFilter, setTimelineFilter] = useState<Set<string>>(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice']))
+  const [timelineFilter, setTimelineFilter] = useState<Set<string>>(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication']))
   const [showInlineNote, setShowInlineNote] = useState(false)
   const [showInlineEvent, setShowInlineEvent] = useState(false)
   const [inlineNote, setInlineNote] = useState('')
   const [inlineEvent, setInlineEvent] = useState({ title: '', description: '', eventType: 'autre', startTime: '' })
+  const [timelineSearch, setTimelineSearch] = useState('')
+  const [timelineSort, setTimelineSort] = useState<'desc' | 'asc'>('desc')
+  const [deletingItem, setDeletingItem] = useState<string | null>(null)
 
   const { data: cases, isLoading } = useQuery({
     queryKey: ['cases', user?.tenantId, statusFilter, typeFilter, priorityFilter, search],
@@ -1042,15 +1046,41 @@ function CasesView() {
 
   const createNoteMut = useMutation({
     mutationFn: (body: { content: string }) => fetch(`/api/cases/${selectedCase!.id}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: body.content, authorId: user?.id, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Note ajoutée'); setInlineNote(''); setShowInlineNote(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-timeline'] }); toast.success('Note ajoutée'); setInlineNote(''); setShowInlineNote(false) },
     onError: () => toast.error('Erreur lors de l\'ajout de la note'),
   })
 
   const createEventMut = useMutation({
     mutationFn: (body: { title: string; description?: string; eventType: string; startTime: string }) => fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, caseId: selectedCase?.id, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Événement ajouté'); setInlineEvent({ title: '', description: '', eventType: 'autre', startTime: '' }); setShowInlineEvent(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-timeline'] }); toast.success('Événement ajouté'); setInlineEvent({ title: '', description: '', eventType: 'autre', startTime: '' }); setShowInlineEvent(false) },
     onError: () => toast.error('Erreur lors de l\'ajout de l\'événement'),
   })
+
+  // Unified timeline query from server
+  const { data: timelineData, isLoading: timelineLoading } = useQuery({
+    queryKey: ['case-timeline', selectedCase?.id, timelineSearch],
+    queryFn: () => fetch(`/api/cases/${selectedCase!.id}/timeline?tenantId=${user?.tenantId}&search=${encodeURIComponent(timelineSearch)}`).then(r => r.json()),
+    enabled: !!selectedCase?.id && detailOpen,
+  })
+
+  // Delete note mutation
+  const deleteNoteMut = useMutation({
+    mutationFn: (noteId: string) => fetch(`/api/cases/${selectedCase!.id}/notes/${noteId}`, { method: 'DELETE' }).then(r => r.ok ? { ok: true } : r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-timeline'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Note supprimée'); setDeletingItem(null) },
+    onError: () => { toast.error('Erreur lors de la suppression'); setDeletingItem(null) },
+  })
+
+  // Delete event mutation
+  const deleteEventMut = useMutation({
+    mutationFn: (eventId: string) => fetch(`/api/events/${eventId}`, { method: 'DELETE' }).then(r => r.ok ? { ok: true } : r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-timeline'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Événement supprimé'); setDeletingItem(null) },
+    onError: () => { toast.error('Erreur lors de la suppression'); setDeletingItem(null) },
+  })
+
+  const handleDeleteTimelineItem = (id: string) => {
+    if (id.startsWith('note-')) deleteNoteMut.mutate(id.replace('note-', ''))
+    else if (id.startsWith('event-')) deleteEventMut.mutate(id.replace('event-', ''))
+  }
 
   const resetForm = () => { setForm({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', isSecret: false }); setEditing(null); setConflicts([]); setSelectedCollabs([]) }
   const openEdit = (c: CaseItem) => {
@@ -1065,87 +1095,36 @@ function CasesView() {
     if (editing) { updateMut.mutate({ id: editing.id, ...payload }) } else { createMut.mutate(payload) }
   }
 
+  // Timeline from server — enrich with icons client-side
+  const timelineIconMap: Record<string, React.ElementType> = { event: Calendar, note: MessageSquare, doc: FileText, task: ClipboardList, invoice: Receipt, payment: Wallet, communication: MessageCircle }
+  const timelineTypeLabels: Record<string, string> = { event: 'Événement', note: 'Note', doc: 'Document', task: 'Tâche', payment: 'Paiement', invoice: 'Facture', communication: 'Communication' }
+
   const timeline = useMemo(() => {
-    if (!caseDetail) return []
-    const items: Array<{
-      id: string; date: string; type: string; icon: React.ElementType;
-      title: string; description: string; color: string; bgColor: string;
-      author?: string; amount?: number; currency?: string; status?: string;
-      metadata?: Record<string, unknown>;
-    }> = []
-    // Events
-    for (const e of (caseDetail.events || [])) {
-      const dotColor = e.criticality === 'urgente' ? '#EF4444' : e.criticality === 'haute' ? '#F59E0B' : e.criticality === 'basse' ? '#9CA3AF' : '#C8A45D'
-      items.push({
-        id: `event-${e.id}`, date: e.startTime, type: 'event', icon: Calendar,
-        title: e.title,
-        description: `${EVENT_TYPE_LABELS[e.eventType] || e.eventType}${e.description ? ` — ${e.description}` : ''}`,
-        color: dotColor, bgColor: '',
-        metadata: { eventType: e.eventType, criticality: e.criticality },
-      })
+    if (!timelineData?.items) return []
+    const searchLower = timelineSearch.toLowerCase()
+    let items = timelineData.items.filter(item => timelineFilter.has(item.type))
+    if (searchLower) {
+      items = items.filter(item =>
+        item.title.toLowerCase().includes(searchLower) ||
+        item.description.toLowerCase().includes(searchLower) ||
+        (item.author && item.author.toLowerCase().includes(searchLower))
+      )
     }
-    // Notes
-    for (const n of (caseDetail.notes || [])) {
-      items.push({
-        id: `note-${n.id}`, date: n.createdAt, type: 'note', icon: MessageSquare,
-        title: 'Note',
-        description: n.content.length > 200 ? n.content.slice(0, 200) + '…' : n.content,
-        color: '#6366F1', bgColor: '',
-        author: n.author?.fullName,
-      })
-    }
-    // Documents
-    for (const d of (caseDetail.documents || [])) {
-      items.push({
-        id: `doc-${d.id}`, date: d.createdAt, type: 'doc', icon: FileText,
-        title: d.fileName,
-        description: `${d.mimeType || 'fichier'} • ${fmtFileSize(d.fileSize)}${d.folder ? ` • ${d.folder}` : ''}`,
-        color: '#059669', bgColor: '',
-      })
-    }
-    // Tasks
-    for (const t of (caseTasks || [])) {
-      const dotColor = t.priority === 'urgente' ? '#EF4444' : t.priority === 'haute' ? '#D97706' : '#C8A45D'
-      items.push({
-        id: `task-${t.id}`, date: t.createdAt, type: 'task', icon: ClipboardList,
-        title: t.title,
-        description: `${taskStatusLabel(t.status)} • ${PRIORITY_LABELS[t.priority] || t.priority}${t.dueDate ? ` • Échéance: ${fmtDate(t.dueDate)}` : ''}`,
-        color: dotColor, bgColor: '',
-        status: t.status,
-      })
-    }
-    // Invoices
-    for (const inv of (caseInvoices || [])) {
-      items.push({
-        id: `invoice-${inv.id}`, date: inv.createdAt, type: 'invoice', icon: Receipt,
-        title: `${INVOICE_TYPE_LABELS[inv.type] || inv.type}${inv.invoiceNumber ? ` ${inv.invoiceNumber}` : ''}`,
-        description: `${fmtMoney(inv.amount, inv.currency?.code || 'XAF')}${inv.status === 'non_paye' ? ' • Non payé' : inv.status === 'partiel' ? ` • Payé: ${fmtMoney(inv.paidAmount, inv.currency?.code || 'XAF')}` : ' • Payé'}`,
-        color: '#926B2D', bgColor: '',
-        amount: inv.amount, currency: inv.currency?.code || 'XAF',
-        status: inv.status,
-      })
-    }
-    // Payments
-    for (const inv of (caseInvoices || [])) {
-      for (const p of (inv.payments || [])) {
-        items.push({
-          id: `payment-${p.id}`, date: p.paidAt, type: 'payment', icon: Wallet,
-          title: `Paiement ${PAYMENT_METHOD_LABELS[p.method] || p.method}`,
-          description: `${fmtMoney(p.amount, 'XAF')}${p.reference ? ` • Réf: ${p.reference}` : ''}${p.recorder?.fullName ? ` par ${p.recorder.fullName}` : ''}`,
-          color: '#059669', bgColor: '',
-          amount: p.amount,
-        })
-      }
-    }
-    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [caseDetail, caseTasks, caseInvoices])
+    // Sort
+    items = [...items].sort((a, b) => {
+      const diff = new Date(b.date).getTime() - new Date(a.date).getTime()
+      return timelineSort === 'asc' ? -diff : diff
+    })
+    return items
+  }, [timelineData, timelineFilter, timelineSearch, timelineSort])
+
+  const timelineCounts = timelineData?.counts || {} as Record<string, number>
 
   // Group timeline by date
   const timelineGrouped = useMemo(() => {
-    const filtered = timeline.filter(item => timelineFilter.has(item.type))
-    const groups: Array<{ key: string; label: string; items: typeof filtered }> = []
+    const groups: Array<{ key: string; label: string; items: typeof timeline }> = []
     let currentKey = ''
-    for (const item of filtered) {
+    for (const item of timeline) {
       const d = new Date(item.date)
       const today = new Date()
       const key = format(d, 'yyyy-MM-dd')
@@ -1164,7 +1143,7 @@ function CasesView() {
       }
     }
     return groups
-  }, [timeline, timelineFilter])
+  }, [timeline])
 
   const toggleTimelineFilter = (type: string) => {
     setTimelineFilter(prev => {
@@ -1195,7 +1174,7 @@ function CasesView() {
         (cases || []).length === 0 ? <EmptyState icon={Briefcase} title="Aucun dossier" description="Créez votre premier dossier" /> :
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
           {(cases || []).map(c => (
-            <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice'])); setShowInlineNote(false); setShowInlineEvent(false) }}>
+            <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication'])); setShowInlineNote(false); setShowInlineEvent(false); setTimelineSearch('') }}>
               <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[#D97706]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-2">
                 <p className="text-xs text-[#6B7280]"><Users className="size-3 inline mr-1" />{getClientName(c)}</p>
@@ -1285,8 +1264,19 @@ function CasesView() {
                 <div className="col-span-2"><span className="text-[#6B7280]">Description :</span><p className="mt-1 text-sm text-[#374151] whitespace-pre-wrap">{caseDetail?.description || 'Aucune description'}</p></div>
               </div>
             </TabsContent>
-            <TabsContent value="timeline" className="mt-3 overflow-y-auto max-h-[50vh]">
-              {/* Filter bar */}
+            <TabsContent value="timeline" className="mt-3">
+              {/* Search & Sort toolbar */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-[#9CA3AF]" />
+                  <Input placeholder="Rechercher dans la timeline…" value={timelineSearch} onChange={e => setTimelineSearch(e.target.value)} className="pl-8 h-8 text-xs" />
+                  {timelineSearch && <button onClick={() => setTimelineSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#374151]"><X className="size-3" /></button>}
+                </div>
+                <button onClick={() => setTimelineSort(s => s === 'desc' ? 'asc' : 'desc')} className={cn('flex items-center gap-1 px-2.5 h-8 rounded-md border text-[11px] font-medium transition-colors', timelineSort === 'asc' ? 'bg-[#1E5A8A]/5 border-[#1E5A8A]/20 text-[#1E5A8A]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]')}>
+                  <ArrowUpDown className="size-3" />{timelineSort === 'desc' ? 'Récent' : 'Ancien'}
+                </button>
+              </div>
+              {/* Filter pills */}
               <div className="flex flex-wrap items-center gap-1.5 mb-4 pb-3 border-b border-[#E5E7EB]">
                 <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mr-1">Filtrer :</span>
                 {[
@@ -1296,19 +1286,21 @@ function CasesView() {
                   { type: 'task', label: 'Tâches', icon: ClipboardList, color: '#D97706' },
                   { type: 'invoice', label: 'Factures', icon: Receipt, color: '#926B2D' },
                   { type: 'payment', label: 'Paiements', icon: Wallet, color: '#059669' },
+                  { type: 'communication', label: 'Comms', icon: MessageCircle, color: '#0891B2' },
                 ].map(f => {
                   const active = timelineFilter.has(f.type)
                   const FI = f.icon
+                  const count = timelineCounts[f.type] || 0
                   return (
                     <button key={f.type} onClick={() => toggleTimelineFilter(f.type)} className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border', active ? 'border-current/20 shadow-sm' : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#9CA3AF] hover:bg-[#F3F4F6]')} style={active ? { backgroundColor: f.color + '12', color: f.color, borderColor: f.color + '30' } : undefined}>
                       <FI className="size-3" />
                       <span>{f.label}</span>
-                      <span className={cn('text-[9px] ml-0.5', active ? 'opacity-70' : 'text-[#D1D5DB]')}>{timeline.filter(t => t.type === f.type).length}</span>
+                      <span className={cn('text-[9px] ml-0.5', active ? 'opacity-70' : 'text-[#D1D5DB]')}>{count}</span>
                     </button>
                   )
                 })}
               </div>
-              {/* Inline creation buttons */}
+              {/* Inline creation */}
               <div className="flex gap-2 mb-4">
                 <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => { setShowInlineNote(v => !v); setShowInlineEvent(false) }}>
                   <Plus className="size-3" />Note
@@ -1318,7 +1310,9 @@ function CasesView() {
                 </Button>
               </div>
               {/* Inline note form */}
+              <AnimatePresence>
               {showInlineNote && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                 <div className="border border-[#6366F1]/30 bg-[#6366F1]/[0.03] rounded-lg p-3 mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <MessageSquare className="size-4 text-[#6366F1]" />
@@ -1327,12 +1321,16 @@ function CasesView() {
                   <Textarea value={inlineNote} onChange={e => setInlineNote(e.target.value)} placeholder="Écrivez votre note…" rows={2} className="text-sm mb-2 resize-none" autoFocus />
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setShowInlineNote(false); setInlineNote('') }}>Annuler</Button>
-                    <Button size="sm" className="text-xs h-7 bg-[#6366F1] hover:bg-[#6366F1]/90" disabled={!inlineNote.trim() || createNoteMut.isPending} onClick={() => createNoteMut.mutate({ content: inlineNote })}>{createNoteMut.isPending ? '…' : 'Ajouter'}</Button>
+                    <Button size="sm" className="text-xs h-7 bg-[#6366F1] hover:bg-[#6366F1]/90" disabled={!inlineNote.trim() || createNoteMut.isPending} onClick={() => createNoteMut.mutate({ content: inlineNote })}>{createNoteMut.isPending ? <Loader2 className="size-3 animate-spin" /> : 'Ajouter'}</Button>
                   </div>
                 </div>
+                </motion.div>
               )}
+              </AnimatePresence>
               {/* Inline event form */}
+              <AnimatePresence>
               {showInlineEvent && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                 <div className="border border-[#C8A45D]/30 bg-[#C8A45D]/[0.03] rounded-lg p-3 mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Calendar className="size-4 text-[#C8A45D]" />
@@ -1351,75 +1349,134 @@ function CasesView() {
                   </div>
                   <div className="flex justify-end gap-2 mt-2">
                     <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setShowInlineEvent(false); setInlineEvent({ title: '', description: '', eventType: 'autre', startTime: '' }) }}>Annuler</Button>
-                    <Button size="sm" className="text-xs h-7 bg-[#926B2D] hover:bg-[#926B2D]/90" disabled={!inlineEvent.title.trim() || !inlineEvent.startTime || createEventMut.isPending} onClick={() => createEventMut.mutate({ title: inlineEvent.title, description: inlineEvent.description || undefined, eventType: inlineEvent.eventType, startTime: inlineEvent.startTime })}>{createEventMut.isPending ? '…' : 'Ajouter'}</Button>
+                    <Button size="sm" className="text-xs h-7 bg-[#926B2D] hover:bg-[#926B2D]/90" disabled={!inlineEvent.title.trim() || !inlineEvent.startTime || createEventMut.isPending} onClick={() => createEventMut.mutate({ title: inlineEvent.title, description: inlineEvent.description || undefined, eventType: inlineEvent.eventType, startTime: inlineEvent.startTime })}>{createEventMut.isPending ? <Loader2 className="size-3 animate-spin" /> : 'Ajouter'}</Button>
                   </div>
                 </div>
+                </motion.div>
               )}
+              </AnimatePresence>
               {/* Timeline content */}
-              {timelineGrouped.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-[#9CA3AF]">
-                  <Activity className="size-8 mb-2 opacity-40" />
-                  <p className="text-sm">Aucune activité{timelineFilter.size < 6 ? ' pour les filtres sélectionnés' : ''}</p>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {timelineGrouped.map(group => (
-                    <div key={group.key}>
-                      {/* Date header */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="size-2 rounded-full bg-[#1E5A8A]" />
-                        <span className="text-[11px] font-bold text-[#374151] tracking-wide">{group.label}</span>
-                        <div className="flex-1 h-px bg-[#E5E7EB]" />
-                        <span className="text-[10px] text-[#9CA3AF]">{group.items.length} élément{group.items.length > 1 ? 's' : ''}</span>
+              <ScrollArea className="max-h-[45vh]">
+                {timelineLoading ? (
+                  <div className="space-y-4 py-4">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="space-y-3">
+                        <div className="flex items-center gap-2"><Skeleton className="size-3 rounded-full" /><Skeleton className="h-3 w-36" /><div className="flex-1 h-px bg-[#E5E7EB]" /></div>
+                        <div className="pl-8 space-y-3">
+                          <Skeleton className="h-16 w-full rounded-lg" />
+                          <Skeleton className="h-16 w-3/4 rounded-lg" />
+                        </div>
                       </div>
-                      {/* Timeline items */}
-                      <div className="relative pl-8">
-                        {/* Vertical line */}
-                        <div className="absolute left-[11px] top-1 bottom-1 w-[2px] bg-gradient-to-b from-[#E5E7EB] via-[#D1D5DB] to-[#E5E7EB] rounded-full" />
-                        {group.items.map(item => {
-                          const Icon = item.icon
-                          const typeLabels: Record<string, string> = { event: 'Événement', note: 'Note', doc: 'Document', task: 'Tâche', payment: 'Paiement', invoice: 'Facture' }
-                          const isTaskDone = item.type === 'task' && item.status === 'terminee'
-                          return (
-                            <div key={item.id} className="relative pb-4 last:pb-0 group/item">
-                              {/* Timeline dot */}
-                              <div className="absolute -left-8 top-1.5 flex items-center justify-center">
-                                <div className="size-[22px] rounded-full bg-white border-2 flex items-center justify-center shadow-sm" style={{ borderColor: item.color }}>
-                                  <Icon className="size-2.5" style={{ color: item.color }} />
+                    ))}
+                  </div>
+                ) : timelineGrouped.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-[#9CA3AF]">
+                    <div className="size-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
+                      {timelineSearch ? <SearchX className="size-7 opacity-40" /> : <Activity className="size-7 opacity-40" />}
+                    </div>
+                    <p className="text-sm font-medium mb-1">{timelineSearch ? `Aucun r\u00E9sultat pour \u00AB ${timelineSearch} \u00BB` : 'Aucune activit\u00E9'}</p>
+                    <p className="text-xs">{timelineSearch ? 'Essayez un autre terme' : timelineFilter.size < 7 ? 'Ajustez les filtres ou ajoutez une note' : 'Ajoutez une note ou un \u00E9v\u00E9nement pour commencer'}</p>
+                    {timelineSearch && <button onClick={() => setTimelineSearch('')} className="text-xs text-[#1E5A8A] hover:underline mt-2">Effacer la recherche</button>}
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {timelineGrouped.map(group => (
+                      <div key={group.key}>
+                        {/* Date header */}
+                        <div className="flex items-center gap-2.5 mb-3">
+                          <div className="size-2.5 rounded-full bg-[#1E5A8A] ring-4 ring-[#1E5A8A]/10" />
+                          <span className="text-[11px] font-bold text-[#374151] tracking-wide">{group.label}</span>
+                          <div className="flex-1 h-px bg-gradient-to-r from-[#E5E7EB] to-transparent" />
+                          <span className="text-[10px] text-[#9CA3AF] tabular-nums">{group.items.length} élément{group.items.length > 1 ? 's' : ''}</span>
+                        </div>
+                        {/* Timeline items */}
+                        <div className="relative pl-9">
+                          {/* Vertical line */}
+                          <div className="absolute left-[10px] top-2 bottom-2 w-[2px] bg-gradient-to-b from-[#D1D5DB] via-[#E5E7EB] to-transparent rounded-full" />
+                          {group.items.map((item, idx) => {
+                            const Icon = timelineIconMap[item.type] || Activity
+                            const isTaskDone = item.type === 'task' && item.status === 'terminee'
+                            const isDeletable = item.type === 'note' || item.type === 'event'
+                            const isDeleting = deletingItem === item.id
+                            const isCritical = item.metadata?.criticality === 'urgente'
+                            const isOverdue = item.type === 'invoice' && item.status === 'non_paye'
+                            return (
+                              <motion.div key={item.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2, delay: idx * 0.04 }} className="relative pb-4 last:pb-0 group/item">
+                                {/* Timeline dot */}
+                                <div className="absolute -left-9 top-2 flex items-center justify-center">
+                                  <div className={cn('size-[22px] rounded-full bg-white border-2 flex items-center justify-center transition-all group-hover/item:scale-110 group-hover/item:shadow-md', isCritical && 'ring-2 ring-[#EF4444]/30')} style={{ borderColor: item.color }}>
+                                    <Icon className="size-2.5" style={{ color: item.color }} />
+                                  </div>
                                 </div>
-                              </div>
-                              {/* Content card */}
-                              <div className={cn('rounded-lg border p-3 transition-colors hover:bg-[#FAFAFA] ml-1', isTaskDone && 'opacity-60')}
-                                style={{ borderColor: item.color + '20' }}>
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <p className={cn('text-sm font-medium', isTaskDone && 'line-through')}>{item.title}</p>
-                                      {item.amount != null && (
-                                        <span className="text-xs font-bold" style={{ color: item.type === 'payment' ? '#059669' : item.status === 'non_paye' ? '#EF4444' : '#374151' }}>
-                                          {fmtMoney(item.amount, item.currency || 'XAF')}
-                                        </span>
+                                {/* Content card */}
+                                <div className={cn(
+                                  'rounded-lg border p-3 transition-all ml-1 group-hover/item:shadow-sm group-hover/item:border-[#D1D5DB] cursor-default',
+                                  isTaskDone && 'opacity-60',
+                                  isDeleting && 'opacity-40 pointer-events-none',
+                                  isCritical && 'border-[#EF4444]/20 bg-[#EF4444]/[0.02]',
+                                  isOverdue && 'border-[#EF4444]/15 bg-[#EF4444]/[0.01]',
+                                )} style={{ borderColor: isCritical || isOverdue ? undefined : item.color + '20' }}>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <p className={cn('text-sm font-medium', isTaskDone && 'line-through')}>{item.title}</p>
+                                        {item.amount != null && (
+                                          <span className={cn('text-xs font-bold', item.type === 'payment' ? 'text-[#059669]' : item.status === 'non_paye' ? 'text-[#EF4444]' : 'text-[#374151]')}>
+                                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: item.currency || 'XAF', minimumFractionDigits: 0 }).format(item.amount)}
+                                          </span>
+                                        )}
+                                        {isCritical && <Badge variant="outline" className="text-[9px] border-[#EF4444]/40 text-[#EF4444] animate-pulse">Urgent</Badge>}
+                                        {isOverdue && <Badge variant="outline" className="text-[9px] border-[#EF4444]/40 text-[#EF4444]">Impayé</Badge>}
+                                      </div>
+                                      {item.author && <p className="text-[10px] text-[#9CA3AF] mt-0.5 flex items-center gap-1"><UserCircle className="size-3" />{item.author}</p>}
+                                      <p className="text-xs text-[#6B7280] mt-1 leading-relaxed line-clamp-3">{item.description}</p>
+                                      {/* Comm type & recipient details */}
+                                      {item.type === 'communication' && item.metadata?.commType && (
+                                        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-[#0891B2]">
+                                          {item.metadata.commType === 'email' ? <Mail className="size-3" /> : item.metadata.commType === 'sms' ? <MessageSquare className="size-3" /> : item.metadata.commType === 'whatsapp' ? <MessageCircle className="size-3" /> : <Send className="size-3" />}
+                                          <span>{item.metadata.recipientEmail || item.metadata.recipientPhone || ''}</span>
+                                        </div>
                                       )}
                                     </div>
-                                    {item.author && <p className="text-[10px] text-[#9CA3AF] mt-0.5">par {item.author}</p>}
-                                    <p className="text-xs text-[#6B7280] mt-1 leading-relaxed">{item.description}</p>
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                      <span className="text-[10px] text-[#9CA3AF]">{relativeTime(item.date)}</span>
+                                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap" style={{ backgroundColor: item.color + '15', color: item.color }}>{timelineTypeLabels[item.type] || item.type}</span>
+                                    </div>
                                   </div>
-                                  <div className="flex flex-col items-end gap-1 shrink-0">
-                                    <span className="text-[10px] text-[#9CA3AF]">{relativeTime(item.date)}</span>
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap" style={{ backgroundColor: item.color + '15', color: item.color }}>{typeLabels[item.type] || item.type}</span>
+                                  {/* Footer: full time + delete action */}
+                                  <div className="flex items-center justify-between mt-1.5">
+                                    <p className="text-[9px] text-[#D1D5DB] opacity-0 group-hover/item:opacity-100 transition-opacity">{fmtDateTime(item.date)}</p>
+                                    {isDeletable && (
+                                      <button
+                                        className={cn(
+                                          'opacity-0 group-hover/item:opacity-100 transition-all p-1 rounded-md hover:bg-[#FEE2E2] text-[#D1D5DB] hover:text-[#EF4444]',
+                                          isDeleting && 'opacity-100 animate-pulse'
+                                        )}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          if (deletingItem === item.id) {
+                                            handleDeleteTimelineItem(item.id)
+                                          } else {
+                                            setDeletingItem(item.id)
+                                            setTimeout(() => setDeletingItem(null), 3000)
+                                          }
+                                        }}
+                                        title={deletingItem === item.id ? 'Cliquez pour confirmer la suppression' : 'Supprimer'}
+                                      >
+                                        <Trash2 className="size-3" />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
-                                {/* Full time on hover */}
-                                <p className="text-[9px] text-[#D1D5DB] mt-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">{fmtDateTime(item.date)}</p>
-                              </div>
-                            </div>
-                          )
-                        })}
+                              </motion.div>
+                            )
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </TabsContent>
             <TabsContent value="notes" className="mt-4 space-y-3 overflow-y-auto max-h-[50vh]">
               {(caseDetail?.notes || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune note</p> :
