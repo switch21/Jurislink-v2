@@ -992,6 +992,11 @@ function CasesView() {
     queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()),
   })
 
+  const { data: users } = useQuery({
+    queryKey: ['users-cases', user?.tenantId],
+    queryFn: () => fetch(`/api/users?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : d.users || []),
+  })
+
   const { data: caseDetail } = useQuery({
     queryKey: ['case-detail', selectedCase?.id],
     queryFn: () => fetch(`/api/cases/${selectedCase!.id}`).then(r => r.json()),

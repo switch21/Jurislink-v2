@@ -243,3 +243,19 @@ Stage Summary:
 - root_admin bypasses all permission checks (built into authenticate helper)
 - Tenant isolation applied to users GET (list) and subscriptions GET — non-root_admin users cannot override tenantId via query params
 - No modifications to login or check-expiry routes
+---
+Task ID: fix-users-not-defined
+Agent: Main
+Task: Fix runtime error "users is not defined" in CasesView
+
+Work Log:
+- Identified the bug: CasesView (line 962) referenced `users` variable at line 1129 (collaborateurs du dossier dialog) but `users` was only defined in TasksView (line 834)
+- Added `useQuery` for users inside CasesView after the clients query (line 995-998)
+- Used unique queryKey 'users-cases' to avoid cache collision with TasksView's 'users' key
+- Fixed package.json dev script: removed `2>&1 | tee dev.log` pipe that caused process instability
+- Scanned all other View functions for similar scope issues — none found
+
+Stage Summary:
+- CasesView now has its own `users` query for the collaborator selection dialog
+- The "Collaborateurs du dossier" section in the case creation/edit dialog will now work correctly
+- package.json dev script simplified to `next dev -p 3000` for stability
