@@ -369,3 +369,63 @@ Stage Summary:
 ### Recommended Next Phase
 - Phase 3 : Relance automatique impayés (détection des factures en retard, relances programmées)
 - Ou Phase 4 : Portail client (valeur business élevée, réduit les demandes répétitives)
+
+---
+Task ID: phase3-impayes
+Agent: Main
+Task: Phase 3 — Relance automatique des impayés (dashboard, UI, cron)
+
+Work Log:
+- Schéma Prisma ReminderLog + reminderLevel/lastReminderAt sur Invoice (déjà en place via webDevReview)
+- 3 endpoints API validés :
+  - GET /api/invoices/overdue — KPIs + factures enrichies + breakdown par niveau/client
+  - POST /api/invoices/overdue/auto-remind — Cron auto-relance (seuils 7/15/30/45j)
+  - POST /api/invoices/[id]/remind — Relance manuelle (crée ReminderLog + Communication + Notification)
+  - GET /api/invoices/[id]/remind — Historique relances
+- Script cron direct créé : scripts/auto-remind-direct.js (fallback localhost inaccessible)
+- Cron exécuté : 5 relances générées
+  - 4 factures : 1ère relance (FAC-NDK-0006, 0007, 0008, 0009)
+  - 1 facture : 2ème relance (FAC-NDK-0006, Georges Owona, 17j, 1 000 000 FCFA)
+- Vue Impayés complète (ImpayesView) :
+  - 5 KPI cards (impayées, montant dû, retard moyen/max, actions possibles)
+  - Répartition par niveau (barres animées Framer Motion)
+  - Top 6 clients impayés (classement par montant)
+  - Filtres par niveau de relance (pilules cliquables couleur)
+  - Liste factures avec badges niveau, retard coloré, montant restant
+  - Bouton relance manuelle avec dialog confirmation
+  - Dialog historique relances (niveau, date, auteur, statut)
+  - Bordures colorées par sévérité
+- Commit c7b8e4f poussé sur GitHub
+
+Stage Summary:
+- Le système de relance automatique est opérationnel avec 4 seuils (7j, 15j, 30j, 45j)
+- 5 relances ont été générées sur les factures du cabinet SCP NDOKI
+- Le dashboard Impayés offre une vue complète avec KPIs, breakdown et actions manuelles
+- Le cron auto-remind peut être planifié (toutes les heures ou journalier)
+- Templates de relance prêts (1ère, 2ème, 3ème relance + mise en demeure)
+
+---
+## PROJECT STATUS (updated)
+
+### Current State
+- Application JurisLink v2 fonctionnelle sur Vercel (auto-deploy depuis GitHub main)
+- 10 phases prévues, 3 terminées (Timeline, GED avancée, Impayés)
+- Cron jobs actifs : check-expiry (1h), webDevReview (15min)
+- DB PostgreSQL Supabase avec Prisma ORM
+
+### Completed Phases
+1. Timeline dossier (chronologie fusionnée, filtres, recherche, animations)
+2. GED avancée (versioning, preview PDF, tags, recherche, grille/liste)
+3. Impayés & Relances (détection auto, 4 seuils, dashboard, historique, cron)
+
+### Remaining Phases
+4. Portail client
+5. Signature électronique (DocuSign/Yousign)
+6. WhatsApp/Email automatique
+7. Application mobile (PWA)
+8. IA documentaire
+9. OCR
+
+### Recommended Next Phase
+- Phase 4 : Portail client (valeur business élevée)
+- Ou Phase 6 : WhatsApp/Email automatique (complète la Phase 3 relances)
