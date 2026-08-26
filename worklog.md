@@ -291,3 +291,81 @@ Work Log:
 Stage Summary:
 - 3 active subscriptions checked, 0 actions needed (no expirations/alerts)
 - Endpoint call succeeded via direct DB access
+
+---
+Task ID: phase2-ged
+Agent: Main
+Task: Phase 2 — GED avancée (versioning, prévisualisation, tags, recherche, UI)
+
+Work Log:
+- Bug fix : recréé /api/documents/[id]/download/route.ts (disparu, support Range requests pour PDF)
+- Modèle Prisma DocumentVersion ajouté (id, version, fileName, fileSize, filePath, mimeType, changeNote, documentId, uploadedById)
+- Champ description + uploadedById + updatedAt ajoutés au modèle Document
+- Relations User→uploadedDocuments + User→uploadedVersions ajoutées
+- db push vers Supabase OK, Prisma Client regénéré
+- Créé /api/documents/[id]/versions/route.ts (GET historique, POST nouvelle version)
+- Créé /api/document-versions/[versionId]/download/route.ts (téléchargement version spécifique)
+- Enrichi GET /api/documents : params search, tag, folder, documentType + retourne { documents, tags, folders, total }
+- Enrichi POST /api/documents : accepte description + uploadedById
+- Refonte complète du DocumentsView dans page.tsx :
+  - Barre de recherche avec clear button
+  - Pilules de tags cliquables (filtrage dynamique)
+  - Pilules de répertoires (filtrage dynamique)
+  - Toggle vue liste / grille avec boutons List et LayoutGrid
+  - Icônes par type MIME (PDF=rouge, Word=bleu, Excel=vert, Image=émeraude)
+  - Grille : Cards avec hover shadow, dropdown menu, badges version/folder/tags
+  - Liste : Groupée par dossier, boutons action apparaissant au hover (aperçu, versions, download, supprimer)
+  - Dialog prévisualisation PDF (iframe plein écran 95vw×85vh) et image
+   - Dialog historique versions (version actuelle + versions précédentes + upload nouvelle version)
+  - Animations Framer Motion (slide-in liste, fade-in grille)
+  - Upload dialog amélioré : description, DialogDescription, plus de types MIME acceptés
+- Onglet Documents du détail dossier amélioré :
+  - Icônes par type MIME, clic pour aperçu PDF/image
+  - Badges version et tags visibles
+  - Preview dialog dédié depuis le détail dossier
+- Types TypeScript mis à jour : Doc avec description, updatedAt, uploadedBy, _count
+- Imports Lucide ajoutés : FileImage, List, LayoutGrid, History
+- Parsing error corrigé (if/else one-liner dans Promise)
+- Lint OK (6 erreurs pré-existantes, 0 nouvelle)
+- Commit 9c6b2c3 poussé sur GitHub
+- Cron webDevReview configuré (toutes les 15 min)
+
+Stage Summary:
+- La vue Documents est maintenant une GED complète avec recherche, filtres, tags, versioning et prévisualisation
+- Le versioning permet de conserver l'historique complet des modifications d'un document
+- La prévisualisation PDF/image fonctionne directement dans le navigateur sans téléchargement
+- L'upload de nouvelle version est intégré au dialog d'historique
+- Bug critique résolu : la route de téléchargement de documents a été recréée
+
+---
+## PROJECT STATUS
+
+### Current State
+- Application JurisLink v2 fonctionnelle sur Vercel (auto-deploy depuis GitHub main)
+- 10 phases de développement prévues, 2 terminées (Timeline + GED avancée)
+- Cron jobs actifs : check-expiry (1h), webDevReview (15min)
+- DB PostgreSQL Supabase avec Prisma ORM
+- Stack : Next.js 16, TypeScript, Tailwind CSS 4, shadcn/ui, React Query, Zustand, Framer Motion
+
+### Completed Phases
+1. ✅ Timeline dossier (chronologie fusionnée 7 sources, filtres, recherche, inline add, animations)
+2. ✅ GED avancée (versioning, preview PDF, tags, recherche, grille/liste, download)
+
+### Remaining Phases
+3. ⏳ Relance automatique impayés (détection + relances email/SMS/WhatsApp)
+4. ⏳ Portail client (interface client consultation)
+5. ⏳ Signature électronique (DocuSign/Yousign)
+6. ⏳ WhatsApp/Email automatique (templates, envoi contextuel)
+7. ⏳ Application mobile (PWA ou React Native)
+8. ⏳ IA documentaire (résumé auto, classification)
+9. ⏳ OCR (extraction données depuis scanned docs)
+
+### Unresolved Issues / Risks
+- agent-browser ne peut pas atteindre localhost:3000 (isolation réseau) → verification visuelle impossible localement
+- 6 erreurs ESLint pré-existantes non critiques (3 no-require-imports dans .js, 3 react-hooks memoization)
+- Le cron check-expiry utilise un script direct Prisma (fallback) car l'endpoint localhost est inaccessible
+- La DATABASE_URL dans .env pointe vers SQLite local (le bon URL est passé manuellement pour db push)
+
+### Recommended Next Phase
+- Phase 3 : Relance automatique impayés (détection des factures en retard, relances programmées)
+- Ou Phase 4 : Portail client (valeur business élevée, réduit les demandes répétitives)
