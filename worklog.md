@@ -148,3 +148,24 @@ Stage Summary:
 - root_admin peut maintenant renouveler, changer ou upgrader tout abonnement depuis la vue Cabinets
 - Indicateurs visuels : vert (>15j), orange (1-15j), rouge (expiré) dans le tableau
 - Cabinet désactivé automatiquement réactivé lors d'une action d'abonnement
+
+---
+Task ID: fix-cabinet-wipe
+Agent: Main
+Task: Correction bug — mise à jour cabinet efface les données (nom, email, etc.)
+
+Work Log:
+- Diagnostic : cabinetForm initialisé avec des chaînes vides ('')
+- Les inputs affichent `cabinetForm.name || tenantInfo.name` (fallback visuel)
+- Mais onClick envoie tout le cabinetForm y compris les champs vides
+- Le backend vérifiait `body.name !== undefined` → '' passe ce test → écrase la DB avec des chaînes vides
+- Correction frontend : filtrer les champs vides avant envoi (`if (v) clean[k] = v`)
+- Correction backend : vérifier `typeof body.name === 'string' && body.name.trim()` pour exclure les chaînes vides
+- Le logo upload n'était pas impacté (ne met à jour que logoUrl)
+- Commit 61c9979 poussé sur GitHub
+
+Stage Summary:
+- Le bouton "Enregistrer les modifications" n'efface plus les champs non modifiés
+- Double protection : frontend filtre + backend ignore les chaînes vides
+- L'upload du logo n'a jamais été la cause (ne modifie que logoUrl)
+- Les cabinets dont les données ont été effacées doivent être re-remplis manuellement
