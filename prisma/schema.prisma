@@ -83,6 +83,8 @@ model User {
   recordedPayments     Payment[]
   timeEntries          TimeEntry[]
   sentCommunications   Communication[] @relation("SentCommunications")
+  uploadedDocuments     Document[]      @relation("DocumentUploader")
+  uploadedVersions      DocumentVersion[] @relation("VersionUploader")
 
   @@map("users")
 }
@@ -283,14 +285,39 @@ model Document {
   tags        String?
   documentType String? @map("document_type")
   mimeType    String? @map("mime_type")
+  description String?
+  uploadedById String? @map("uploaded_by_id") @db.Uuid
+  uploadedBy  User?   @relation("DocumentUploader", fields: [uploadedById], references: [id])
   createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   tenantId    String  @map("tenant_id") @db.Uuid
   tenant      Tenant  @relation(fields: [tenantId], references: [id])
   caseId      String? @map("case_id") @db.Uuid
   case        Case?   @relation(fields: [caseId], references: [id])
 
+  versions    DocumentVersion[]
+
   @@map("documents")
+}
+
+// ==================== DOCUMENT VERSION ====================
+model DocumentVersion {
+  id          String   @id @default(uuid()) @db.Uuid
+  version     Int
+  fileName    String   @map("file_name")
+  fileSize    Int      @map("file_size")
+  filePath    String   @map("file_path")
+  mimeType    String?  @map("mime_type")
+  changeNote  String?  @map("change_note")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  documentId  String   @map("document_id") @db.Uuid
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  uploadedById String? @map("uploaded_by_id") @db.Uuid
+  uploadedBy  User?    @relation("VersionUploader", fields: [uploadedById], references: [id])
+
+  @@map("document_versions")
 }
 
 // ==================== EVENT ====================
