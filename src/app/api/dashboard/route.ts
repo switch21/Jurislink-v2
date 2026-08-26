@@ -170,6 +170,43 @@ export async function GET(request: Request) {
       })),
     }))
 
+    // Cases with upcoming events in next 3 days = urgencies
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+    const urgencyCases = await db.case.findMany({
+      where: {
+        ...where,
+        status: { in: ['nouveau', 'ouvert', 'en_cours', 'en_attente'] },
+        events: {
+          some: {
+            startTime: { gte: now, lte: threeDaysFromNow }
+          }
+        }
+      },
+      include: {
+        client: { select: { fullName: true } },
+        events: {
+          where: {
+            startTime: { gte: now, lte: threeDaysFromNow }
+          },
+          orderBy: { startTime: 'asc' },
+          take: 1
+        }
+      },
+      take: 10,
+    })
+    const urgencies = urgencyCases.map(c => {
+      const nextEvent = c.events[0]
+      const daysRemaining = Math.ceil((new Date(nextEvent.startTime).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      return {
+        id: c.id,
+        reference: c.reference,
+        title: c.title,
+        clientName: c.client.fullName,
+        nextDueDate: nextEvent.startTime,
+        daysRemaining,
+      }
+    })
+
     // === myTasks: tasks relevant to the current user ===
     let myTasks: Array<{
       id: string
@@ -339,6 +376,21 @@ export async function GET(request: Request) {
       }),
     ])
 
+    // Today's events count for dashboard "Aujourd'hui" card
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+    const todayEventsCount = await db.event.count({
+      where: { ...where, startTime: { gte: startOfDay, lte: endOfDay } },
+    })
+    const todayEvents = await db.event.findMany({
+      where: { ...where, startTime: { gte: startOfDay, lte: endOfDay } },
+      include: {
+        case: { select: { id: true, reference: true, title: true } },
+        assignments: { include: { user: { select: { fullName: true } } } },
+      },
+      orderBy: { startTime: 'asc' },
+    })
+
     return NextResponse.json({
       totalCases,
       activeCases,
@@ -351,11 +403,18 @@ export async function GET(request: Request) {
       casesByType,
       recentActivity,
       upcomingEventsList: upcomingEvents,
-      urgencies: [],
+      urgencies,
       overdueInvoices: overdueInvoicesFormatted,
       urgentTasks: urgentTasksFormatted,
       upcomingEventsEnhanced: upcomingEventsFormatted,
       myTasks,
+      todayEventsCount,
+      todayEvents: todayEvents.map(e => ({
+        id: e.id, title: e.title, startTime: e.startTime, endTime: e.endTime,
+        eventType: e.eventType, criticality: e.criticality,
+        caseReference: e.case?.reference ?? null,
+        assignments: e.assignments.map(a => ({ userName: a.user.fullName })),
+      })),
       financial: {
         revenueThisMonth: totalRevenue,
         revenueLastMonth: 0,

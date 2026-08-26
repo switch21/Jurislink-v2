@@ -633,6 +633,7 @@ function DashboardView() {
   const finData = stats.financial
   const urgencyCount = (stats.urgencies?.length || 0) + (stats.overdueInvoices?.length || 0)
   const myTaskCount = stats.myTasks?.length || 0
+  const todayEvtCount = stats.todayEventsCount || 0
   const totalPending = (stats.overdueInvoices || []).reduce((s, i) => s + i.amount, 0)
 
   const statusChartData = Object.entries(stats.casesByStatus || {}).map(([name, value]) => ({ name: STATUS_LABELS[name] || name, value })).filter(d => d.value > 0)
@@ -665,6 +666,7 @@ function DashboardView() {
               <div className={cn('rounded-xl p-3 border-l-4', urgencyCount > 0 ? 'border-l-[#EF4444] bg-[#FEF2F2]' : 'border-l-[#059669] bg-[#ECFDF5]')}>
                 <p className="text-[10px] sm:text-xs font-medium text-[#6B7280] mb-1">Aujourd'hui</p>
                 <p className="text-lg sm:text-xl font-bold text-[#111827]">{urgencyCount > 0 ? <><span className="text-[#DC2626]">{urgencyCount}</span> <span className="text-xs sm:text-sm font-normal">urgence{urgencyCount > 1 ? 's' : ''}</span></> : <><CheckCircle2 className="size-5 sm:size-6 text-[#059669] inline" /> <span className="text-xs sm:text-sm font-normal text-[#059669]">Tout va bien</span></>}</p>
+                {todayEvtCount > 0 && <p className="text-[10px] text-[#1E5A8A] mt-0.5"><Calendar className="size-3 inline mr-0.5" />{todayEvtCount} événement{todayEvtCount > 1 ? 's' : ''}</p>}
               </div>
               <div className="rounded-xl p-3 border-l-4 border-l-[#C8A45D] bg-[#FEF3C7]">
                 <p className="text-[10px] sm:text-xs font-medium text-[#6B7280] mb-1">Actions à faire</p>
@@ -685,19 +687,21 @@ function DashboardView() {
         <Card><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><ClipboardList className="size-4 text-[#C8A45D]" />Mes tâches en cours</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-48 overflow-y-auto">{(stats.myTasks || []).length === 0 ? <p className="text-xs text-[#9CA3AF] py-4 text-center">Aucune tâche en cours</p> : (stats.myTasks || []).map(t => (<div key={t.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#F9FAFB] cursor-pointer" onClick={() => setCurrentView('tasks')}><span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[#EF4444]' : t.priority === 'haute' ? 'bg-[#D97706]' : 'bg-[#C8A45D]')} /><div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{t.title}</p><p className="text-xs text-[#9CA3AF]">{t.caseReference ? `${t.caseReference} — ` : ''}{t.dueDate ? `Échéance: ${fmtDate(t.dueDate)}` : ''}</p></div></div>))}</div></CardContent></Card>
       </div>
 
-      {/* Urgencies + Upcoming Events */}
-      {(urgencyCount > 0 || (stats.urgentTasks?.length || 0) > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Urgencies */}
-          <Card className="border-l-4 border-l-[#DC2626]"><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2 text-[#DC2626]"><AlertOctagon className="size-4" />Urgences</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-3 max-h-64 overflow-y-auto">
-            {stats.urgencies?.map(u => (<div key={u.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF2F2] cursor-pointer hover:bg-[#FEE2E2]" onClick={() => setCurrentView('cases')}><div className="mt-0.5"><Gavel className="size-4 text-[#EF4444]" /></div><div className="min-w-0"><p className="text-sm font-medium">{u.reference} — {u.title}</p><p className="text-xs text-[#6B7280]">{u.clientName} • <span className="font-semibold text-[#DC2626]">{u.daysRemaining <= 0 ? 'Aujourd\'hui !' : `Dans ${u.daysRemaining} jour${u.daysRemaining > 1 ? 's' : ''}`}</span></p></div></div>))}
-            {stats.overdueInvoices?.map(inv => (<div key={inv.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF3C7] cursor-pointer hover:bg-[#FDE68A]" onClick={() => setCurrentView('invoices')}><div className="mt-0.5"><AlertTriangle className="size-4 text-[#D97706]" /></div><div className="min-w-0"><p className="text-sm font-medium">{inv.clientName}</p><p className="text-xs text-[#6B7280]">{fmtMoney(inv.amount, inv.currencyCode)} • <span className="font-semibold text-[#D97706]">{inv.daysOverdue}j de retard</span></p></div></div>))}
-            {stats.urgentTasks?.slice(0, 3).map(t => (<div key={t.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF3C7] cursor-pointer hover:bg-[#FDE68A]" onClick={() => setCurrentView('tasks')}><div className="mt-0.5"><Timer className="size-4 text-[#C8A45D]" /></div><div className="min-w-0"><p className="text-sm font-medium">{t.title}</p><p className="text-xs text-[#6B7280]">{t.assigneeName ? `→ ${t.assigneeName}` : ''} {t.caseReference ? `• ${t.caseReference}` : ''}</p></div></div>))}
+      {/* Today's events + Urgencies + Upcoming Events */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Today's events or Urgencies */}
+        <Card className={cn('border-l-4', todayEvtCount > 0 ? 'border-l-[#1E5A8A]' : urgencyCount > 0 ? 'border-l-[#DC2626]' : 'border-l-[#059669]')}><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2">{todayEvtCount > 0 ? <><Calendar className="size-4 text-[#1E5A8A]" />Événements aujourd'hui ({todayEvtCount})</> : urgencyCount > 0 ? <><AlertOctagon className="size-4 text-[#DC2626]" />Urgences ({urgencyCount})</> : <><CheckCircle2 className="size-4 text-[#059669]" />Aucune urgence</>}</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">
+            {todayEvtCount > 0 ? (stats.todayEvents || []).map((e: { id: string; title: string; startTime: string; eventType: string; criticality: string; caseReference: string | null; assignments: Array<{ userName: string }> }) => (
+              <div key={e.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#E8F0F8] cursor-pointer" onClick={() => setCurrentView('calendar')}><span className={cn('w-1 h-8 rounded-full shrink-0', CRIT_COLORS[e.criticality] || CRIT_COLORS.normal)} /><div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-[#6B7280]">{fmtDateTime(e.startTime)}{e.caseReference ? ` • ${e.caseReference}` : ''}</p><p className="text-[10px] text-[#9CA3AF] mt-0.5">{e.assignments.map(a => a.userName).join(', ') || 'Non assigné'}</p></div><Badge variant="outline" className="text-[10px] shrink-0">{EVENT_TYPE_LABELS[e.eventType] || e.eventType}</Badge></div>
+            )) : urgencyCount > 0 ? <>
+              {stats.urgencies?.map(u => (<div key={u.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF2F2] cursor-pointer hover:bg-[#FEE2E2]" onClick={() => setCurrentView('cases')}><div className="mt-0.5"><Gavel className="size-4 text-[#EF4444]" /></div><div className="min-w-0"><p className="text-sm font-medium">{u.reference} — {u.title}</p><p className="text-xs text-[#6B7280]">{u.clientName} • <span className="font-semibold text-[#DC2626]">{u.daysRemaining <= 0 ? 'Aujourd\'hui !' : `Dans ${u.daysRemaining} jour${u.daysRemaining > 1 ? 's' : ''}`}</span></p></div></div>))}
+              {stats.overdueInvoices?.map(inv => (<div key={inv.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF3C7] cursor-pointer hover:bg-[#FDE68A]" onClick={() => setCurrentView('invoices')}><div className="mt-0.5"><AlertTriangle className="size-4 text-[#D97706]" /></div><div className="min-w-0"><p className="text-sm font-medium">{inv.clientName}</p><p className="text-xs text-[#6B7280]">{fmtMoney(inv.amount, inv.currencyCode)} • <span className="font-semibold text-[#D97706]">{inv.daysOverdue}j de retard</span></p></div></div>))}
+              {stats.urgentTasks?.slice(0, 3).map(t => (<div key={t.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF3C7] cursor-pointer hover:bg-[#FDE68A]" onClick={() => setCurrentView('tasks')}><div className="mt-0.5"><Timer className="size-4 text-[#C8A45D]" /></div><div className="min-w-0"><p className="text-sm font-medium">{t.title}</p><p className="text-xs text-[#6B7280]">{t.caseReference ? `• ${t.caseReference}` : ''}</p></div></div>))}
+            </> : <p className="text-xs text-[#059669] text-center py-6">Aucun événement aujourd'hui, aucune urgence ni impayé. Parfait ! 🎉</p>}
           </div></CardContent></Card>
           {/* Upcoming Events */}
           <Card><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Calendar className="size-4 text-[#C8A45D]" />Prochains événements (7j)</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">{(stats.upcomingEventsEnhanced || []).length === 0 ? <p className="text-xs text-[#9CA3AF] py-4 text-center">Aucun événement à venir</p> : (stats.upcomingEventsEnhanced || []).map(e => (<div key={e.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F9FAFB] cursor-pointer" onClick={() => setCurrentView('calendar')}><span className={cn('w-1 h-8 rounded-full shrink-0', CRIT_COLORS[e.criticality] || CRIT_COLORS.normal)} /><div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-[#6B7280]">{fmtDateTime(e.startTime)}{e.caseReference ? ` • ${e.caseReference}` : ''}</p><p className="text-xs text-[#9CA3AF] mt-0.5">{e.assignments.map(a => a.userName).join(', ')}</p></div><Badge variant="outline" className="text-[10px] shrink-0">{EVENT_TYPE_LABELS[e.eventType] || e.eventType}</Badge></div>))}</div></CardContent></Card>
-        </div>
-      )}
+      </div>
 
       {/* Activité du cabinet - Financial comparison + Counts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1008,11 +1012,11 @@ function CasesView() {
 
   const timeline = useMemo(() => {
     if (!caseDetail) return []
-    const items: Array<{ date: string; type: 'event' | 'note' | 'doc' | 'task'; icon: React.ElementType; title: string; description: string }> = []
-    for (const e of (caseDetail.events || [])) { items.push({ date: e.startTime, type: 'event', icon: Calendar, title: e.title, description: e.description || '' }) }
-    for (const n of (caseDetail.notes || [])) { items.push({ date: n.createdAt, type: 'note', icon: FileText, title: 'Note', description: n.content }) }
-    for (const d of (caseDetail.documents || [])) { items.push({ date: d.createdAt, type: 'doc', icon: FileCheck, title: d.fileName, description: `${d.mimeType || 'fichier'} • ${fmtFileSize(d.fileSize)}` }) }
-    for (const t of (caseTasks || [])) { items.push({ date: t.createdAt, type: 'task', icon: ClipboardList, title: `Tâche: ${t.title}`, description: `${taskStatusLabel(t.status)} • ${PRIORITY_LABELS[t.priority] || t.priority}` }) }
+    const items: Array<{ date: string; type: 'event' | 'note' | 'doc' | 'task' | 'payment'; icon: React.ElementType; title: string; description: string; color: string }> = []
+    for (const e of (caseDetail.events || [])) { items.push({ date: e.startTime, type: 'event', icon: Calendar, title: e.title, description: `${EVENT_TYPE_LABELS[e.eventType] || e.eventType}${e.description ? ` — ${e.description}` : ''}`, color: CRIT_COLORS[e.criticality] || CRIT_COLORS.normal }) }
+    for (const n of (caseDetail.notes || [])) { items.push({ date: n.createdAt, type: 'note', icon: MessageSquare, title: 'Note', description: n.content, color: '#6366F1' }) }
+    for (const d of (caseDetail.documents || [])) { items.push({ date: d.createdAt, type: 'doc', icon: FileText, title: d.fileName, description: `${d.mimeType || 'fichier'} • ${fmtFileSize(d.fileSize)}`, color: '#059669' }) }
+    for (const t of (caseTasks || [])) { items.push({ date: t.createdAt, type: 'task', icon: ClipboardList, title: `Tâche: ${t.title}`, description: `${taskStatusLabel(t.status)} • ${PRIORITY_LABELS[t.priority] || t.priority}`, color: t.priority === 'urgente' ? '#EF4444' : t.priority === 'haute' ? '#D97706' : '#C8A45D' }) }
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }, [caseDetail, caseTasks])
 
@@ -1132,10 +1136,11 @@ function CasesView() {
                 <div className="absolute left-[7px] top-2 bottom-2 w-px bg-[#E5E7EB]" />
                 {timeline.map((item, i) => {
                   const Icon = item.icon
+                  const typeLabel: Record<string, string> = { event: 'Événement', note: 'Note', doc: 'Document', task: 'Tâche' }
                   return (
                     <div key={i} className="relative pb-4">
-                      <div className="absolute -left-6 top-1 size-[15px] rounded-full bg-white border-2 border-slate-300 flex items-center justify-center"><Icon className="size-2.5 text-[#6B7280]" /></div>
-                      <div><p className="text-xs text-[#9CA3AF]">{fmtDateTime(item.date)}</p><p className="text-sm font-medium mt-0.5">{item.title}</p>{item.description && <p className="text-xs text-[#6B7280] mt-0.5">{item.description}</p>}</div>
+                      <div className="absolute -left-6 top-1 size-[15px] rounded-full bg-white border-2 flex items-center justify-center" style={{ borderColor: item.color }}><Icon className="size-2.5" style={{ color: item.color }} /></div>
+                      <div><p className="text-xs text-[#9CA3AF]">{fmtDateTime(item.date)}</p><p className="text-sm font-medium mt-0.5">{item.title}</p><div className="flex items-center gap-2 mt-0.5"><span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: item.color + '18', color: item.color }}>{typeLabel[item.type] || item.type}</span>{item.description && <p className="text-xs text-[#6B7280]">{item.description}</p>}</div></div>
                     </div>
                   )
                 })}

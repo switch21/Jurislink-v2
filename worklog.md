@@ -169,3 +169,20 @@ Stage Summary:
 - Double protection : frontend filtre + backend ignore les chaînes vides
 - L'upload du logo n'a jamais été la cause (ne modifie que logoUrl)
 - Les cabinets dont les données ont été effacées doivent être re-remplis manuellement
+
+---
+Task ID: 2-a
+Agent: Backend
+Task: Populate dashboard urgencies API
+
+Work Log:
+- Added query after `upcomingEventsEnhanced` block to find cases with events in the next 3 days
+- Query filters by active case statuses (nouveau, ouvert, en_cours, en_attente) and events with startTime within [now, now+3days]
+- Includes client fullName and the earliest upcoming event per case (take: 1, orderBy: asc)
+- Maps results to urgencies array with id, reference, title, clientName, nextDueDate, daysRemaining
+- Changed `urgencies: []` to `urgencies` in the return statement
+
+Stage Summary:
+- Dashboard API now returns populated urgencies array with cases having events within the next 3 days
+- Each urgency entry includes case info, client name, next event date, and days remaining
+- Limited to 10 most urgent cases
