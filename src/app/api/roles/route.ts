@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await authenticate(request, 'role', 'view')
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const roles = await db.role.findMany({
@@ -21,6 +25,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await authenticate(request, 'role', 'create')
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const body = await request.json()

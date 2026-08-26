@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast'
 import { useTheme } from 'next-themes'
 import { useAppStore, type ViewName, type UserInfo } from '@/store/appStore'
 import { cn } from '@/lib/utils'
+import { initAuthFetch } from '@/lib/auth-fetch'
 
 // ==================== shadcn/ui imports ====================
 import { Button } from '@/components/ui/button'
@@ -159,6 +160,10 @@ interface DashboardStats {
   upcomingEventsEnhanced: Array<{ id: string; title: string; startTime: string; eventType: string; criticality: string; caseReference: string | null; assignments: Array<{ userId: string; userName: string }> }>;
   myTasks: Array<{ id: string; title: string; priority: string; status: string; dueDate: string | null; caseReference: string | null }>;
   activityCounts?: { dossiersOuverts?: number; dossiersCloses?: number; nouveauxClients?: number; audiences?: number; facturesEmises?: number };
+  pendingDocuments?: Array<{ id: string; fileName: string; status: string; createdAt: string; caseReference: string | null; caseTitle: string | null; uploadedBy: string | null }>;
+  pendingDocumentsCount?: number;
+  casesWithoutDeadlines?: Array<{ id: string; reference: string; title: string; clientName: string | null; status: string; updatedAt: string; pendingTasksCount: number }>;
+  casesWithoutDeadlinesCount?: number;
 }
 interface ConflictResult {
   type: string; case: { id: string; reference: string; title: string; clientName: string }; description: string;
@@ -701,6 +706,34 @@ function DashboardView() {
           </div></CardContent></Card>
           {/* Upcoming Events */}
           <Card><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Calendar className="size-4 text-[#C8A45D]" />Prochains événements (7j)</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">{(stats.upcomingEventsEnhanced || []).length === 0 ? <p className="text-xs text-[#9CA3AF] py-4 text-center">Aucun événement à venir</p> : (stats.upcomingEventsEnhanced || []).map(e => (<div key={e.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F9FAFB] cursor-pointer" onClick={() => setCurrentView('calendar')}><span className={cn('w-1 h-8 rounded-full shrink-0', CRIT_COLORS[e.criticality] || CRIT_COLORS.normal)} /><div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-[#6B7280]">{fmtDateTime(e.startTime)}{e.caseReference ? ` • ${e.caseReference}` : ''}</p><p className="text-xs text-[#9CA3AF] mt-0.5">{e.assignments.map(a => a.userName).join(', ')}</p></div><Badge variant="outline" className="text-[10px] shrink-0">{EVENT_TYPE_LABELS[e.eventType] || e.eventType}</Badge></div>))}</div></CardContent></Card>
+      </div>
+
+      {/* Documents en attente + Dossiers sans échéance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="border-l-4 border-l-[#7C3AED]">
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><FileText className="size-4 text-[#7C3AED]" />Documents en attente{(stats.pendingDocumentsCount ?? 0) > 0 && <Badge className="bg-[#7C3AED] text-white text-[10px] ml-auto">{stats.pendingDocumentsCount}</Badge>}</CardTitle></CardHeader>
+          <CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">
+            {(stats.pendingDocuments || []).length === 0 ? <p className="text-xs text-[#9CA3AF] py-4 text-center">Tous les documents sont traités</p> : (stats.pendingDocuments || []).map(d => (
+              <div key={d.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#F5F3FF] hover:bg-[#EDE9FE] cursor-pointer" onClick={() => { if (d.caseReference) { const c = caseList.find(x => x.reference === d.caseReference); if (c) { setSelectedCase(c); setCurrentView('case-detail') } } }}>
+                <div className="size-8 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center shrink-0"><FileText className="size-4 text-[#7C3AED]" /></div>
+                <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{d.fileName}</p><p className="text-[10px] text-[#6B7280]">{d.caseReference ? `${d.caseReference} — ${d.caseTitle || ''}` : 'Hors dossier'}{d.uploadedBy ? ` • Par ${d.uploadedBy}` : ''}</p><p className="text-[10px] text-[#9CA3AF]">{fmtDateTime(d.createdAt)}</p></div>
+                <Badge variant="outline" className={cn('text-[10px] shrink-0', d.status === 'brouillon' ? 'border-[#9CA3AF] text-[#6B7280]' : 'border-[#D97706] text-[#D97706]')}>{d.status === 'brouillon' ? 'Brouillon' : 'En attente'}</Badge>
+              </div>
+            ))}
+          </div></CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-[#6366F1]">
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><AlertCircle className="size-4 text-[#6366F1]" />Dossiers sans échéance{(stats.casesWithoutDeadlinesCount ?? 0) > 0 && <Badge className="bg-[#6366F1] text-white text-[10px] ml-auto">{stats.casesWithoutDeadlinesCount}</Badge>}</CardTitle></CardHeader>
+          <CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">
+            {(stats.casesWithoutDeadlines || []).length === 0 ? <p className="text-xs text-[#059669] py-4 text-center">Tous les dossiers actifs ont des échéances</p> : (stats.casesWithoutDeadlines || []).map(c => (
+              <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#EEF2FF] hover:bg-[#E0E7FF] cursor-pointer" onClick={() => { const cs = caseList.find(x => x.id === c.id); if (cs) { setSelectedCase(cs); setCurrentView('case-detail') } }}>
+                <div className="size-8 rounded-lg bg-[#6366F1]/10 flex items-center justify-center shrink-0"><FolderOpen className="size-4 text-[#6366F1]" /></div>
+                <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{c.reference} — {c.title}</p><p className="text-[10px] text-[#6B7280]">{c.clientName || 'Sans client'}{c.pendingTasksCount > 0 ? ` • ${c.pendingTasksCount} tâche${c.pendingTasksCount > 1 ? 's' : ''} en cours` : ''}</p><p className="text-[10px] text-[#9CA3AF]">Dernière MAJ : {fmtDateTime(c.updatedAt)}</p></div>
+                <Badge variant="outline" className="text-[10px] shrink-0 border-[#6366F1] text-[#6366F1]">{STATUS_LABELS[c.status] || c.status}</Badge>
+              </div>
+            ))}
+          </div></CardContent>
+        </Card>
       </div>
 
       {/* Activité du cabinet - Financial comparison + Counts */}
@@ -4099,7 +4132,7 @@ function AppInner() {
 
 export default function App() {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => { const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id) }, [])
+  useEffect(() => { initAuthFetch(); const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id) }, [])
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

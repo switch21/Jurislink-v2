@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { unlink } from 'fs/promises'
 import path from 'path'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(
   _request: Request,

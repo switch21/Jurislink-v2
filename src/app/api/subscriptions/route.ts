@@ -1,14 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-
-function getTenantId(request: Request): string | null {
-  // Check header first, then query param
-  const headerTenant = request.headers.get('x-tenant-id')
-  if (headerTenant) return headerTenant
-
-  const { searchParams } = new URL(request.url)
-  return searchParams.get('tenantId')
-}
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 function getPeriodDates(billingPeriod: string) {
   const now = new Date()
@@ -35,9 +27,16 @@ function getPeriodDates(billingPeriod: string) {
 }
 
 export async function GET(request: Request) {
+  const auth = await authenticate(request, 'subscription', 'view')
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
-    const tenantId = getTenantId(request)
+    // Tenant isolation: non-root_admin users can only see their own tenant's subscription
+    const tenantId = auth.role === 'root_admin'
+      ? (request.headers.get('x-tenant-id') || new URL(request.url).searchParams.get('tenantId'))
+      : auth.tenantId
+
     if (!tenantId) {
       return NextResponse.json({ error: 'L\'identifiant du cabinet est requis' }, { status: 400 })
     }
@@ -65,6 +64,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await authenticate(request, 'subscription', 'manage')
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const body = await request.json()

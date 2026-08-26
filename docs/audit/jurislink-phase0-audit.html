@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+@page {
+    size: 210mm 297mm;
+    margin: 0;
+}
+:root {
+    --c-bg: #ffffff;
+    --c-surface: #f8fafc;
+    --c-border: #e2e8f0;
+    --c-text: #1e293b;
+    --c-muted: #64748b;
+    --c-primary: #0f172a;
+    --c-accent: #b45309;
+    --c-danger: #dc2626;
+    --c-warning: #d97706;
+    --c-success: #16a34a;
+    --c-info: #2563eb;
+    --c-code-bg: #1e293b;
+    --c-table-header: #f1f5f9;
+    --c-table-alt: #f8fafc;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 210mm;
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 10pt;
+    line-height: 1.6;
+}
+@media screen {
+    html {
+        display: flex;
+        justify-content: center;
+        background: #e2e8f0;
+    }
+    body {
+        margin: 20px auto;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    }
+}
+
+/* COVER */
+.cover {
+    width: 210mm;
+    height: 297mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(160deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+    color: #fff;
+    padding: 80px 70px;
+    break-after: page;
+    overflow: hidden;
+}
+
+.cover-badge {
+    display: inline-block;
+    background: rgba(180, 83, 9, 0.9);
+    color: #fff;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 10pt;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 1;
+}
+.cover-title {
+    font-size: 32pt;
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 0 0 16px 0;
+    position: relative;
+    z-index: 1;
+}
+.cover-subtitle {
+    font-size: 14pt;
+    font-weight: 300;
+    color: #94a3b8;
+    margin: 0 0 40px 0;
+    position: relative;
+    z-index: 1;
+}
+.cover-meta {
+    display: flex;
+    gap: 30px;
+    font-size: 9pt;
+    color: #94a3b8;
+    position: relative;
+    z-index: 1;
+}
+.cover-meta-item { display: flex; flex-direction: column; align-items: center; }
+.cover-meta-label { font-weight: 600; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px; font-size: 7pt; margin-bottom: 4px; }
+.cover-meta-value { color: #f8fafc; font-weight: 500; }
+.cover-line {
+    width: 60px;
+    height: 3px;
+    background: var(--c-accent);
+    margin: 40px auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* MAIN CONTENT */
+.main-content {
+    padding: 40px 55px 50px 55px;
+}
+
+/* SECTION HEADERS */
+.chapter-header {
+    break-after: avoid;
+    break-inside: avoid;
+    margin-top: 32px;
+    margin-bottom: 16px;
+}
+.section-tag {
+    display: inline-block;
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--c-accent);
+    margin-bottom: 4px;
+}
+.section-title {
+    font-size: 18pt;
+    font-weight: 800;
+    color: var(--c-primary);
+    margin: 0 0 8px 0;
+    line-height: 1.25;
+}
+.section-subtitle {
+    font-size: 11pt;
+    font-weight: 400;
+    color: var(--c-muted);
+    margin: 0;
+}
+.divider {
+    width: 40px;
+    height: 3px;
+    background: var(--c-accent);
+    margin: 10px 0 0 0;
+}
+
+/* SUBSECTIONS */
+.subsection-title {
+    font-size: 13pt;
+    font-weight: 700;
+    color: var(--c-primary);
+    margin: 22px 0 10px 0;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--c-border);
+}
+.sub-subsection-title {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #334155;
+    margin: 16px 0 8px 0;
+}
+
+/* BODY TEXT */
+.body-text {
+    font-size: 10pt;
+    line-height: 1.65;
+    color: #334155;
+    margin: 0 0 10px 0;
+}
+.body-text strong { color: var(--c-primary); }
+.body-text code {
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9pt;
+    color: var(--c-danger);
+}
+
+/* TABLES */
+.table-wrapper {
+    margin: 12px 0 16px 0;
+    break-inside: avoid;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    line-height: 1.45;
+}
+thead th {
+    background: var(--c-table-header);
+    color: var(--c-primary);
+    font-weight: 700;
+    text-align: left;
+    padding: 7px 8px;
+    border-bottom: 2px solid #cbd5e1;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+tbody td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: top;
+    color: #334155;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+tbody tr:nth-child(even) { background: var(--c-table-alt); }
+table code {
+    background: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    color: var(--c-danger);
+}
+
+/* CALLOUT BOXES */
+.callout {
+    border-left: 4px solid;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 0 6px 6px 0;
+    break-inside: avoid;
+    font-size: 9.5pt;
+    line-height: 1.55;
+}
+.callout-danger { border-color: var(--c-danger); background: #fef2f2; }
+.callout-warning { border-color: var(--c-warning); background: #fffbeb; }
+.callout-info { border-color: var(--c-info); background: #eff6ff; }
+.callout-success { border-color: var(--c-success); background: #f0fdf4; }
+.callout-title { font-weight: 700; margin-bottom: 4px; }
+.callout-danger .callout-title { color: var(--c-danger); }
+.callout-warning .callout-title { color: var(--c-warning); }
+.callout-info .callout-title { color: var(--c-info); }
+.callout-success .callout-title { color: var(--c-success); }
+
+/* CODE BLOCKS */
+.code-block {
+    background: var(--c-code-bg);
+    color: #e2e8f0;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+    word-break: break-all;
+    white-space: pre-wrap;
+    margin: 10px 0 14px 0;
+    break-inside: avoid;
+}
+.code-label {
+    font-size: 8pt;
+    font-weight: 700;
+    color: var(--c-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 14px 0 6px 0;
+}
+
+/* STATUS BADGES */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 7.5pt;
+    font-weight: 700;
+}
+.badge-ok { background: #dcfce7; color: #166534; }
+.badge-warn { background: #fef3c7; color: #92400e; }
+.badge-err { background: #fee2e2; color: #991b1b; }
+.badge-na { background: #f1f5f9; color: #64748b; }
+
+/* SUMMARY GRID */
+.summary-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 14px 0;
+}
+.summary-card {
+    flex: 1 1 45%;
+    min-width: 120px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    break-inside: avoid;
+}
+.summary-card-label {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: var(--c-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+.summary-card-value {
+    font-size: 18pt;
+    font-weight: 900;
+    color: var(--c-primary);
+}
+.summary-card-value.danger { color: var(--c-danger); }
+.summary-card-value.success { color: var(--c-success); }
+.summary-card-value.warning { color: var(--c-warning); }
+
+/* LIST */
+.styled-list {
+    margin: 8px 0 12px 0;
+    padding-left: 20px;
+}
+.styled-list li {
+    margin-bottom: 5px;
+    font-size: 9.5pt;
+    line-height: 1.55;
+    color: #334155;
+}
+.styled-list li strong { color: var(--c-primary); }
+
+/* NUMBERED LIST */
+.numbered-list {
+    margin: 8px 0 12px 0;
+    padding-left: 0;
+    counter-reset: item;
+    list-style: none;
+}
+.numbered-list li {
+    counter-increment: item;
+    margin-bottom: 6px;
+    font-size: 9.5pt;
+    line-height: 1.55;
+    color: #334155;
+    padding-left: 28px;
+    position: relative;
+}
+.numbered-list li::before {
+    content: counter(item);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    background: var(--c-accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 8pt;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* PAGE FOOTER */
+.page-footer {
+    text-align: center;
+    font-size: 7pt;
+    color: #94a3b8;
+    padding: 12px 0;
+    border-top: 1px solid var(--c-border);
+    margin-top: 30px;
+}
+
+/* TABLE LIMITATIONS TABLE */
+.limitations-table td:first-child { font-weight: 600; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER ==================== -->
+<div class="cover">
+    <div class="cover-badge">Phase 0</div>
+    <div class="cover-title">JURISLINK V2</div>
+    <div class="cover-title" style="font-size: 20pt; font-weight: 300;">Rapport d'Audit du Schema Supabase</div>
+    <div class="cover-subtitle">Audit complet de la base de donnees, securite, isolation multi-tenant, stockage et traçabilite</div>
+    <div class="cover-meta">
+        <div class="cover-meta-item">
+            <span class="cover-meta-label">Projet</span>
+            <span class="cover-meta-value">switch21/jurislink</span>
+        </div>
+        <div class="cover-meta-item">
+            <span class="cover-meta-label">Reference</span>
+            <span class="cover-meta-value">zosqktvmihtkqbbgdbgx</span>
+        </div>
+        <div class="cover-meta-item">
+            <span class="cover-meta-label">Date</span>
+            <span class="cover-meta-value">2025-06-18</span>
+        </div>
+        <div class="cover-meta-item">
+            <span class="cover-meta-label">PostgREST</span>
+            <span class="cover-meta-value">v14.5</span>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MAIN CONTENT ==================== -->
+<div class="main-content">
+
+    <!-- SECTION: LIMITATIONS -->
+    <div class="chapter-header">
+        <div class="section-tag">Avertissement</div>
+        <div class="section-title">Limitations de l'Audit</div>
+        <div class="divider"></div>
+    </div>
+    <div class="body-text">Cet audit a ete realise via l'API REST Supabase (PostgREST + Auth Admin + Storage). La connexion directe PostgreSQL etant impossible (DNS IPv6 uniquement, sandbox IPv4-only), certains elements necessitent une verification complementaire via le SQL Editor du dashboard Supabase.</div>
+
+    <div class="table-wrapper">
+        <table class="limitations-table">
+            <thead>
+                <tr><th>Element</th><th>Statut</th><th>Detail</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Tables / Colonnes / Types</td><td><span class="badge badge-ok">Complet</span></td><td>Via OpenAPI spec</td></tr>
+                <tr><td>Donnees existantes</td><td><span class="badge badge-ok">Complet</span></td><td>Via REST API service_role</td></tr>
+                <tr><td>Auth utilisateurs</td><td><span class="badge badge-ok">Complet</span></td><td>Via Auth Admin API</td></tr>
+                <tr><td>Storage buckets</td><td><span class="badge badge-ok">Complet</span></td><td>Via Storage API</td></tr>
+                <tr><td>RPC fonctions (signatures)</td><td><span class="badge badge-ok">Complet</span></td><td>Via OpenAPI spec</td></tr>
+                <tr><td>RLS politiques</td><td><span class="badge badge-warn">Partiel</span></td><td>Texte SQL non accessible via REST</td></tr>
+                <tr><td>Triggers</td><td><span class="badge badge-err">Non verifiable</span></td><td>Necessite pg_catalog</td></tr>
+                <tr><td>Fonctions SQL (corps)</td><td><span class="badge badge-err">Non verifiable</span></td><td>Necessite pg_proc</td></tr>
+                <tr><td>Index</td><td><span class="badge badge-err">Non verifiable</span></td><td>Necessite pg_indexes</td></tr>
+                <tr><td>Contraintes CHECK/UNIQUE</td><td><span class="badge badge-err">Non verifiable</span></td><td>Necessite information_schema</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout callout-info">
+        <div class="callout-title">Action requise</div>
+        Pour completer l'audit (RLS, triggers, fonctions, index, contraintes), merci d'executer le script SQL fourni en Section 11 dans le SQL Editor du dashboard Supabase et fournir le resultat.
+    </div>
+
+    <!-- ==================== SECTION 1 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 1</div>
+        <div class="section-title">Inventaire des Tables</div>
+        <div class="section-subtitle">18 tables + 2 vues</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">1.1 Tables metier</div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>#</th><th>Table</th><th>Lignes</th><th>Cle primaire</th><th>tenant_id</th><th>Role metier</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td><code>tenants</code></td><td>3</td><td>id (uuid)</td><td><span class="badge badge-na">N/A</span></td><td>Cabinet juridique</td></tr>
+                <tr><td>2</td><td><code>users</code></td><td>8</td><td>id (uuid)</td><td><span class="badge badge-warn">NULLABLE</span></td><td>Profils utilisateurs</td></tr>
+                <tr><td>3</td><td><code>clients</code></td><td>4</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Clients du cabinet</td></tr>
+                <tr><td>4</td><td><code>cases</code></td><td>3</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Dossiers juridiques</td></tr>
+                <tr><td>5</td><td><code>case_assignments</code></td><td>4</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Avocats assignes aux dossiers</td></tr>
+                <tr><td>6</td><td><code>case_notes</code></td><td>2</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Notes de dossier</td></tr>
+                <tr><td>7</td><td><code>documents</code></td><td>3</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Documents stockes</td></tr>
+                <tr><td>8</td><td><code>events</code></td><td>5</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Evenements / calendrier</td></tr>
+                <tr><td>9</td><td><code>event_assignments</code></td><td>5</td><td>id (uuid)</td><td><span class="badge badge-err">MANQUANT</span></td><td>Assignation evenements</td></tr>
+                <tr><td>10</td><td><code>tasks</code></td><td>0</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Taches</td></tr>
+                <tr><td>11</td><td><code>invoices</code></td><td>4</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Factures</td></tr>
+                <tr><td>12</td><td><code>messages</code></td><td>3</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Messages internes</td></tr>
+                <tr><td>13</td><td><code>notifications</code></td><td>2</td><td>id (uuid)</td><td><span class="badge badge-ok">NOT NULL</span></td><td>Notifications</td></tr>
+                <tr><td>14</td><td><code>currencies</code></td><td>4</td><td>id (uuid)</td><td><span class="badge badge-na">N/A</span></td><td>Devises</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">1.2 Tables systeme / securite</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>#</th><th>Table</th><th>Lignes</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td>15</td><td><code>audit_logs</code></td><td>35</td><td>Journal d'audit avec chaine de hachage</td></tr>
+                <tr><td>16</td><td><code>audit_chain_alerts</code></td><td>0</td><td>Alertes d'integrite de la chaine d'audit</td></tr>
+                <tr><td>17</td><td><code>sessions_log</code></td><td>0</td><td>Journal des sessions</td></tr>
+                <tr><td>18</td><td><code>rate_limit_buckets</code></td><td>0</td><td>Rate limiting</td></tr>
+                <tr><td>19</td><td><code>csp_violations</code></td><td>0</td><td>Violations Content Security Policy</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">1.3 Vues</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Vue</th><th>Lignes</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>v_active_sessions</code></td><td>0</td><td>Sessions actives avec info utilisateur</td></tr>
+                <tr><td><code>v_csp_violations_top</code></td><td>0</td><td>Top des violations CSP</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ==================== SECTION 2 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 2</div>
+        <div class="section-title">Detail des Colonnes par Table</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">Table <code>tenants</code></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Colonne</th><th>Type</th><th>Nullable</th></tr></thead>
+            <tbody>
+                <tr><td>id</td><td>uuid</td><td>NOT NULL (PK)</td></tr>
+                <tr><td>name</td><td>string</td><td>NOT NULL</td></tr>
+                <tr><td>logo_url</td><td>string</td><td>Oui</td></tr>
+                <tr><td>language</td><td>string</td><td>Oui (defaut 'fr')</td></tr>
+                <tr><td>timezone</td><td>string</td><td>Oui (defaut 'Europe/Paris')</td></tr>
+                <tr><td>phone, email, address</td><td>string</td><td>Oui</td></tr>
+                <tr><td>niu</td><td>string</td><td>Oui</td></tr>
+                <tr><td>plan</td><td>string</td><td>Oui ('starter', 'premium')</td></tr>
+                <tr><td>max_users</td><td>integer</td><td>Oui</td></tr>
+                <tr><td>max_storage_gb</td><td>number</td><td>Oui</td></tr>
+                <tr><td>is_active</td><td>boolean</td><td>Oui</td></tr>
+                <tr><td>created_at, updated_at</td><td>timestamptz</td><td>Oui</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">Table <code>users</code></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Colonne</th><th>Type</th><th>Nullable</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>PK, FK vers auth.users</td></tr>
+                <tr><td>tenant_id</td><td>uuid</td><td>Oui</td><td>NULL pour root_admin</td></tr>
+                <tr><td>role</td><td>string</td><td>NOT NULL</td><td>Pas de contrainte ENUM</td></tr>
+                <tr><td>full_name, email</td><td>string</td><td>NOT NULL</td><td></td></tr>
+                <tr><td>preferred_language</td><td>string</td><td>Oui</td><td></td></tr>
+                <tr><td>is_active</td><td>boolean</td><td>Oui</td><td></td></tr>
+                <tr><td>failed_login_attempts</td><td>integer</td><td>NOT NULL</td><td>Defaut 0</td></tr>
+                <tr><td>session_count_today</td><td>integer</td><td>NOT NULL</td><td>Defaut 0</td></tr>
+                <tr><td>locked_until</td><td>timestamptz</td><td>Oui</td><td>Verrouillage compte</td></tr>
+                <tr><td>last_login_at</td><td>timestamptz</td><td>Oui</td><td></td></tr>
+                <tr><td>last_session_id</td><td>string</td><td>Oui</td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">Table <code>clients</code></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Colonne</th><th>Type</th><th>Nullable</th></tr></thead>
+            <tbody>
+                <tr><td>id</td><td>uuid NOT NULL (PK)</td><td></td></tr>
+                <tr><td>tenant_id</td><td>uuid NOT NULL</td><td></td></tr>
+                <tr><td>full_name</td><td>string NOT NULL</td><td></td></tr>
+                <tr><td>company, phone, email, address, notes</td><td>string</td><td>Oui</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">Table <code>cases</code></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Colonne</th><th>Type</th><th>Nullable</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>id</td><td>uuid</td><td>NOT NULL (PK)</td><td></td></tr>
+                <tr><td>tenant_id</td><td>uuid</td><td>NOT NULL</td><td></td></tr>
+                <tr><td>client_id</td><td>uuid</td><td>NOT NULL</td><td>FK vers clients</td></tr>
+                <tr><td>title</td><td>string</td><td>NOT NULL</td><td></td></tr>
+                <tr><td>description</td><td>string</td><td>Oui</td><td></td></tr>
+                <tr><td>status</td><td>string</td><td>Oui</td><td>Pas de contrainte ENUM</td></tr>
+                <tr><td>open_date</td><td>date</td><td>Oui</td><td></td></tr>
+                <tr><td>is_secret</td><td>boolean</td><td>Oui</td><td>Dossier confidentiel</td></tr>
+                <tr><td>payment_status, outcome</td><td>string</td><td>Oui</td><td></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">Table <code>documents</code></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Colonne</th><th>Type</th><th>Nullable</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>id</td><td>uuid</td><td>NOT NULL (PK)</td><td></td></tr>
+                <tr><td>tenant_id</td><td>uuid</td><td>NOT NULL</td><td></td></tr>
+                <tr><td>case_id</td><td>uuid</td><td>Oui</td><td>FK vers cases</td></tr>
+                <tr><td>uploader_id</td><td>uuid</td><td>NOT NULL</td><td>FK vers users</td></tr>
+                <tr><td>file_name</td><td>string</td><td>NOT NULL</td><td></td></tr>
+                <tr><td>file_path</td><td>string</td><td>NOT NULL</td><td>Chemin Supabase Storage</td></tr>
+                <tr><td>file_size</td><td>integer</td><td>NOT NULL</td><td>En bytes</td></tr>
+                <tr><td>tags</td><td>jsonb</td><td>Oui</td><td>Tableau de tags</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">Table <code>events</code></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Colonne</th><th>Type</th><th>Nullable</th></tr></thead>
+            <tbody>
+                <tr><td>id</td><td>uuid NOT NULL (PK)</td><td></td></tr>
+                <tr><td>tenant_id</td><td>uuid NOT NULL</td><td></td></tr>
+                <tr><td>case_id</td><td>uuid</td><td>Oui (FK vers cases)</td><td></td></tr>
+                <tr><td>title</td><td>string NOT NULL</td><td></td></tr>
+                <tr><td>start_time, end_time</td><td>timestamptz NOT NULL</td><td></td></tr>
+                <tr><td>event_type, criticality</td><td>string</td><td>Oui</td></tr>
+                <tr><td>reminder_sent</td><td>boolean</td><td>Oui</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">Table <code>notifications</code></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Colonne</th><th>Type</th><th>Nullable</th></tr></thead>
+            <tbody>
+                <tr><td>id</td><td>uuid NOT NULL (PK)</td><td></td></tr>
+                <tr><td>tenant_id</td><td>uuid NOT NULL</td><td></td></tr>
+                <tr><td>user_id, event_id</td><td>uuid</td><td>Oui</td></tr>
+                <tr><td>title</td><td>string NOT NULL</td><td></td></tr>
+                <tr><td>message, type</td><td>string</td><td>Oui</td></tr>
+                <tr><td>read</td><td>boolean</td><td>Oui</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">Table <code>audit_logs</code></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Colonne</th><th>Type</th><th>Nullable</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td>id</td><td>uuid</td><td>NOT NULL (PK)</td><td></td></tr>
+                <tr><td>tenant_id</td><td>uuid</td><td>NOT NULL</td><td></td></tr>
+                <tr><td>user_id</td><td>uuid</td><td>Oui</td><td></td></tr>
+                <tr><td>action</td><td>string</td><td>NOT NULL</td><td>INSERT, UPDATE, DELETE, etc.</td></tr>
+                <tr><td>entity</td><td>string</td><td>NOT NULL</td><td>Nom de la table</td></tr>
+                <tr><td>entity_id</td><td>string</td><td>NOT NULL</td><td>ID de la ligne</td></tr>
+                <tr><td>timestamp</td><td>timestamptz</td><td>Oui</td><td></td></tr>
+                <tr><td>previous_state, new_state</td><td>jsonb</td><td>Oui</td><td>Diff avant/apres</td></tr>
+                <tr><td>metadata</td><td>jsonb</td><td>Oui</td><td></td></tr>
+                <tr><td>prev_hash, curr_hash</td><td>string</td><td>Oui</td><td>Chaine d'audit</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ==================== SECTION 3 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 3</div>
+        <div class="section-title">Donnees Existantes</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">3.1 Tenants (3 cabinets)</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Nom</th><th>Plan</th><th>Utilisateurs</th><th>Region</th></tr></thead>
+            <tbody>
+                <tr><td>EKOKA LAW FIRM</td><td>starter</td><td>3</td><td>Douala</td></tr>
+                <tr><td>SCP NDOKI &amp; ASSOCIES</td><td>premium</td><td>1</td><td>Douala</td></tr>
+                <tr><td>SCP MBOCK &amp; PINDY</td><td>premium</td><td>4</td><td>Douala</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">3.2 Utilisateurs (8)</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Email</th><th>Role</th><th>Tenant</th><th>Actif</th><th>MFA</th></tr></thead>
+            <tbody>
+                <tr><td>pat.epee@gmail.com</td><td>root_admin</td><td>(global)</td><td>Oui</td><td><span class="badge badge-err">Non</span></td></tr>
+                <tr><td>pod126@yahoo.fr</td><td>firm_admin</td><td>EKOKA</td><td>Oui</td><td><span class="badge badge-err">Non</span></td></tr>
+                <tr><td>charlenendoki91@gmail.com</td><td>lawyer</td><td>EKOKA</td><td>Oui</td><td><span class="badge badge-err">Non</span></td></tr>
+                <tr><td>thewarehouse.cm@gmail.com</td><td>secretary</td><td>EKOKA</td><td>Oui</td><td><span class="badge badge-err">Non</span></td></tr>
+                <tr><td>pindy@scpmock-pindy.com</td><td>firm_admin</td><td>MBOCK &amp; PINDY</td><td>Oui</td><td><span class="badge badge-err">Non</span></td></tr>
+                <tr><td>mbock@scpmock-pindy.com</td><td>firm_admin</td><td>MBOCK &amp; PINDY</td><td>Oui</td><td><span class="badge badge-err">Non</span></td></tr>
+                <tr><td>eboukijean@gmail.com</td><td>lawyer</td><td>MBOCK &amp; PINDY</td><td>Oui</td><td><span class="badge badge-err">Non</span></td></tr>
+                <tr><td>cndoki@scp-ndoki.com</td><td>firm_admin</td><td>SCP NDOKI</td><td>Oui</td><td><span class="badge badge-err">Non</span></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">3.3 Distribution des donnees par tenant</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Table</th><th>EKOKA</th><th>SCP NDOKI</th><th>MBOCK &amp; PINDY</th><th>Total</th></tr></thead>
+            <tbody>
+                <tr><td>Cases</td><td>1</td><td>0</td><td>2</td><td>3</td></tr>
+                <tr><td>Clients</td><td>1</td><td>0</td><td>3</td><td>4</td></tr>
+                <tr><td>Documents</td><td>1</td><td>0</td><td>2</td><td>3</td></tr>
+                <tr><td>Events</td><td>2</td><td>0</td><td>3</td><td>5</td></tr>
+                <tr><td>Invoices</td><td>2</td><td>0</td><td>2</td><td>4</td></tr>
+                <tr><td>Messages</td><td>2</td><td>0</td><td>1</td><td>3</td></tr>
+                <tr><td>Notifications</td><td>2</td><td>0</td><td>0</td><td>2</td></tr>
+                <tr><td>Audit Logs</td><td>1</td><td>1</td><td>33</td><td>35</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ==================== SECTION 4 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 4</div>
+        <div class="section-title">Fonctions RPC (14)</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">4.1 Securite &amp; Sessions</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Fonction</th><th>Parametres</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><code>get_tenant_id</code></td><td>(aucun, utilise auth.uid())</td><td>Retourne le tenant_id de l'utilisateur</td></tr>
+                <tr><td><code>get_user_role</code></td><td>(aucun, utilise auth.uid())</td><td>Retourne le role de l'utilisateur</td></tr>
+                <tr><td><code>is_aal2</code></td><td>(aucun, utilise auth.uid())</td><td>Verifie si MFA actif (AAL2)</td></tr>
+                <tr><td><code>is_account_locked</code></td><td>p_user_id</td><td>Verifie si un compte est verrouille</td></tr>
+                <tr><td><code>is_session_suspicious</code></td><td>p_user_id</td><td>Detecte sessions suspectes</td></tr>
+                <tr><td><code>is_case_assignee</code></td><td>check_case_id</td><td>Verifie si utilisateur assigne a un dossier</td></tr>
+                <tr><td><code>register_successful_login</code></td><td>p_user_id, p_session_id?</td><td>Enregistre connexion reussie</td></tr>
+                <tr><td><code>register_failed_login</code></td><td>p_email</td><td>Enregistre echec de connexion</td></tr>
+                <tr><td><code>register_session_end</code></td><td>p_session_id, p_reason?</td><td>Enregistre fin de session</td></tr>
+                <tr><td><code>revoke_session</code></td><td>p_session_id, p_revoked_by?</td><td>Revoque une session</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">4.2 Audit</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Fonction</th><th>Parametres</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><code>compute_audit_hash</code></td><td>p_action, p_entity, p_entity_id, p_metadata, p_prev_hash, p_timestamp, p_user_id</td><td>Calcule le hash pour la chaine d'audit</td></tr>
+                <tr><td><code>verify_audit_chain</code></td><td>p_from_id?, p_to_id?</td><td>Verifie l'integrite de la chaine</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">4.3 Donnees (RGPD)</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Fonction</th><th>Parametres</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><code>export_user_data</code></td><td>p_user_id</td><td>Exporte les donnees utilisateur (RGPD)</td></tr>
+                <tr><td><code>soft_delete_user_data</code></td><td>p_user_id, p_deleted_by?, p_reason?</td><td>Suppression soft (RGPD)</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">4.4 Systeme</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Fonction</th><th>Parametres</th><th>Role</th></tr></thead>
+            <tbody>
+                <tr><td><code>detect_suspicious_sessions</code></td><td>p_hours_back?</td><td>Detecte sessions suspectes</td></tr>
+                <tr><td><code>purge_old_csp_violations</code></td><td>p_max_age_days?</td><td>Nettoie anciennes violations CSP</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ==================== SECTION 5 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 5</div>
+        <div class="section-title">Storage</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">Buckets</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Bucket</th><th>Public</th><th>File Size Limit</th><th>Notes</th></tr></thead>
+            <tbody>
+                <tr><td><code>documents</code></td><td>Prive</td><td>Aucune</td><td>Documents juridiques</td></tr>
+                <tr><td><code>logos</code></td><td>Public</td><td>Aucune</td><td>Logos des cabinets</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout callout-warning">
+        <div class="callout-title">Problemes Storage</div>
+        <ul class="styled-list">
+            <li><strong>Policies 404 :</strong> L'API Storage retourne 404 sur les policies. Aucune policy definie confirmee ou endpoint modifie.</li>
+            <li><strong>Bucket logos PUBLIC :</strong> Les logos sont accessibles sans authentification. Acceptable si seuls des logos y sont stockes.</li>
+            <li><strong>Pas de file_size_limit :</strong> Aucun des deux buckets n'a de limite de taille de fichier.</li>
+        </ul>
+    </div>
+
+    <!-- ==================== SECTION 6 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 6</div>
+        <div class="section-title">Auth &amp; MFA</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">6.1 Statut Auth</div>
+    <div class="body-text">8 utilisateurs, tous avec email confirme automatiquement a la creation.</div>
+
+    <div class="subsection-title">6.2 MFA — CRITIQUE</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Metric</th><th>Valeur</th></tr></thead>
+            <tbody>
+                <tr><td>Utilisateurs avec MFA</td><td><strong style="color:var(--c-danger)">0 / 8 (0%)</strong></td></tr>
+                <tr><td>Facteurs TOTP enregistres</td><td><strong style="color:var(--c-danger)">0</strong></td></tr>
+                <tr><td>Niveau AAL</td><td><strong style="color:var(--c-danger)">AAL1 (aucun MFA)</strong> pour tous</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout callout-danger">
+        <div class="callout-title">Risque majeur</div>
+        L'application a l'infrastructure pour MFA (fonction is_aal2, mentions dans instructions.md Phase 2), mais <strong>aucun utilisateur n'a active MFA</strong>. Pour un outil juridique manipulant des donnees sensibles, c'est un risque majeur.
+    </div>
+
+    <!-- ==================== SECTION 7 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 7</div>
+        <div class="section-title">Analyse Multi-Tenant</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">7.1 Isolation par tenant_id</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Table</th><th>tenant_id</th><th>NOT NULL</th><th>Statut</th></tr></thead>
+            <tbody>
+                <tr><td>tenants</td><td>—</td><td>—</td><td><span class="badge badge-na">N/A</span> (table racine)</td></tr>
+                <tr><td>users</td><td>Oui</td><td>Non (NULLABLE)</td><td><span class="badge badge-warn">root_admin a NULL</span></td></tr>
+                <tr><td>clients, cases, case_assignments, case_notes</td><td>Oui</td><td>Oui</td><td><span class="badge badge-ok">Bon</span></td></tr>
+                <tr><td>documents, events, tasks, invoices</td><td>Oui</td><td>Oui</td><td><span class="badge badge-ok">Bon</span></td></tr>
+                <tr><td>messages, notifications, audit_logs</td><td>Oui</td><td>Oui</td><td><span class="badge badge-ok">Bon</span></td></tr>
+                <tr><td><strong>event_assignments</strong></td><td><strong>MANQUANT</strong></td><td>—</td><td><span class="badge badge-err">CRITIQUE</span></td></tr>
+                <tr><td>sessions_log</td><td>Oui</td><td>Non (NULLABLE)</td><td><span class="badge badge-warn">A surveiller</span></td></tr>
+                <tr><td>currencies</td><td>—</td><td>—</td><td><span class="badge badge-na">N/A</span> (donnees globales)</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">7.2 Faille critique : event_assignments sans tenant_id</div>
+    <div class="callout callout-danger">
+        <div class="callout-title">Faille d'isolation multi-tenant</div>
+        La table <code>event_assignments</code> lie un evenement a un utilisateur mais <strong>n'a pas de colonne tenant_id</strong>. Cela signifie :<br>
+        <ul class="styled-list">
+            <li>Impossible d'appliquer une RLS basee sur tenant</li>
+            <li>Un utilisateur du tenant A pourrait theoriquement voir les assignations d'evenements du tenant B</li>
+            <li>La jointure avec events.tenant_id est necessaire pour filtrer, mais la RLS ne peut pas faire ca directement</li>
+        </ul>
+        <strong>Action :</strong> Ajouter <code>tenant_id uuid NOT NULL REFERENCES tenants(id)</code> + index (Migration 001).
+    </div>
+
+    <!-- ==================== SECTION 8 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 8</div>
+        <div class="section-title">Chaine d'Audit — Analyse</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="body-text">La table <code>audit_logs</code> possede une excellente structure avec <code>prev_hash</code> / <code>curr_hash</code> pour la chaine de hachage, <code>previous_state</code> / <code>new_state</code> pour le diff, et <code>metadata</code> pour les infos supplementaires. Les fonctions <code>compute_audit_hash</code> et <code>verify_audit_chain</code> sont egalement presentes.</div>
+
+    <div class="subsection-title">8.2 Problemes identifies</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Probleme</th><th>Severite</th><th>Detail</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Tous les hashes sont NULL</strong></td><td><span class="badge badge-err">Critique</span></td><td>Les 35 entrees ont prev_hash=null et curr_hash=null. La chaine d'integrite n'est pas utilisee.</td></tr>
+                <tr><td><strong>user_id NULL</strong></td><td><span class="badge badge-warn">Moyen</span></td><td>Certaines entrees (creation tenant, creation user) ont user_id=null.</td></tr>
+                <tr><td><strong>Pas d'IP</strong></td><td><span class="badge badge-warn">Moyen</span></td><td>Pas de colonne ip_address dans audit_logs</td></tr>
+                <tr><td><strong>Pas de user_agent</strong></td><td><span class="badge badge-warn">Moyen</span></td><td>Pas de colonne user_agent dans audit_logs</td></tr>
+                <tr><td><strong>Naming incoherent</strong></td><td><span class="badge badge-na">Faible</span></td><td>La colonne entity sert de resource_type, mais le naming ne correspond pas aux instructions.md</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ==================== SECTION 9 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 9</div>
+        <div class="section-title">Comparaison avec instructions.md — Ecarts</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">9.1 Elements compatibles (reutilisables)</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Element</th><th>Statut</th><th>Commentaire</th></tr></thead>
+            <tbody>
+                <tr><td>Table tenants</td><td><span class="badge badge-ok">Bon</span></td><td>Bonne structure</td></tr>
+                <tr><td>Table users</td><td><span class="badge badge-ok">Bon</span></td><td>Avec securite (locked_until, failed_login_attempts)</td></tr>
+                <tr><td>Tables clients, cases, documents, events, invoices</td><td><span class="badge badge-ok">Bon</span></td><td>Structure adequate</td></tr>
+                <tr><td>Table audit_logs</td><td><span class="badge badge-ok">Bon</span></td><td>Excellente structure avec chaine de hachage</td></tr>
+                <tr><td>14 fonctions RPC</td><td><span class="badge badge-ok">Bon</span></td><td>Couvrant securite, audit, sessions</td></tr>
+                <tr><td>2 buckets Storage</td><td><span class="badge badge-ok">Bon</span></td><td>Documents (private) + Logos (public)</td></tr>
+                <tr><td>8 utilisateurs + 3 tenants</td><td><span class="badge badge-ok">Bon</span></td><td>Donnees de demo preservees</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">9.2 Colonnes manquantes (Migration ADD COLUMN)</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Table</th><th>Colonne</th><th>Type</th><th>Phase</th></tr></thead>
+            <tbody>
+                <tr><td><strong>event_assignments</strong></td><td><code>tenant_id</code></td><td>uuid NOT NULL</td><td><span class="badge badge-err">CRITIQUE</span> (Phase 3)</td></tr>
+                <tr><td>cases</td><td><code>reference</code></td><td>varchar(50)</td><td>Phase 9</td></tr>
+                <tr><td>cases</td><td><code>case_type</code></td><td>varchar(100)</td><td>Phase 9</td></tr>
+                <tr><td>cases</td><td><code>priority</code></td><td>varchar(20)</td><td>Phase 9</td></tr>
+                <tr><td>cases</td><td><code>assigned_lawyer_id</code></td><td>uuid FK</td><td>Phase 9</td></tr>
+                <tr><td>cases</td><td><code>next_deadline</code></td><td>timestamptz</td><td>Phase 9</td></tr>
+                <tr><td>clients</td><td><code>responsible_lawyer_id</code></td><td>uuid FK</td><td>Phase 8</td></tr>
+                <tr><td>clients</td><td><code>status</code></td><td>varchar(20)</td><td>Phase 8</td></tr>
+                <tr><td>clients</td><td><code>last_activity_at</code></td><td>timestamptz</td><td>Phase 8</td></tr>
+                <tr><td>notifications</td><td><code>category</code></td><td>varchar(50)</td><td>Phase 12</td></tr>
+                <tr><td>notifications</td><td><code>resource_type</code></td><td>varchar(50)</td><td>Phase 12</td></tr>
+                <tr><td>notifications</td><td><code>resource_id</code></td><td>uuid</td><td>Phase 12</td></tr>
+                <tr><td>audit_logs</td><td><code>ip_address</code></td><td>varchar(45)</td><td>Phase 11</td></tr>
+                <tr><td>audit_logs</td><td><code>user_agent</code></td><td>text</td><td>Phase 11</td></tr>
+                <tr><td>documents</td><td><code>mime_type</code></td><td>varchar(100)</td><td>Phase 10</td></tr>
+                <tr><td>documents</td><td><code>version</code></td><td>integer</td><td>Phase 10</td></tr>
+                <tr><td>documents</td><td><code>is_confidential</code></td><td>boolean</td><td>Phase 20</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">9.3 Nouvelles entites necessaires</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Entite</th><th>Justification</th><th>Phase</th></tr></thead>
+            <tbody>
+                <tr><td><code>document_versions</code></td><td>Historique de versionnage des documents</td><td>Phase 10</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">9.4 Contraintes manquantes</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Table</th><th>Contrainte CHECK</th><th>Valeurs autorisees</th></tr></thead>
+            <tbody>
+                <tr><td>users.role</td><td>chk_user_role</td><td>root_admin, firm_admin, lawyer, secretary, collaborator, accountant, trainee</td></tr>
+                <tr><td>cases.status</td><td>chk_case_status</td><td>new, open, in_progress, pending, closed, archived</td></tr>
+                <tr><td>invoices.status</td><td>chk_invoice_status</td><td>draft, sent, paid, overdue, cancelled</td></tr>
+                <tr><td>events.criticality</td><td>chk_event_criticality</td><td>low, normal, high, urgent</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">9.5 Relations manquantes</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Relation</th><th>Type</th><th>Justification</th></tr></thead>
+            <tbody>
+                <tr><td>event_assignments.tenant_id → tenants.id</td><td>FK + index</td><td><strong>CRITIQUE</strong> — Isolation multi-tenant</td></tr>
+                <tr><td>cases.assigned_lawyer_id → users.id</td><td>FK</td><td>Avocat responsable (Phase 9)</td></tr>
+                <tr><td>clients.responsible_lawyer_id → users.id</td><td>FK</td><td>Avocat responsable (Phase 8)</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="subsection-title">9.6 Index recommandes</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Table</th><th>Colonnes</th><th>Requete typique</th></tr></thead>
+            <tbody>
+                <tr><td>users</td><td>(tenant_id, role)</td><td>Liste utilisateurs par cabinet et role</td></tr>
+                <tr><td>cases</td><td>(tenant_id, status)</td><td>Filtre dossiers par statut</td></tr>
+                <tr><td>cases</td><td>(tenant_id, client_id)</td><td>Dossiers d'un client</td></tr>
+                <tr><td>clients</td><td>(tenant_id, full_name)</td><td>Recherche clients</td></tr>
+                <tr><td>documents</td><td>(tenant_id, case_id)</td><td>Documents d'un dossier</td></tr>
+                <tr><td>events</td><td>(tenant_id, start_time)</td><td>Evenements par date</td></tr>
+                <tr><td>notifications</td><td>(user_id, read)</td><td>Notifications non lues</td></tr>
+                <tr><td>audit_logs</td><td>(tenant_id, timestamp)</td><td>Historique d'audit</td></tr>
+                <tr><td>audit_logs</td><td>(entity, entity_id)</td><td>Suivi d'une entite</td></tr>
+                <tr><td>messages</td><td>(tenant_id, receiver_id, read_status)</td><td>Messages non lus</td></tr>
+                <tr><td>sessions_log</td><td>(user_id, started_at)</td><td>Historique sessions</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ==================== SECTION 10 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 10</div>
+        <div class="section-title">Plan de Migrations (non-destructives)</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="body-text">Les 4 migrations suivantes sont <strong>entierement non-destructives</strong>. Elles preservent toutes les donnees existantes et utilisent uniquement des instructions ADD, CREATE, ALTER compatibles avec les donnees en place.</div>
+
+    <div class="subsection-title">Migration 001 — Correction critique : tenant_id sur event_assignments</div>
+    <div class="code-block">ALTER TABLE event_assignments 
+ADD COLUMN tenant_id uuid NOT NULL DEFAULT 
+  '00000000-0000-0000-0000-000000000000'::uuid;
+
+UPDATE event_assignments ea
+SET tenant_id = e.tenant_id
+FROM events e WHERE ea.event_id = e.id;
+
+ALTER TABLE event_assignments ALTER COLUMN tenant_id DROP DEFAULT;
+ALTER TABLE event_assignments 
+ADD CONSTRAINT fk_event_assignments_tenant 
+FOREIGN KEY (tenant_id) REFERENCES tenants(id);
+CREATE INDEX idx_event_assignments_tenant_id 
+  ON event_assignments(tenant_id);</div>
+
+    <div class="subsection-title">Migration 002 — Contraintes CHECK</div>
+    <div class="code-block">ALTER TABLE users ADD CONSTRAINT chk_user_role 
+  CHECK (role IN ('root_admin','firm_admin','lawyer',
+    'secretary','collaborator','accountant','trainee'));
+
+ALTER TABLE cases ADD CONSTRAINT chk_case_status 
+  CHECK (status IN ('new','open','in_progress',
+    'pending','closed','archived'));
+
+ALTER TABLE invoices ADD CONSTRAINT chk_invoice_status 
+  CHECK (status IN ('draft','sent','paid',
+    'overdue','cancelled'));
+
+ALTER TABLE events ADD CONSTRAINT chk_event_criticality 
+  CHECK (criticality IN ('low','normal','high','urgent'));</div>
+
+    <div class="subsection-title">Migration 003 — Colonnes manquantes pour V2</div>
+    <div class="code-block">-- Cases
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS reference varchar(50);
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS case_type varchar(100);
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS priority varchar(20) DEFAULT 'normal';
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS assigned_lawyer_id uuid REFERENCES users(id);
+ALTER TABLE cases ADD COLUMN IF NOT EXISTS next_deadline timestamptz;
+
+-- Clients
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS responsible_lawyer_id uuid REFERENCES users(id);
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS status varchar(20) DEFAULT 'active';
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS last_activity_at timestamptz;
+
+-- Notifications
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS category varchar(50);
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS resource_type varchar(50);
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS resource_id uuid;
+
+-- Audit logs
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address varchar(45);
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_agent text;
+
+-- Documents
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS mime_type varchar(100);
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS version integer DEFAULT 1;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS is_confidential boolean DEFAULT false;</div>
+
+    <div class="subsection-title">Migration 004 — Index performance</div>
+    <div class="code-block">CREATE INDEX IF NOT EXISTS idx_users_tenant_role ON users(tenant_id, role);
+CREATE INDEX IF NOT EXISTS idx_cases_tenant_status ON cases(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_cases_tenant_client ON cases(tenant_id, client_id);
+CREATE INDEX IF NOT EXISTS idx_clients_tenant_name ON clients(tenant_id, full_name);
+CREATE INDEX IF NOT EXISTS idx_documents_tenant_case ON documents(tenant_id, case_id);
+CREATE INDEX IF NOT EXISTS idx_events_tenant_start ON events(tenant_id, start_time);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, read);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_tenant_ts ON audit_logs(tenant_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity, entity_id);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver_read ON messages(tenant_id, receiver_id, read_status);
+CREATE INDEX IF NOT EXISTS idx_sessions_log_user ON sessions_log(user_id, started_at);</div>
+
+    <!-- ==================== SECTION 11 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 11</div>
+        <div class="section-title">Script SQL a Executer dans le Dashboard</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="body-text">Pour completer l'audit (RLS, triggers, fonctions, index, contraintes existantes), veuillez executer ce script dans le <strong>SQL Editor</strong> du Supabase Dashboard et fournir le resultat :</div>
+
+    <div class="code-block">-- RLS STATUS
+SELECT relname AS table_name, relrowsecurity AS rls_enabled,
+  relforcerowsecurity AS rls_forced
+FROM pg_class 
+WHERE relnamespace = 'public'::regnamespace 
+  AND relkind = 'r' 
+ORDER BY relname;
+
+-- RLS POLICIES
+SELECT schemaname, tablename, policyname, permissive, roles,
+  cmd, qual, with_check
+FROM pg_policies 
+WHERE schemaname = 'public' 
+ORDER BY tablename, policyname;
+
+-- TRIGGERS
+SELECT event_object_table AS table_name, trigger_name,
+  event_manipulation, action_timing, action_statement
+FROM information_schema.triggers 
+WHERE trigger_schema = 'public' 
+ORDER BY event_object_table, trigger_name;
+
+-- FUNCTIONS (public schema)
+SELECT p.proname AS name, 
+  pg_get_function_arguments(p.oid) AS args,
+  pg_get_function_result(p.oid) AS returns, 
+  prosrc AS source
+FROM pg_proc p 
+JOIN pg_namespace n ON p.pronamespace = n.oid
+WHERE n.nspname = 'public' 
+ORDER BY p.proname;
+
+-- INDEXES
+SELECT schemaname, tablename, indexname, indexdef
+FROM pg_indexes 
+WHERE schemaname = 'public' 
+ORDER BY tablename, indexname;
+
+-- CONSTRAINTS (UNIQUE + CHECK)
+SELECT tc.table_name, tc.constraint_name, 
+  tc.constraint_type, cc.check_clause
+FROM information_schema.table_constraints tc
+LEFT JOIN information_schema.check_constraints cc 
+  ON tc.constraint_name = cc.constraint_name
+WHERE tc.table_schema = 'public' 
+  AND tc.constraint_type IN ('UNIQUE', 'CHECK')
+ORDER BY tc.table_name;
+
+-- ENUM TYPES
+SELECT t.typname, e.enumlabel, e.enumsortorder
+FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid 
+ORDER BY t.typname, e.enumsortorder;
+
+-- STORAGE POLICIES
+SELECT * FROM storage.policies ORDER BY bucket_id, name;</div>
+
+    <!-- ==================== SECTION 12 ==================== -->
+    <div class="chapter-header">
+        <div class="section-tag">Section 12</div>
+        <div class="section-title">Resume Executif</div>
+        <div class="divider"></div>
+    </div>
+
+    <div class="subsection-title">Forces identifiees</div>
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="summary-card-label">Architecture multi-tenant</div>
+            <div class="summary-card-value success">En place</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-card-label">Chaine d'audit</div>
+            <div class="summary-card-value success">Structure OK</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-card-label">Fonctions RPC</div>
+            <div class="summary-card-value" style="color:var(--c-accent);">14 fonctions</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-card-label">Donnees de demo</div>
+            <div class="summary-card-value" style="color:var(--c-accent);">Preservees</div>
+        </div>
+    </div>
+
+    <div class="body-text">Le schema existant presente une architecture solide avec isolation multi-tenant, un systeme d'audit complet avec chaine de hachage, 14 fonctions RPC couvrant securite, audit et sessions, ainsi que des tables de securite (sessions_log, rate_limit_buckets, csp_violations). L'isolation des documents par tenant dans le Storage est egalement une bonne pratique en place.</div>
+
+    <div class="subsection-title">Faiblesses critiques</div>
+    <div class="callout callout-danger">
+        <div class="callout-title">5 points critiques a corriger</div>
+        <ol class="numbered-list">
+            <li><strong>event_assignments sans tenant_id</strong> — Faille d'isolation multi-tenant permettant un acces cross-tenant theorique</li>
+            <li><strong>Chaine de hachage d'audit non activee</strong> — Tous les 35 hashes sont NULL, l'integrite n'est pas verifiable</li>
+            <li><strong>MFA a 0% d'adoption</strong> — Aucun des 8 utilisateurs n'a active l'authentification multi-facteurs</li>
+            <li><strong>RLS policies non verifiables</strong> — Confirmation par SQL requise (script Section 11)</li>
+            <li><strong>Storage policies non verifiables</strong> — API retourne 404, verification SQL requise</li>
+        </ol>
+    </div>
+
+    <div class="subsection-title">Ameliorations prioritaires</div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>#</th><th>Action</th><th>Migration</th><th>Priorite</th></tr></thead>
+            <tbody>
+                <tr><td>1</td><td>Ajouter tenant_id a event_assignments</td><td>001</td><td><span class="badge badge-err">CRITIQUE</span></td></tr>
+                <tr><td>2</td><td>Verifier et renforcer les RLS</td><td>Script S11</td><td><span class="badge badge-err">CRITIQUE</span></td></tr>
+                <tr><td>3</td><td>Activer la chaine de hachage d'audit</td><td>Backfill + trigger</td><td><span class="badge badge-err">HAUTE</span></td></tr>
+                <tr><td>4</td><td>Ajouter les 17 colonnes manquantes</td><td>003</td><td><span class="badge badge-warn">MOYENNE</span></td></tr>
+                <tr><td>5</td><td>Ajouter les contraintes CHECK</td><td>002</td><td><span class="badge badge-warn">MOYENNE</span></td></tr>
+                <tr><td>6</td><td>Creer les 11 index manquants</td><td>004</td><td><span class="badge badge-warn">MOYENNE</span></td></tr>
+                <tr><td>7</td><td>Definir les Storage policies</td><td>A determiner</td><td><span class="badge badge-warn">MOYENNE</span></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page-footer">
+        Rapport genere automatiquement — Les migrations proposees sont non-destructives et preservent toutes les donnees existantes.<br>
+        Jurislink V2 — Phase 0 Audit — 2025-06-18
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
+  const auth = await authenticate(request, 'user', 'view')
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get('tenantId')
     const role = searchParams.get('role')
     const search = searchParams.get('search')
     const includeInactive = searchParams.get('includeInactive') === 'true'
@@ -14,8 +17,14 @@ export async function GET(request: Request) {
 
     const includeRootAdmin = searchParams.get('includeRootAdmin') === 'true'
     const where: Record<string, unknown> = {}
-    if (tenantId) {
-      where.tenantId = tenantId
+
+    // Tenant isolation: non-root_admin users can only see their own tenant's users
+    const effectiveTenantId = auth.role === 'root_admin'
+      ? searchParams.get('tenantId')
+      : auth.tenantId
+
+    if (effectiveTenantId) {
+      where.tenantId = effectiveTenantId
       // Never expose root_admin to tenant-scoped queries
       if (role) where.role = role
       else where.role = { not: 'root_admin' }
@@ -68,6 +77,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await authenticate(request, 'user', 'create')
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const body = await request.json()

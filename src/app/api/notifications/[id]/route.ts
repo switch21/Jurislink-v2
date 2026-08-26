@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function PUT(
   _request: Request,

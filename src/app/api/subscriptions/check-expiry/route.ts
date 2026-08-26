@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { differenceInDays } from 'date-fns'
+import { requireRootAdmin } from '@/lib/auth-server'
 
 const ALERT_DAYS = [30, 15, 10, 5, 1]
 
-export async function POST() {
+export async function POST(request: Request) {
+  const auth = await requireRootAdmin(request)
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const activeSubs = await db.subscription.findMany({

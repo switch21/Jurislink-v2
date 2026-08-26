@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { isErrorResponse, requireRootAdmin } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
+  const auth = await requireRootAdmin(request)
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
@@ -38,6 +42,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRootAdmin(request)
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const body = await request.json()

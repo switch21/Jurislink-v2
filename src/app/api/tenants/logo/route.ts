@@ -4,12 +4,16 @@ import path from 'path'
 import sharp from 'sharp'
 import { getDb } from '@/lib/db'
 import { randomUUID } from 'crypto'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'logos')
 
 export async function POST(request: Request) {
+  const auth = await authenticate(request, 'tenant', 'update')
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const formData = await request.formData()

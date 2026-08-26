@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
+  const auth = await authenticate(request, 'dashboard', 'read')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
@@ -415,6 +418,74 @@ export async function GET(request: Request) {
       orderBy: { startTime: 'asc' },
     })
 
+    // === Documents en attente de signature/validation ===
+    const pendingDocuments = await db.document.findMany({
+      where: {
+        tenantId,
+        status: { in: ['en_attente', 'brouillon'] },
+      },
+      include: {
+        case: { select: { reference: true, title: true } },
+        uploadedBy: { select: { fullName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    })
+    const pendingDocumentsFormatted = pendingDocuments.map(d => ({
+      id: d.id,
+      fileName: d.fileName,
+      status: d.status,
+      createdAt: d.createdAt,
+      caseReference: d.case?.reference ?? null,
+      caseTitle: d.case?.title ?? null,
+      uploadedBy: d.uploadedBy?.fullName ?? null,
+    }))
+    const pendingDocumentsCount = await db.document.count({
+      where: {
+        tenantId,
+        status: { in: ['en_attente', 'brouillon'] },
+      },
+    })
+
+    // === Dossiers sans échéance (actifs sans événement à venir) ===
+    const activeCasesWithoutDeadlines = await db.case.findMany({
+      where: {
+        tenantId,
+        status: { in: ['nouveau', 'ouvert', 'en_cours', 'en_attente'] },
+        events: {
+          none: {
+            startTime: { gte: now },
+          },
+        },
+      },
+      include: {
+        client: { select: { fullName: true } },
+        _count: { select: { tasks: { where: { status: { not: 'terminee' } } } } },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+    })
+    const casesWithoutDeadlinesFormatted = activeCasesWithoutDeadlines.map(c => ({
+      id: c.id,
+      reference: c.reference,
+      title: c.title,
+      clientName: c.client?.fullName ?? null,
+      status: c.status,
+      updatedAt: c.updatedAt,
+      pendingTasksCount: c._count.tasks,
+    }))
+    const casesWithoutDeadlinesCount = await db.case.count({
+      where: {
+        tenantId,
+        status: { in: ['nouveau', 'ouvert', 'en_cours', 'en_attente'] },
+        events: {
+          none: {
+            startTime: { gte: now },
+          },
+        },
+      },
+    })
+
     return NextResponse.json({
       totalCases,
       activeCases,
@@ -461,6 +532,10 @@ export async function GET(request: Request) {
         audiences,
         facturesEmises,
       },
+      pendingDocuments: pendingDocumentsFormatted,
+      pendingDocumentsCount,
+      casesWithoutDeadlines: casesWithoutDeadlinesFormatted,
+      casesWithoutDeadlinesCount,
     })
   } catch (error) {
     console.error('Dashboard stats error:', error)

@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { hash, compare } from 'bcryptjs'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await authenticate(request, 'user', 'update')
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const { id } = await params

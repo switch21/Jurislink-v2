@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { requireRootAdmin } from '@/lib/auth-server'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireRootAdmin(request)
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const currencies = await db.currency.findMany({
@@ -18,6 +21,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRootAdmin(request)
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const body = await request.json()

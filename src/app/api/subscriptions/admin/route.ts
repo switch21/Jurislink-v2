@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { isErrorResponse, requireRootAdmin } from '@/lib/auth-server'
 
 function getPeriodDates(billingPeriod: string, fromDate?: Date) {
   const start = fromDate ? new Date(fromDate) : new Date()
@@ -25,6 +26,9 @@ function getPeriodDates(billingPeriod: string, fromDate?: Date) {
 }
 
 export async function PUT(request: Request) {
+  const auth = await requireRootAdmin(request)
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const body = await request.json()

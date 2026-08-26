@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
+  const auth = await authenticate(request, 'tasks', 'read')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
@@ -108,6 +111,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await authenticate(request, 'tasks', 'create')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const body = await request.json()

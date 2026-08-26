@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 interface TaskTemplate {
   title: string
@@ -28,6 +29,8 @@ const WORKFLOW_TEMPLATES: Record<string, TaskTemplate[]> = {
 }
 
 export async function POST(request: Request) {
+  const auth = await authenticate(request, 'workflow', 'create')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const body = await request.json()

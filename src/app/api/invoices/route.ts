@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 const TYPE_PREFIXES: Record<string, string> = {
   facture: 'FAC',
@@ -26,6 +27,8 @@ async function generateInvoiceNumber(db: ReturnType<typeof getDb>, type: string,
 }
 
 export async function GET(request: Request) {
+  const auth = await authenticate(request, 'invoices', 'read')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
@@ -69,6 +72,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await authenticate(request, 'invoices', 'create')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const body = await request.json()

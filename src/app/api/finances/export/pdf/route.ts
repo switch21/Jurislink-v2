@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import PDFDocument from 'pdfkit'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 const COLORS = { primary: '#1E5A8A', dark: '#111827', gray: '#6B7280', lightGray: '#F3F4F6', border: '#D1D5DB', white: '#FFFFFF', green: '#059669', red: '#DC2626' }
 
@@ -12,6 +13,8 @@ function fmtD(d: Date | string) {
 }
 
 export async function GET(request: Request) {
+  const auth = await authenticate(request, 'finances', 'read')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)

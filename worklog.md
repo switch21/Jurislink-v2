@@ -212,3 +212,34 @@ Stage Summary:
 - Endpoint fonctionne correctement : 3 abonnements vérifiés, 0 action
 - DATABASE_URL corrigé dans .env (SQLite → PostgreSQL Supabase)
 - Aucune erreur dans la logique de vérification des abonnements
+
+---
+Task ID: 2-admin
+Agent: RBAC Agent
+Task: Apply RBAC authentication + permission checks to 14 critical API route files
+
+Work Log:
+- Added `import { authenticate, isErrorResponse, requireRootAdmin } from '@/lib/auth-server'` to 14 route files
+- admin/dashboard/route.ts — GET: `requireRootAdmin`
+- users/route.ts — GET: `authenticate('user','view')` + tenant isolation (non-root_admin forced to `auth.tenantId`); POST: `authenticate('user','create')`
+- users/[id]/route.ts — GET/PUT/DELETE: `authenticate('user','view'/'update'/'delete')`; preserved existing root_admin protection in PUT/DELETE
+- users/[id]/password/route.ts — PUT: `authenticate('user','update')`
+- roles/route.ts — GET: `authenticate('role','view')`; POST: `authenticate('role','create')`
+- roles/[id]/route.ts — GET/PUT/DELETE: `authenticate('role','view'/'update'/'delete')`; preserved system role & assigned-user deletion guards
+- permissions/route.ts — GET: `authenticate('role','view')`; POST: `authenticate('role','manage')`
+- tenants/route.ts — GET/POST: `requireRootAdmin`
+- tenants/[id]/route.ts — GET/PUT/DELETE: `requireRootAdmin`
+- tenants/logo/route.ts — POST: `authenticate('tenant','update')`
+- subscription-plans/route.ts — GET/POST: `requireRootAdmin`
+- subscription-plans/[id]/route.ts — all methods: `requireRootAdmin`; preserved active-subscription deletion guard
+- subscriptions/admin/route.ts — PUT: `requireRootAdmin`
+- subscriptions/route.ts — GET: `authenticate('subscription','view')` + tenant isolation; POST: `authenticate('subscription','manage')`
+- All existing business logic preserved unchanged
+- All existing root_admin protection guards kept intact
+- Lint passes (0 new errors; 4 pre-existing errors in inspect-db.js and page.tsx)
+
+Stage Summary:
+- 14 route files now enforce RBAC authentication at the top of each handler
+- root_admin bypasses all permission checks (built into authenticate helper)
+- Tenant isolation applied to users GET (list) and subscriptions GET — non-root_admin users cannot override tenantId via query params
+- No modifications to login or check-expiry routes

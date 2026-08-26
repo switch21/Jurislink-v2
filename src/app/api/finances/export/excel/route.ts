@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import ExcelJS from 'exceljs'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
+  const auth = await authenticate(request, 'finances', 'read')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)

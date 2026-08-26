@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import PDFDocument from 'pdfkit'
 import path from 'path'
 import fs from 'fs'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 const TVA_RATE = 0.1925
 const COLORS = {

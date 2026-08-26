@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 async function recalcInvoiceStatus(db: ReturnType<typeof getDb>, invoiceId: string) {
   const payments = await db.payment.findMany({
@@ -28,6 +29,8 @@ async function recalcInvoiceStatus(db: ReturnType<typeof getDb>, invoiceId: stri
 }
 
 export async function GET(request: Request) {
+  const auth = await authenticate(request, 'payments', 'read')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
@@ -64,6 +67,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await authenticate(request, 'payments', 'create')
+  if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
     const body = await request.json()

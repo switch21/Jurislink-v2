@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { isErrorResponse, requireRootAdmin } from '@/lib/auth-server'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireRootAdmin(request)
+  if (isErrorResponse(auth)) return auth
+
   const db = getDb()
   try {
     const [

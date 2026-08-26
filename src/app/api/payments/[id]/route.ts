@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 async function recalcInvoiceStatus(db: ReturnType<typeof getDb>, invoiceId: string) {
   const payments = await db.payment.findMany({
