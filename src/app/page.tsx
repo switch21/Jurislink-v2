@@ -2500,7 +2500,13 @@ function SettingsView() {
                 <div className="space-y-1.5"><Label className="text-xs">Pays</Label><Input value={cabinetForm.country || tenantInfo.country || ''} onChange={e => setCabinetForm(f => ({ ...f, country: e.target.value }))} className="h-10" /></div>
                 <div className="space-y-1.5"><Label className="text-xs">Devise</Label><Input value={cabinetForm.currencyCode || tenantInfo.currencyCode || 'XAF'} onChange={e => setCabinetForm(f => ({ ...f, currencyCode: e.target.value }))} className="h-10" /></div>
               </div>
-              <Button size="sm" className="bg-[#1E5A8A] hover:bg-[#164070]" disabled={updateTenant.isPending} onClick={() => updateTenant.mutate(cabinetForm)}>
+              <Button size="sm" className="bg-[#1E5A8A] hover:bg-[#164070]" disabled={updateTenant.isPending} onClick={() => {
+                const clean: Record<string, string> = {}
+                for (const [k, v] of Object.entries(cabinetForm)) {
+                  if (v) clean[k] = v
+                }
+                updateTenant.mutate(clean)
+              }}>
                 {updateTenant.isPending ? <RefreshCw className="size-3.5 mr-1.5 animate-spin" /> : <Check className="size-3.5 mr-1.5" />}
                 Enregistrer les modifications
               </Button>
