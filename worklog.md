@@ -198,3 +198,34 @@ Stage Summary:
 - Root cause: process.cwd() is read-only in Vercel/Lambda (/var/task/)
 - Fix: centralized getUploadsDir() uses /tmp/jurislink-uploads in serverless, cwd/uploads locally
 - Commit: fe041e2, pushed to main
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Integrate Supabase Storage bucket for document uploads
+
+Work Log:
+- Installed @supabase/supabase-js@2.112.4
+- Refactored src/lib/supabase.ts to lazy-init (no crash when env vars missing)
+- Created src/lib/storage.ts — unified storage abstraction:
+  - uploadFile() → Supabase Storage if configured, else local /tmp fallback
+  - downloadFile() → auto-detects sb:// prefix for Supabase vs local
+  - deleteFile() → same auto-detection
+  - Files in Supabase stored as sb://{tenantId}/{uuid}.{ext}
+  - Files locally stored as {tenantId}/{uuid}.{ext} in uploads dir
+- Updated all 7 API routes to use storage.ts:
+  - /api/documents (POST upload)
+  - /api/documents/[id] (GET, PUT, DELETE)
+  - /api/documents/[id]/download (GET)
+  - /api/documents/[id]/versions (POST)
+  - /api/documents/[id]/versions/[versionId]/download (GET)
+  - /api/portal/documents/[id]/download (GET)
+  - /api/tenants/logo (POST)
+- Removed now-unused src/lib/uploads.ts
+
+Stage Summary:
+- New documents stored in Supabase 'documents' bucket when env vars present
+- Existing local files still downloadable (backward compatible)
+- Tenant isolation via folder prefix (tenantId/uuid.ext)
+- Required env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+- Commit: acffadd, pushed to main
