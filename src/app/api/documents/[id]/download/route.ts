@@ -3,7 +3,7 @@ import { getDb } from '@/lib/db'
 import { readFile } from 'fs/promises'
 import path from 'path'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
-import { stat } from 'fs/promises'
+import { getUploadsDir } from '@/lib/uploads'
 
 export async function GET(
   request: Request,
@@ -20,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
     }
 
-    const filePath = path.join(process.cwd(), 'uploads', doc.filePath)
+    const filePath = path.join(await getUploadsDir(), doc.filePath)
     let fileBuffer: Buffer
     try {
       fileBuffer = await readFile(filePath)

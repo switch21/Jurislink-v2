@@ -4,12 +4,11 @@
  */
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
-
-const UPLOADS_DIR = path.join(process.cwd(), 'uploads')
+import { getUploadsDir } from '@/lib/uploads'
 
 export async function GET(
   request: Request,
@@ -62,10 +61,10 @@ export async function POST(
       return NextResponse.json({ error: 'Fichier requis' }, { status: 400 })
     }
 
-    await mkdir(UPLOADS_DIR, { recursive: true })
+    const uploadsDir = await getUploadsDir()
     const ext = path.extname(file.name)
     const uniqueName = `${randomUUID()}${ext}`
-    const filePath = path.join(UPLOADS_DIR, uniqueName)
+    const filePath = path.join(uploadsDir, uniqueName)
     const bytes = await file.arrayBuffer()
     await writeFile(filePath, Buffer.from(bytes))
 

@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { readFile } from 'fs/promises'
 import path from 'path'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { getUploadsDir } from '@/lib/uploads'
 
 export async function GET(
   request: Request,
@@ -19,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: 'Version non trouvée' }, { status: 404 })
     }
 
-    const filePath = path.join(process.cwd(), 'uploads', version.filePath)
+    const filePath = path.join(await getUploadsDir(), version.filePath)
     let fileBuffer: Buffer
     try {
       fileBuffer = await readFile(filePath)

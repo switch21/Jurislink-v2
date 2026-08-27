@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server'
-import { writeFile } from 'fs/promises'
+import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import sharp from 'sharp'
 import { getDb } from '@/lib/db'
 import { randomUUID } from 'crypto'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { getUploadsDir } from '@/lib/uploads'
 
 const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'logos')
 
 export async function POST(request: Request) {
   const auth = await authenticate(request, 'tenant', 'update')
@@ -43,9 +43,13 @@ export async function POST(request: Request) {
           .png()
           .toBuffer()
 
+    const uploadsDir = await getUploadsDir()
+    const logoDir = path.join(uploadsDir, 'logos')
+    await mkdir(logoDir, { recursive: true })
+
     const ext = file.type === 'image/svg+xml' ? 'svg' : 'png'
     const filename = `${tenantId}_${randomUUID().slice(0, 8)}.${ext}`
-    const filepath = path.join(UPLOAD_DIR, filename)
+    const filepath = path.join(logoDir, filename)
 
     await writeFile(filepath, processed)
 

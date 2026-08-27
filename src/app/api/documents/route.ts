@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { getUploadsDir } from '@/lib/uploads'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'document', 'view')
@@ -102,8 +103,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const uploadsDir = path.join(process.cwd(), 'uploads')
-    await mkdir(uploadsDir, { recursive: true })
+    const uploadsDir = await getUploadsDir()
 
     const ext = path.extname(file.name)
     const uniqueName = `${randomUUID()}${ext}`

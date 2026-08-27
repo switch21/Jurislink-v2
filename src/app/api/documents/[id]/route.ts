@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { unlink } from 'fs/promises'
 import path from 'path'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { getUploadsDir } from '@/lib/uploads'
 
 export async function GET(
   request: Request,
@@ -87,7 +88,7 @@ export async function DELETE(
 
     // Delete file from disk
     if (document.filePath) {
-      const absolutePath = path.join(process.cwd(), 'uploads', document.filePath)
+      const absolutePath = path.join(await getUploadsDir(), document.filePath)
       try {
         await unlink(absolutePath)
       } catch (fsError) {

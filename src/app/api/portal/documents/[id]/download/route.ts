@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { readFile } from 'fs/promises'
 import path from 'path'
+import { getUploadsDir } from '@/lib/uploads'
 
 export async function GET(
   request: Request,
@@ -34,7 +35,7 @@ export async function GET(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const filePath = path.join(process.cwd(), 'uploads', doc.filePath)
+    const filePath = path.join(await getUploadsDir(), doc.filePath)
     let fileBuffer: Buffer
     try {
       fileBuffer = await readFile(filePath)
