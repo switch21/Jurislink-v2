@@ -503,9 +503,8 @@ function LoginPage() {
             </>}
             {tab === 'portal' && <>
               <CardHeader className="text-center pb-2 pt-8">
-                <div className="mx-auto mb-4 flex items-center justify-center gap-3">
-                  <div className="size-12 rounded-xl bg-[#E8F0F8] flex items-center justify-center"><Globe className="size-6 text-[#1E5A8A]" /></div>
-                  <span className="text-xl font-bold tracking-tight"><span className="text-[#1E5A8A]">Juris</span><span className="text-[#C8A45D]">Link</span></span>
+                <div className="mx-auto mb-4 flex items-center justify-center">
+                  <img src="/splash.png" alt="JurisLink" className="h-16 w-auto object-contain" />
                 </div>
                 <CardDescription className="text-sm mt-1 text-[#6B7280]">Espace client — Accédez à vos dossiers</CardDescription>
               </CardHeader>
@@ -515,12 +514,8 @@ function LoginPage() {
                   <div className="space-y-2"><Label htmlFor="portal-password">Mot de passe</Label><div className="relative"><Input id="portal-password" type={portalShowPw ? 'text' : 'password'} placeholder="••••••••" value={portalPassword} onChange={e => setPortalPassword(e.target.value)} className="h-11 rounded-lg border-[#E5E7EB] bg-white pr-10" /><button type="button" onClick={() => setPortalShowPw(!portalShowPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors" tabIndex={-1}>{portalShowPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></div>
                   <Button type="submit" className="w-full h-11 bg-[#1E5A8A] hover:bg-[#164070] text-white rounded-lg font-medium" disabled={portalLoading}>{portalLoading ? <RefreshCw className="size-4 animate-spin" /> : 'Accéder à mon espace'}</Button>
                 </form>
-                <div className="mt-4 text-center space-y-2">
+                <div className="mt-4 text-center">
                   <button type="button" onClick={() => toast.info('Fonctionnalité bientôt disponible')} className="text-xs text-[#1E5A8A] hover:underline">Mot de passe oublié ?</button>
-                  <div className="text-[10px] text-[#9CA3AF] bg-[#F9FAFB] rounded-lg px-3 py-2">
-                    <p className="font-medium text-[#6B7280] mb-0.5">Compte démo :</p>
-                    <p>contact@camara.cm — JurisLink2025</p>
-                  </div>
                 </div>
               </CardContent>
               <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-[#9CA3AF]">Espace réservé aux clients</p></CardFooter>
@@ -4943,8 +4938,8 @@ function PortalSidebar() {
   return (<>
     <aside className='hidden lg:flex fixed top-0 left-0 z-40 h-full bg-white flex-col w-[260px] border-r border-[#E5E7EB] overflow-hidden'>
       <div className='flex items-center gap-3 px-4 h-16 border-b border-[#E5E7EB] shrink-0'>
-        {portalUser?.tenant?.logoUrl ? <img src={portalUser.tenant.logoUrl} alt={tenantName} className='size-8 rounded-lg shrink-0 object-cover' /> : <div className='size-8 rounded-lg bg-[#1E5A8A] flex items-center justify-center shrink-0'><Scale className='size-4 text-white' /></div>}
-        <div className='min-w-0'><p className='text-sm font-bold truncate text-[#111827]'>{tenantName}</p><p className='text-[10px] text-[#C8A45D] font-medium'>Espace client</p></div>
+        <img src="/icon.png" alt="JurisLink" className='size-8 rounded-lg shrink-0 object-cover' />
+        <div className='min-w-0'><span className='text-lg font-bold tracking-tight whitespace-nowrap'><span className='text-[#1E5A8A]'>Juris</span><span className='text-[#C8A45D]'>Link</span></span><p className='text-[10px] text-[#9CA3AF]'>{tenantName} · Espace client</p></div>
       </div>
       <ScrollArea className='flex-1 min-h-0 py-4 custom-scrollbar'>{navContent}</ScrollArea>
       <div className='p-4 border-t border-[#E5E7EB] shrink-0'>
@@ -4956,8 +4951,8 @@ function PortalSidebar() {
     </aside>
     <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}><SheetContent side='left' className='w-[280px] p-0 bg-white border-[#E5E7EB]'>
       <div className='flex items-center gap-3 px-4 h-16 border-b border-[#E5E7EB] shrink-0'>
-        <div className='size-8 rounded-lg bg-[#1E5A8A] flex items-center justify-center shrink-0'><Scale className='size-4 text-white' /></div>
-        <span className='text-sm font-bold text-[#111827]'>{tenantName}</span>
+        <img src="/icon.png" alt="JurisLink" className='size-8 rounded-lg shrink-0 object-cover' />
+        <div className='min-w-0'><span className='text-sm font-bold tracking-tight'><span className='text-[#1E5A8A]'>Juris</span><span className='text-[#C8A45D]'>Link</span></span></div>
         <Button variant='ghost' size='icon' className='ml-auto text-[#6B7280]' onClick={() => setSidebarOpen(false)}><X className='size-5' /></Button>
       </div>
       <ScrollArea className='flex-1 min-h-0 py-4 custom-scrollbar'>{navContent}</ScrollArea>
