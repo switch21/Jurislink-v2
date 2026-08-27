@@ -13,6 +13,9 @@ import { useAppStore, type ViewName, type UserInfo } from '@/store/appStore'
 import { cn } from '@/lib/utils'
 import { initAuthFetch } from '@/lib/auth-fetch'
 
+// Patch fetch immediately at module load (before any React rendering)
+if (typeof window !== 'undefined') initAuthFetch()
+
 // ==================== shadcn/ui imports ====================
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
