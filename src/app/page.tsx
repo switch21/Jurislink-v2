@@ -2429,9 +2429,9 @@ function InvoicesView() {
     enabled: !!selectedInvoice?.id && detailOpen,
   })
 
-  const { data: clients } = useQuery({ queryKey: ['clients-invoice', user?.tenantId], queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()) })
-  const { data: cases } = useQuery({ queryKey: ['cases-invoice', user?.tenantId], queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()) })
-  const { data: currencies } = useQuery({ queryKey: ['currencies-invoice'], queryFn: () => fetch('/api/currencies').then(r => r.json()) })
+  const { data: clients } = useQuery({ queryKey: ['clients-invoice', user?.tenantId], queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
+  const { data: cases } = useQuery({ queryKey: ['cases-invoice', user?.tenantId], queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
+  const { data: currencies } = useQuery({ queryKey: ['currencies-invoice'], queryFn: () => fetch('/api/currencies').then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
 
   const createMut = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, tenantId: user?.tenantId }) }).then(r => r.json()),

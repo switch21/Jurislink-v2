@@ -722,3 +722,20 @@ Stage Summary:
 - Script is idempotent (skips clients that already have a portal account)
 - Portal API routes already exist at `/api/portal/*` (login, invoices, cases, dashboard, profile, etc.)
 - Next step: build the portal frontend UI (login page, client dashboard, case/invoice views)
+---
+Task ID: bugfix-invoices-map
+Agent: Main
+Task: Fix "(S || []).map is not a function" error when opening Factures view
+
+Work Log:
+- Diagnosed the error: queries in InvoicesView for `clients`, `cases`, and `currencies` lacked Array.isArray guards
+- If the API returned an error object (e.g. `{ error: 'Non authentifié' }` from 401/403), the `.map()` call on the error object would fail
+- The `currencies` endpoint requires `root_admin` role, so non-admin users would always get a 403 response
+- Added `.then(d => Array.isArray(d) ? d : [])` guard to all three queries (clients, cases, currencies)
+- The `invoices` query already had this guard
+- Also added `21.0.16.38` to `allowedDevOrigins` in next.config.ts for agent-browser compatibility
+
+Stage Summary:
+- Fixed 3 query functions in InvoicesView (lines 2432-2434) to add Array.isArray guards
+- The error "(S || []).map is not a function" was caused by non-array API responses being passed to .map() calls
+- No changes to API routes — the fix is purely defensive on the frontend
