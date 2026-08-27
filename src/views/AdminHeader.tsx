@@ -7,17 +7,16 @@ import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventA
 export function AdminHeader() {
   const { user, logout, sidebarOpen, setSidebarOpen } = useAppStore()
   return (
-    <header className='sticky top-0 z-30 bg-white border-b border-[#E5E7EB] px-4 md:px-6 h-14 flex items-center gap-4 shrink-0'>
-      <button onClick={() => setSidebarOpen(!sidebarOpen)} className='lg:hidden text-[#6B7280] hover:text-[#111827]'><Menu className='size-5' /></button>
-      <div className='flex items-center gap-2'><Crown className='size-5 text-[#C8A45D]' /><h1 className='text-sm font-semibold text-[#111827]'>Administration</h1></div>
+    <header className='sticky top-0 z-30 bg-jl-card border-b border-jl px-4 md:px-6 h-14 flex items-center gap-4 shrink-0 transition-colors duration-300'>
+      <button onClick={() => setSidebarOpen(!sidebarOpen)} className='lg:hidden text-jl-secondary hover:text-jl-primary' aria-label='Ouvrir le menu'><Menu className='size-5' /></button>
+      <div className='flex items-center gap-2'><Crown className='size-5 text-jl-gold' /><h1 className='text-sm font-semibold text-jl-primary'>Administration</h1></div>
       <div className='ml-auto flex items-center gap-3'>
         <div className='hidden sm:flex items-center gap-2'>
-          <Avatar className='size-7'><AvatarFallback className='bg-[#C8A45D] text-white text-[10px]'>{user?.fullName ? initials(user.fullName) : 'A'}</AvatarFallback></Avatar>
-          <span className='text-sm font-medium text-[#111827]'>{user?.fullName}</span>
+          <Avatar className='size-7'><AvatarFallback className='bg-jl-gold text-white text-[10px]'>{user?.fullName ? initials(user.fullName) : 'A'}</AvatarFallback></Avatar>
+          <span className='text-sm font-medium text-jl-primary'>{user?.fullName}</span>
         </div>
-        <Button variant='ghost' size='icon' className='text-[#6B7280] hover:text-[#DC2626]' onClick={logout}><LogOut className='size-4' /></Button>
+        <Button variant='ghost' size='icon' className='text-jl-secondary hover:text-[var(--danger)]' onClick={logout} aria-label='Déconnexion'><LogOut className='size-4' /></Button>
       </div>
     </header>
   )
 }
-

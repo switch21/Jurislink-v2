@@ -48,23 +48,23 @@ export function Header() {
   const msgCount = 0
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-[#E5E7EB]">
-      <div className="flex items-center gap-4 h-16 px-4 lg:px-6">
-        <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => useAppStore.getState().toggleSidebar()}><Menu className="size-5" /></Button>
-        <h1 className="text-lg font-semibold text-[#111827] hidden sm:block">{viewLabel}</h1>
-        <div className="relative flex-1 max-w-md ml-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#9CA3AF]" />
-          <Input placeholder="Rechercher dossiers, clients, factures, tâches..." className="pl-9 h-9 bg-[#F3F4F6] border-transparent rounded-lg" value={search} onChange={e => handleSearchChange(e.target.value)} onFocus={() => search && setSearchOpen(true)} />
+    <header className='sticky top-0 z-30 bg-jl-card border-b border-jl transition-colors duration-300'>
+      <div className='flex items-center gap-4 h-16 px-4 lg:px-6'>
+        <Button variant='ghost' size='icon' className='lg:hidden' onClick={() => useAppStore.getState().toggleSidebar()} aria-label='Ouvrir le menu'><Menu className='size-5' /></Button>
+        <h1 className='text-lg font-semibold text-jl-primary hidden sm:block'>{viewLabel}</h1>
+        <div className='relative flex-1 max-w-md ml-auto'>
+          <Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' />
+          <Input placeholder='Rechercher dossiers, clients, factures, tâches...' className='pl-9 h-9 bg-jl-page border-transparent rounded-lg transition-colors duration-200' value={search} onChange={e => handleSearchChange(e.target.value)} onFocus={() => search && setSearchOpen(true)} aria-label='Recherche globale' />
           {searchOpen && searchResults.length > 0 && (
-            <div className="absolute top-full mt-1 w-full bg-white rounded-lg border border-[#E5E7EB] shadow-lg z-50 max-h-80 overflow-y-auto">
+            <div className='absolute top-full mt-1 w-full bg-jl-card rounded-lg border border-jl shadow-lg z-50 max-h-80 overflow-y-auto'>
               {(() => {
                 const categories: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-                  case: { icon: Briefcase, color: 'text-[#926B2D]', label: 'Dossiers' },
-                  client: { icon: Users, color: 'text-[#059669]', label: 'Clients' },
-                  task: { icon: ClipboardList, color: 'text-[#1E5A8A]', label: 'Tâches' },
-                  document: { icon: FileText, color: 'text-[#6B7280]', label: 'Documents' },
-                  event: { icon: Calendar, color: 'text-[#C8A45D]', label: 'Événements' },
-                  invoice: { icon: Receipt, color: 'text-[#DC2626]', label: 'Factures' },
+                  case: { icon: Briefcase, color: 'text-jl-gold', label: 'Dossiers' },
+                  client: { icon: Users, color: 'text-[var(--success)]', label: 'Clients' },
+                  task: { icon: ClipboardList, color: 'text-jl-blue', label: 'Tâches' },
+                  document: { icon: FileText, color: 'text-jl-secondary', label: 'Documents' },
+                  event: { icon: Calendar, color: 'text-jl-gold', label: 'Événements' },
+                  invoice: { icon: Receipt, color: 'text-[var(--danger)]', label: 'Factures' },
                 }
                 const grouped: Record<string, typeof searchResults> = {}
                 for (const r of searchResults) {
@@ -73,14 +73,14 @@ export function Header() {
                   grouped[cat].push(r)
                 }
                 return Object.entries(grouped).map(([cat, items]) => {
-                  const meta = categories[cat] || { icon: FileText, color: 'text-[#6B7280]', label: cat }
+                  const meta = categories[cat] || { icon: FileText, color: 'text-jl-secondary', label: cat }
                   const CatIcon = meta.icon
                   return (
                     <div key={cat}>
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-[#F9FAFB] sticky top-0"><CatIcon className={cn('size-3.5', meta.color)} /><span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">{meta.label}</span><Badge variant="secondary" className="text-[9px] ml-auto">{items.length}</Badge></div>
+                      <div className='flex items-center gap-2 px-3 py-1.5 bg-jl-page sticky top-0'><CatIcon className={cn('size-3.5', meta.color)} /><span className='text-[10px] font-semibold text-jl-secondary uppercase tracking-wider'>{meta.label}</span><Badge variant='secondary' className='text-[9px] ml-auto'>{items.length}</Badge></div>
                       {items.map((r, i) => (
-                        <button key={`${r._id}-${i}`} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#F9FAFB] text-left" onMouseDown={e => { e.preventDefault(); setSearchOpen(false); setCurrentView(r._view); setSearch('') }}>
-                          <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{r._label}</p><p className="text-xs text-[#9CA3AF] truncate">{r._sub}</p></div>
+                        <button key={`${r._id}-${i}`} className='w-full flex items-center gap-3 px-3 py-2 hover:bg-[var(--border-light)] text-left transition-colors duration-150' onMouseDown={e => { e.preventDefault(); setSearchOpen(false); setCurrentView(r._view); setSearch('') }}>
+                          <div className='min-w-0 flex-1'><p className='text-sm font-medium truncate text-jl-primary'>{r._label}</p><p className='text-xs text-jl-muted truncate'>{r._sub}</p></div>
                         </button>
                       ))}
                     </div>
@@ -90,14 +90,13 @@ export function Header() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="relative size-9" onClick={() => { setCurrentView('messages') }}><MessageSquare className="size-5" />{msgCount ? <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-[#1E5A8A] text-white text-[10px] flex items-center justify-center font-bold">{msgCount > 9 ? '9+' : msgCount}</span> : null}</Button></TooltipTrigger><TooltipContent>Messages</TooltipContent></Tooltip></TooltipProvider>
-          <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="relative size-9"><Bell className="size-5" />{unreadCount ? <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-[#EF4444] text-white text-[10px] flex items-center justify-center font-bold">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto"><DropdownMenuLabel>Notifications ({unreadCount})</DropdownMenuLabel><DropdownMenuSeparator />{(notifs?.notifications || []).slice(0, 8).map((n: Notification) => (<DropdownMenuItem key={n.id} className="flex flex-col items-start gap-1 p-3 cursor-pointer" onClick={() => { const vmap: Record<string, ViewName> = { dossier: 'cases', echeance: 'calendar', facture: 'invoices', document: 'documents', tache: 'tasks', message: 'messages' }; setCurrentView(vmap[n.category] || 'dashboard'); setNotifOpen(false) }}><p className={cn('text-sm font-medium', !n.read && 'text-[#111827]')}>{n.title}</p><p className="text-xs text-[#9CA3AF] line-clamp-2">{n.message}</p></DropdownMenuItem>))}</DropdownMenuContent></DropdownMenu>
+        <div className='flex items-center gap-1'>
+          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant='ghost' size='icon' className='relative size-9' onClick={() => { setCurrentView('messages') }} aria-label='Messages'><MessageSquare className='size-5' />{msgCount ? <span className='absolute -top-0.5 -right-0.5 size-4 rounded-full bg-jl-blue text-white text-[10px] flex items-center justify-center font-bold'>{msgCount > 9 ? '9+' : msgCount}</span> : null}</Button></TooltipTrigger><TooltipContent>Messages</TooltipContent></Tooltip></TooltipProvider>
+          <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}><DropdownMenuTrigger asChild><Button variant='ghost' size='icon' className='relative size-9' aria-label={`Notifications${unreadCount ? ` (${unreadCount} non lues)` : ''}`}><Bell className='size-5' />{unreadCount ? <span className='absolute -top-0.5 -right-0.5 size-4 rounded-full bg-[var(--danger)] text-white text-[10px] flex items-center justify-center font-bold animate-pulse-glow'>{unreadCount > 9 ? '9+' : unreadCount}</span> : null}</Button></DropdownMenuTrigger><DropdownMenuContent align='end' className='w-80 max-h-96 overflow-y-auto'><DropdownMenuLabel>Notifications ({unreadCount})</DropdownMenuLabel><DropdownMenuSeparator />{(notifs?.notifications || []).slice(0, 8).map((n: Notification) => (<DropdownMenuItem key={n.id} className='flex flex-col items-start gap-1 p-3 cursor-pointer' onClick={() => { const vmap: Record<string, ViewName> = { dossier: 'cases', echeance: 'calendar', facture: 'invoices', document: 'documents', tache: 'tasks', message: 'messages' }; setCurrentView(vmap[n.category] || 'dashboard'); setNotifOpen(false) }}><p className={cn('text-sm font-medium', !n.read && 'text-jl-primary')}><s className='sr-only'>{!n.read ? 'Non lue : ' : ''}</s>{n.title}</p><p className='text-xs text-jl-muted line-clamp-2'>{n.message}</p></DropdownMenuItem>))}</DropdownMenuContent></DropdownMenu>
           <ThemeToggle />
-          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><LogOut className="size-5 text-[#6B7280]" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={logout} className="text-[#DC2626] cursor-pointer"><LogOut className="size-4 mr-2" />Déconnexion</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant='ghost' size='icon' aria-label='Menu utilisateur'><LogOut className='size-5 text-jl-secondary' /></Button></DropdownMenuTrigger><DropdownMenuContent align='end'><DropdownMenuItem onClick={logout} className='text-[var(--danger)] cursor-pointer'><LogOut className='size-4 mr-2' />Déconnexion</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </div>
       </div>
     </header>
   )
 }
-

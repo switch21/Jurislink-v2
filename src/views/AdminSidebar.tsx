@@ -8,13 +8,16 @@ import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventA
 export function AdminSidebar() {
   const { currentView, setCurrentView, user, sidebarOpen, setSidebarOpen } = useAppStore()
   const navContent = (
-    <nav className='space-y-1 mx-3'>
+    <nav className='space-y-1 mx-3' role='navigation' aria-label='Navigation admin'>
       {ADMIN_NAV_ITEMS.map(item => {
         const Icon = item.icon; const active = currentView === item.view
         return (
           <button key={item.view} onClick={() => { setCurrentView(item.view); setSidebarOpen(false) }}
+            aria-current={active ? 'page' : undefined}
             className={cn('w-full flex items-center h-11 px-3 rounded-lg text-sm font-medium transition-all duration-200',
-              active ? 'bg-[#C8A45D]/10 text-[#926B2D] border-l-[3px] border-[#C8A45D]' : 'text-[#374151] hover:bg-[#F9FAFB] border-l-[3px] border-transparent')}>
+              active
+                ? 'bg-jl-gold-light text-jl-gold border-l-[3px] border-jl-gold'
+                : 'text-[var(--text-secondary)] hover:bg-[var(--border-light)] border-l-[3px] border-transparent')}>
             <Icon className='size-5 shrink-0 mr-3' /><span className='whitespace-nowrap'>{item.label}</span>
           </button>
         )
@@ -22,27 +25,28 @@ export function AdminSidebar() {
     </nav>
   )
   return (<>
-    <aside className='hidden lg:flex fixed top-0 left-0 z-40 h-full bg-white flex-col w-[260px] border-r border-[#E5E7EB] overflow-hidden'>
-      <div className='flex items-center gap-3 px-4 h-16 border-b border-[#E5E7EB] shrink-0'>
+    {/* Desktop */}
+    <aside className='hidden lg:flex fixed top-0 left-0 z-40 h-full bg-jl-card flex-col w-[260px] border-r border-jl overflow-hidden transition-colors duration-300' role='complementary' aria-label='Menu admin'>
+      <div className='flex items-center gap-3 px-4 h-16 border-b border-jl shrink-0'>
         <img src='/icon.png' alt='JurisLink' className='size-8 rounded-lg shrink-0 object-cover' />
-        <div className='flex-1 min-w-0'><span className='text-lg font-bold tracking-tight whitespace-nowrap'><span className='text-[#1E5A8A]'>Juris</span><span className='text-[#C8A45D]'>Link</span></span><div className='flex items-center gap-1'><Badge className='bg-[#C8A45D] text-white text-[9px] px-1.5 py-0'><Crown className='size-2.5 mr-0.5' />Admin</Badge></div></div>
+        <div className='flex-1 min-w-0'><span className='text-lg font-bold tracking-tight whitespace-nowrap'><span className='text-jl-blue'>Juris</span><span className='text-jl-gold'>Link</span></span><div className='flex items-center gap-1'><Badge className='bg-jl-gold text-white text-[9px] px-1.5 py-0'><Crown className='size-2.5 mr-0.5' />Admin</Badge></div></div>
       </div>
       <ScrollArea className='flex-1 min-h-0 py-4 custom-scrollbar'>{navContent}</ScrollArea>
-      <div className='p-4 border-t border-[#E5E7EB] shrink-0'>
+      <div className='p-4 border-t border-jl shrink-0'>
         <div className='flex items-center gap-3'>
-          <Avatar className='size-8 shrink-0'><AvatarFallback className='bg-[#C8A45D] text-white text-xs'>{user?.fullName ? initials(user.fullName) : 'A'}</AvatarFallback></Avatar>
-          <div className='min-w-0'><p className='text-sm font-medium truncate text-[#111827]'>{user?.fullName}</p><p className='text-xs text-[#9CA3AF] truncate'>Admin Racine</p></div>
+          <Avatar className='size-8 shrink-0'><AvatarFallback className='bg-jl-gold text-white text-xs'>{user?.fullName ? initials(user.fullName) : 'A'}</AvatarFallback></Avatar>
+          <div className='min-w-0'><p className='text-sm font-medium truncate text-jl-primary'>{user?.fullName}</p><p className='text-xs text-jl-muted truncate'>Admin Racine</p></div>
         </div>
       </div>
     </aside>
-    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}><SheetContent side='left' className='w-[280px] p-0 bg-white border-[#E5E7EB]'>
-      <div className='flex items-center gap-3 px-4 h-16 border-b border-[#E5E7EB] shrink-0'>
+    {/* Mobile */}
+    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}><SheetContent side='left' className='w-[280px] p-0 bg-jl-card border-jl'>
+      <div className='flex items-center gap-3 px-4 h-16 border-b border-jl shrink-0'>
         <img src='/icon.png' alt='JurisLink' className='size-8 rounded-lg shrink-0 object-cover' />
-        <span className='text-lg font-bold tracking-tight whitespace-nowrap'><span className='text-[#1E5A8A]'>Juris</span><span className='text-[#C8A45D]'>Link</span></span>
-        <Button variant='ghost' size='icon' className='ml-auto text-[#6B7280] hover:text-[#111827]' onClick={() => setSidebarOpen(false)}><X className='size-5' /></Button>
+        <span className='text-lg font-bold tracking-tight whitespace-nowrap'><span className='text-jl-blue'>Juris</span><span className='text-jl-gold'>Link</span></span>
+        <Button variant='ghost' size='icon' className='ml-auto text-jl-secondary hover:text-jl-primary' onClick={() => setSidebarOpen(false)} aria-label='Fermer le menu'><X className='size-5' /></Button>
       </div>
       <ScrollArea className='flex-1 min-h-0 py-4 custom-scrollbar'>{navContent}</ScrollArea>
     </SheetContent></Sheet>
   </>)
 }
-

@@ -43,6 +43,9 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ═══════════════════════════════════════════════════════
+   Light Mode (default)
+   ═══════════════════════════════════════════════════════ */
 :root {
   /* Design System Colors */
   --bg-page: #F5F7FA;
@@ -97,6 +100,65 @@
   --sidebar-ring: #1E5A8A;
 }
 
+/* ═══════════════════════════════════════════════════════
+   Dark Mode
+   ═══════════════════════════════════════════════════════ */
+.dark {
+  /* Design System Colors */
+  --bg-page: #0B1121;
+  --bg-card: #151D2E;
+  --bg-sidebar: #111827;
+  --primary: #4A9BD9;
+  --primary-light: #1A2A40;
+  --primary-dark: #2B7ABF;
+  --accent: #D4B76A;
+  --accent-light: #2A2415;
+  --border: #1E293B;
+  --border-light: #1A2234;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --info: #60A5FA;
+
+  /* shadcn/ui overrides (dark mode) */
+  --background: #0B1121;
+  --foreground: #F1F5F9;
+  --card: #151D2E;
+  --card-foreground: #F1F5F9;
+  --popover: #151D2E;
+  --popover-foreground: #F1F5F9;
+  --primary-foreground: #0B1121;
+  --secondary: #1E293B;
+  --secondary-foreground: #CBD5E1;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --accent: #1A2A40;
+  --accent-foreground: #F1F5F9;
+  --destructive: #F87171;
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #4A9BD9;
+  --chart-1: #4A9BD9;
+  --chart-2: #D4B76A;
+  --chart-3: #34D399;
+  --chart-4: #FBBF24;
+  --chart-5: #F87171;
+  --sidebar: #111827;
+  --sidebar-foreground: #CBD5E1;
+  --sidebar-primary: #4A9BD9;
+  --sidebar-primary-foreground: #0B1121;
+  --sidebar-accent: #1A2A40;
+  --sidebar-accent-foreground: #4A9BD9;
+  --sidebar-border: #1E293B;
+  --sidebar-ring: #4A9BD9;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Base Layer
+   ═══════════════════════════════════════════════════════ */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -106,10 +168,13 @@
     font-family: 'Inter', sans-serif;
     font-size: 14px;
     line-height: 1.5;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
-/* Custom scrollbar */
+/* ═══════════════════════════════════════════════════════
+   Custom Scrollbar
+   ═══════════════════════════════════════════════════════ */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -118,19 +183,23 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #D1D5DB;
+  background-color: var(--border);
   border-radius: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #9CA3AF;
+  background-color: var(--text-muted);
 }
 
-/* Login page */
+/* ═══════════════════════════════════════════════════════
+   Login Page
+   ═══════════════════════════════════════════════════════ */
 .login-bg {
-  background-color: #F5F7FA;
+  background-color: var(--bg-page);
 }
 
-/* Fade in animation */
+/* ═══════════════════════════════════════════════════════
+   Animations
+   ═══════════════════════════════════════════════════════ */
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
   opacity: 0;
@@ -139,18 +208,272 @@
   to { opacity: 1; }
 }
 
-/* Design system utility classes */
-.bg-page { background-color: var(--bg-page); }
-.bg-card-ds { background-color: var(--bg-card); }
-.text-primary-ds { color: var(--text-primary); }
+/* View transition animation */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, var(--muted) 25%, var(--border) 50%, var(--muted) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Pulse glow for notifications */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+/* Scale-in for cards and dialogs */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Design System Utility Classes (dark-aware)
+   ═══════════════════════════════════════════════════════ */
+.bg-page { background-color: var(--bg-page); transition: background-color 0.3s ease; }
+.bg-card-ds { background-color: var(--bg-card); transition: background-color 0.3s ease; }
+.text-primary-ds { color: var(--text-primary); transition: color 0.3s ease; }
 .text-secondary-ds { color: var(--text-secondary); }
 .text-muted-ds { color: var(--text-muted); }
 .bg-primary-ds { background-color: var(--primary); }
-.bg-primary-light-ds { background-color: var(--primary-light); }
+.bg-primary-light-ds { background-color: var(--primary-light); transition: background-color 0.3s ease; }
 .bg-accent-ds { background-color: var(--accent); }
-.bg-accent-light-ds { background-color: var(--accent-light); }
-.border-ds { border-color: var(--border); }
+.bg-accent-light-ds { background-color: var(--accent-light); transition: background-color 0.3s ease; }
+.border-ds { border-color: var(--border); transition: border-color 0.3s ease; }
 .bg-success-ds { background-color: var(--success); }
 .bg-warning-ds { background-color: var(--warning); }
 .bg-danger-ds { background-color: var(--danger); }
 .bg-info-ds { background-color: var(--info); }
+
+/* Dark-aware color utilities for JurisLink brand colors */
+.bg-jl-blue { background-color: var(--primary); }
+.bg-jl-blue-light { background-color: var(--primary-light); }
+.text-jl-blue { color: var(--primary); }
+.bg-jl-gold { background-color: var(--accent); }
+.bg-jl-gold-light { background-color: var(--accent-light); }
+.text-jl-gold { color: var(--accent); }
+.bg-jl-page { background-color: var(--bg-page); }
+.bg-jl-card { background-color: var(--bg-card); }
+.text-jl-primary { color: var(--text-primary); }
+.text-jl-secondary { color: var(--text-secondary); }
+.text-jl-muted { color: var(--text-muted); }
+.border-jl { border-color: var(--border); }
+.hover-jl-bg { transition: background-color 0.15s ease; }
+.hover-jl-bg:hover { background-color: var(--border-light); }
+
+/* Dark mode overlay for images/icons */
+.dark img {
+  filter: brightness(0.95);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Phase 7: Dark Mode Overrides for Hardcoded Tailwind Colors
+     These override the most common hardcoded patterns used in views
+     so dark mode works without modifying every view file.
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Backgrounds ── */
+.dark .bg-white {
+  background-color: var(--bg-card);
+}
+.dark .bg-\[\#F5F7FA\] {
+  background-color: var(--bg-page);
+}
+.dark .bg-\[\#F9FAFB\] {
+  background-color: var(--border-light);
+}
+.dark .bg-\[\#F3F4F6\] {
+  background-color: var(--muted);
+}
+.dark .bg-\[\#E8F0F8\] {
+  background-color: var(--primary-light);
+}
+.dark .bg-\[\#FEF2F2\] {
+  background-color: rgba(248, 113, 113, 0.1);
+}
+.dark .bg-\[\#F0FDF4\] {
+  background-color: rgba(52, 211, 153, 0.1);
+}
+.dark .bg-\[\#FFFBEB\] {
+  background-color: rgba(251, 191, 36, 0.1);
+}
+.dark .bg-\[\#EFF6FF\] {
+  background-color: rgba(96, 165, 250, 0.1);
+}
+.dark .bg-\[\#FAF5FF\] {
+  background-color: rgba(167, 139, 250, 0.1);
+}
+.dark .hover\:bg-\[\#F9FAFB\]:hover {
+  background-color: var(--border-light);
+}
+
+/* ── Text Colors ── */
+.dark .text-\[\#111827\] {
+  color: var(--text-primary);
+}
+.dark .text-\[\#374151\] {
+  color: var(--text-secondary);
+}
+.dark .text-\[\#6B7280\] {
+  color: var(--text-secondary);
+}
+.dark .text-\[\#9CA3AF\] {
+  color: var(--text-muted);
+}
+.dark .text-\[\#D1D5DB\] {
+  color: var(--text-muted);
+}
+
+/* ── Border Colors ── */
+.dark .border-\[\#E5E7EB\] {
+  border-color: var(--border);
+}
+.dark .border-\[\#F3F4F6\] {
+  border-color: var(--border-light);
+}
+.dark .divide-\[\#E5E7EB\] > :not(:last-child) {
+  border-color: var(--border);
+}
+
+/* ── Ring / Focus ── */
+.dark .ring-\[\#E5E7EB\] {
+  --tw-ring-color: var(--border);
+}
+
+/* ── Specific brand color overrides for dark mode ── */
+.dark .bg-\[\#1E5A8A\] {
+  background-color: var(--primary);
+}
+.dark .text-\[\#1E5A8A\] {
+  color: var(--primary);
+}
+.dark .text-\[\#926B2D\] {
+  color: var(--accent);
+}
+.dark .bg-\[\#C8A45D\]\/10 {
+  background-color: var(--accent-light);
+}
+
+/* ── Search input in header ── */
+.dark .bg-\[\#F3F4F6\].border-transparent {
+  background-color: var(--muted);
+  border-color: var(--border);
+}
+
+/* ── Table row hover ── */
+.dark .hover\:bg-\[\#F9FAFB\]:hover {
+  background-color: var(--border-light);
+}
+
+/* ── Ensure dropdowns/popovers use dark bg ── */
+.dark [data-radix-popper-content-wrapper] > div {
+  background-color: var(--popover);
+  border-color: var(--border);
+  color: var(--popover-foreground);
+}
+
+/* ── Dialog/Sheet overlays ── */
+.dark [data-radix-dialog-content] {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--card-foreground);
+}
+.dark [data-radix-sheet-content] {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--card-foreground);
+}
+
+/* ── ScrollArea in dark ── */
+.dark [data-radix-scroll-area-viewport] {
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Phase 7: Responsive Table Wrapper
+   ═══════════════════════════════════════════════════════ */
+.responsive-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.responsive-table table {
+  min-width: 640px;
+}
+
+/* Make all view tables scrollable on small screens */
+main table {
+  display: table;
+}
+@media (max-width: 767px) {
+  main .overflow-hidden {
+    overflow-x: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Phase 7: Smooth Page Transitions
+   ═══════════════════════════════════════════════════════ */
+.view-enter {
+  animation: viewEnter 0.25s ease-out forwards;
+}
+@keyframes viewEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Phase 7: Improved Focus Styles (Accessibility)
+   ═══════════════════════════════════════════════════════ */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Phase 7: Skip-to-content Link (Accessibility)
+   ═══════════════════════════════════════════════════════ */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 9999;
+  padding: 8px 16px;
+  background-color: var(--primary);
+  color: white;
+  border-radius: 0 0 8px 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 0;
+}
