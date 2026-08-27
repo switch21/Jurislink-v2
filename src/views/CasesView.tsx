@@ -28,6 +28,38 @@ export function CasesView() {
   const [timelineSort, setTimelineSort] = useState<'desc' | 'asc'>('desc')
   const [deletingItem, setDeletingItem] = useState<string | null>(null)
   const [casePreviewDoc, setCasePreviewDoc] = useState<Doc | null>(null)
+  const [caseUploadFile, setCaseUploadFile] = useState<File | null>(null)
+  const [caseUploading, setCaseUploading] = useState(false)
+  const [caseUploadProgress, setCaseUploadProgress] = useState(0)
+  const caseFileRef = useRef<HTMLInputElement>(null)
+
+  const handleCaseDocUpload = async () => {
+    if (!caseUploadFile || !selectedCase) return
+    setCaseUploading(true); setCaseUploadProgress(0)
+    try {
+      const fd = new FormData()
+      fd.append('file', caseUploadFile)
+      fd.append('tenantId', user?.tenantId || '')
+      fd.append('caseId', selectedCase.id)
+      fd.append('folder', 'Général')
+      fd.append('documentType', 'autre')
+      const xhr = new XMLHttpRequest()
+      xhr.upload.onprogress = e => { if (e.lengthComputable) setCaseUploadProgress(Math.round((e.loaded / e.total) * 100)) }
+      await new Promise<void>((resolve, reject) => {
+        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { resolve() } else { reject(new Error(`Upload failed: ${xhr.status}`)) } }
+        xhr.onerror = () => reject(new Error('Upload failed'))
+        xhr.open('POST', '/api/documents')
+        if (user?.id) xhr.setRequestHeader('X-User-Id', user.id)
+        if (user?.tenantId) xhr.setRequestHeader('X-Tenant-Id', user.tenantId)
+        xhr.send(fd)
+      })
+      toast.success('Document ajouté au dossier')
+      qc.invalidateQueries({ queryKey: ['case-detail', selectedCase.id] })
+      qc.invalidateQueries({ queryKey: ['case-timeline', selectedCase.id] })
+      qc.invalidateQueries({ queryKey: ['documents'] })
+      setCaseUploadFile(null)
+    } catch { toast.error('Erreur lors du téléchargement du document') } finally { setCaseUploading(false); setCaseUploadProgress(0) }
+  }
 
   const { data: cases, isLoading } = useQuery({
     queryKey: ['cases', user?.tenantId, statusFilter, typeFilter, priorityFilter, search],
@@ -531,6 +563,14 @@ export function CasesView() {
                 ))}
             </TabsContent>
             <TabsContent value="documents" className="mt-4 overflow-y-auto max-h-[50vh]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-jl-secondary">{(caseDetail?.documents || []).length} document{(caseDetail?.documents || []).length > 1 ? 's' : ''}</span>
+                <div className="flex items-center gap-2">
+                  {caseUploading && <div className="flex items-center gap-2"><Progress value={caseUploadProgress} className="w-20 h-1.5" /><span className="text-[10px] text-jl-muted">{caseUploadProgress}%</span></div>}
+                  <input ref={caseFileRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { setCaseUploadFile(f); handleCaseDocUpload() } }} />
+                  <Button size="sm" variant="outline" disabled={caseUploading} onClick={() => caseFileRef.current?.click()}><Upload className="size-3.5 mr-1" />Ajouter</Button>
+                </div>
+              </div>
               {(() => {
                 const docs = caseDetail?.documents || []
                 if (docs.length === 0) return <p className="text-sm text-jl-muted text-center py-8">Aucun document</p>
