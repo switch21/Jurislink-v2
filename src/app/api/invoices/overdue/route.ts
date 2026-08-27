@@ -104,7 +104,7 @@ export async function GET(request: Request) {
         maxDaysOverdue,
         actionable,
         byLevel,
-        byClient: Array.from(byClient.entries()).sort((a, b) => b[1].amount - a[1].amount),
+        byClient: Array.from(byClient.entries()).sort((a, b) => b[1].amount - a[1].amount).map(([id, v]) => ({ clientId: id, ...v })),
       },
       thresholds: REMINDER_THRESHOLDS,
     })
