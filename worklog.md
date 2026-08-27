@@ -524,3 +524,27 @@ Stage Summary:
 - Subscription-gated AI access with clear 403 messaging
 - Build passes cleanly (0 errors)
 - Version: v3.8.71 → v3.8.72
+
+---
+Task ID: 8
+Agent: Super Z (main) + 3 subagents
+Task: Phase 8 — Fonctionnalités Avancées
+
+Work Log:
+- **AI Case Analysis** (Agent A): Completed LLM integration in /api/ai/analyze-case, added aiAnalysis field to Case model, built AIAnalysisPanel component in CasesView with 7 themed sections, risk color-coding, subscription gating
+- **Advanced Search Cmd+K** (Agent A): Created SearchDialog.tsx using cmdk, enhanced /api/search with AI mode (type=ai), added 2 more entity types (Messages, Communications), keyboard shortcut in Header, results grouped by type with icons
+- **WebSocket Notifications** (Agent B): Created mini-services/notification-service/ on port 3004, useNotificationSocket hook, Zustand store (unreadCount, lastNotification), real-time badge with pulse in Header, trigger notifications from document upload/task creation/case assignment
+- **Document Generation** (Agent C): Created /api/document-templates/generate/ for PDF generation with pdfkit, auto-populates 11 variables from case data, enhanced TemplatesView with auto/manual variable distinction and preview, added generate-from-template in CasesView Documents tab
+- **Automated Workflow** (Agent C): Created /api/workflow/auto-on-create/ with 5 case-type templates (civil 5 tasks, penal 4, commercial 3, social 3, administratif 3), AI workflow suggestions via /api/workflow/ai-suggest/, Workflow tab in CasesView with progress indicator and AI suggestion checkboxes
+- Created src/lib/ai-service.ts (unified LLM interface), src/lib/workflow-templates.ts, src/lib/legal-templates.ts
+- Updated eslint.config.mjs to ignore known parser incompatibility
+- Added aiAnalysis column to Prisma schema
+
+Stage Summary:
+- 36 files changed, 3728 insertions, 418 deletions
+- 16 new files created
+- Commit: fdb19cd, pushed to main
+- 5 major features delivered in one phase
+- Prisma schema change (aiAnalysis) needs `prisma db push` on production
+- Notification service needs `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` + `DATABASE_URL` env vars on Vercel
+- LLM_API_URL and LLM_API_KEY env vars needed for AI features
