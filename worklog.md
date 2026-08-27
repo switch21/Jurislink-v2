@@ -422,6 +422,26 @@ Stage Summary:
 - Only the Phase 3 complete ImpayesView remains (with KPIs, bar chart, top clients, manual remind, history)
 
 ---
+Task ID: fix-loading-errors
+Agent: Main
+Task: Diagnostic des erreurs de chargement + vérification API + durcissement auth
+
+Work Log:
+- Testé exhaustivement 8 endpoints API (admin/dashboard, tenants, plans, users, dashboard, roles, overdue, documents) — tous retournent 200 OK avec données correctes
+- Vérifié que l'auth RBAC fonctionne correctement (401 sans header, 200 avec header)
+- Confirmé que initAuthFetch() était déjà appelé dans useEffect avant AppInner render
+- Ajouté un appel module-level `initAuthFetch()` pour garantir le patch avant tout rendu React
+- Cron check-expiry vérifié : 3 abonnements actifs (126-365 jours restants), aucune action requise
+- Problème racine probable : le build Vercel échouait (duplicate ImpayesView), empêchant le déploiement de la dernière version fonctionnelle
+- Commit 763cf05 poussé sur GitHub
+
+Stage Summary:
+- Toutes les API fonctionnent correctement avec authentification
+- Le patch fetch est maintenant appliqué au niveau module + useEffect (double sécurité)
+- Vercel va auto-déployer la version corrigée
+- Abonnements : 3 actifs, aucun en danger
+
+---
 ## PROJECT STATUS (updated)
 
 ### Current State
