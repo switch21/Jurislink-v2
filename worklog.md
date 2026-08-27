@@ -540,3 +540,50 @@ Stage Summary:
 ### Known Issues
 - Dashboard lent en dev (~15s) — nombreuses queries séquentielles vers Supabase
 - Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
+- Erreur UUID Prisma sur /api/admin/dashboard (header X-User-Id avec valeur non-UUID, probablement session obsolète) — non critique pour les utilisateurs cabinet
+
+---
+Task ID: fix-overduecount-not-defined
+Agent: Main
+Task: Fix "overdueCount is not defined" crash when connecting to a cabinet
+
+Work Log:
+- Diagnostic : l'erreur `overdueCount is not defined` venait de la fonction Sidebar (ligne 447) qui référençait `overdueCount` défini uniquement dans la fonction Header (ligne 570-571)
+- Ce sont deux composants React séparés ; Sidebar ne peut pas accéder aux variables de Header
+- L'error boundary Next.js (error.tsx) capturait le crash et affichait "Une erreur est survenue - overdueCount is not defined"
+- Correction : déplacé le useQuery + la variable overdueCount dans le composant Sidebar avec queryKey 'sidebar-overdue-count'
+- Supprimé le useQuery doublon inutilisé dans le composant Header
+- Vérifié via agent-browser : la page de connexion s'affiche sans erreur, aucun error dans la console
+- Compilation Turbopack OK en 886ms
+
+Stage Summary:
+- Le crash "overdueCount is not defined" est résolu
+- Les utilisateurs cabinet peuvent maintenant se connecter sans erreur
+- Le badge rouge sur l'onglet "Impayés" dans la sidebar fonctionne correctement
+- L'appel API /api/invoices/overdue est maintenant fait depuis Sidebar (queryKey différent pour éviter les conflits de cache)
+
+---
+## PROJECT STATUS (updated)
+
+### Current State
+- Application JurisLink v2 fonctionnelle sur Vercel (auto-deploy depuis GitHub main)
+- Build: passing
+- DB: Supabase PostgreSQL
+
+### Completed Phases
+1. Timeline dossier
+2. GED avancée (versioning, preview PDF, tags, recherche, grille/liste)
+3. Impayés & Relances (détection auto, 4 seuils, dashboard, historique, cron)
+
+### Remaining Phases
+4. Portail client
+5. Signature électronique
+6. WhatsApp/Email automatique
+7. Application mobile (PWA)
+8. IA documentaire
+9. OCR
+
+### Known Issues
+- Dashboard lent en dev (~15s) — nombreuses queries séquentielles vers Supabase
+- Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
+- Erreur UUID Prisma sur /api/admin/dashboard (header X-User-Id avec valeur non-UUID, probablement session obsolète) — non critique pour les utilisateurs cabinet

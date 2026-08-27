@@ -431,6 +431,8 @@ function Sidebar() {
   const { currentView, setCurrentView, user, sidebarOpen, setSidebarOpen } = useAppStore()
   const isAdmin = user?.role === 'firm_admin' || user?.role === 'root_admin' || user?.role === 'associate'
   const hasPermission = useAppStore(s => s.hasPermission)
+  const { data: overdueCountData } = useQuery({ queryKey: ['sidebar-overdue-count', user?.tenantId], queryFn: () => fetch(`/api/invoices/overdue?tenantId=${user!.tenantId}`).then(r => r.json()).then(d => d?.kpis?.totalOverdue || 0), enabled: !!user?.tenantId, refetchInterval: 60000 })
+  const overdueCount = overdueCountData || 0
   const navContent = (
     <nav className="space-y-1 mx-3">
       {NAV_ITEMS.filter(item => {
@@ -567,8 +569,6 @@ function Header() {
 
   const { data: notifs } = useQuery({ queryKey: ['notifications', user?.tenantId], queryFn: () => fetch(`/api/notifications?tenantId=${user!.tenantId}`).then(r => r.json()), enabled: !!user?.tenantId, refetchInterval: 30000 })
   const unreadCount = (Array.isArray(notifs) ? notifs : []).filter((n: Notification) => !n.read).length
-  const { data: overdueCountData } = useQuery({ queryKey: ['overdue-count', user?.tenantId], queryFn: () => fetch(`/api/invoices/overdue?tenantId=${user!.tenantId}`).then(r => r.json()).then(d => d?.kpis?.totalOverdue || 0), enabled: !!user?.tenantId, refetchInterval: 60000 })
-  const overdueCount = overdueCountData || 0
   const msgCount = 0
 
   return (
