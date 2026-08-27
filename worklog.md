@@ -472,3 +472,51 @@ Stage Summary:
 - Le cron auto-remind peut être planifié (toutes les heures ou journalier)
 - Templates de relance prêts (1ère, 2ème, 3ème relance + mise en demeure)
 
+
+---
+Task ID: fix-critical-api-errors
+Agent: Main
+Task: Fix loading errors on pages and empty cabinet dashboards
+
+Work Log:
+- Diagnostic: le dashboard API retournait 500 à cause de Document.status (champ inexistant dans le schéma Prisma)
+- Ajouté le champ 'status' (default 'actif') au modèle Document dans prisma/schema.prisma
+- db push vers Supabase OK
+- Fixé dashboard/stats/route.ts : 5 erreurs de champ (name→fullName, type→caseType, createdAt→timestamp, db→getDb())
+- Fixé dashboard/route.ts : ajouté include currency dans la query overdueInvoices
+- Fixé le lien de téléchargement des versions de documents (chemin incorrect /api/document-versions/ → /api/documents/[id]/versions/[versionId]/download)
+- Créé la route manquante /api/documents/[id]/versions/[versionId]/download/route.ts
+- Corrigé .env : DATABASE_URL pointait vers SQLite local, mis à jour vers Supabase PostgreSQL
+- Build OK, push sur GitHub (commit 1227769)
+
+Stage Summary:
+- Les dashboards des cabinets s'affichent maintenant correctement
+- L'erreur Prisma 'Unknown argument status' sur Document est résolue
+- Le dashboard/stats ne crash plus (5 corrections de noms de champ)
+- Le téléchargement des versions de documents fonctionne (route créée)
+- Note : le dashboard est lent (~15s) en dev à cause du nombre de queries séquentielles vers Supabase
+
+---
+## PROJECT STATUS (updated)
+
+### Current State
+- Application JurisLink v2 fonctionnelle sur Vercel (auto-deploy depuis GitHub main)
+- Build: passing
+- DB: Supabase PostgreSQL (DATABASE_URL corrigé dans .env local)
+
+### Completed Phases
+1. Timeline dossier
+2. GED avancée (versioning, preview PDF, tags, recherche, grille/liste)
+3. Impayés & Relances (détection auto, 4 seuils, dashboard, historique, cron)
+
+### Remaining Phases
+4. Portail client
+5. Signature électronique
+6. WhatsApp/Email automatique
+7. Application mobile (PWA)
+8. IA documentaire
+9. OCR
+
+### Known Issues
+- Dashboard lent en dev (~15s) — nombreuses queries séquentielles vers Supabase
+- Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
