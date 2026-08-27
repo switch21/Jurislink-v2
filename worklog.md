@@ -541,26 +541,24 @@ Stage Summary:
 - Dashboard lent en dev (~15s) — nombreuses queries séquentielles vers Supabase
 - Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
 - Erreur UUID Prisma sur /api/admin/dashboard (header X-User-Id avec valeur non-UUID, probablement session obsolète) — non critique pour les utilisateurs cabinet
+- DATABASE_URL dans .env locale pointait vers SQLite (corrigé vers Supabase PostgreSQL)
 
 ---
-Task ID: fix-overduecount-not-defined
+Task ID: fix-nan-top-clients-impayes
 Agent: Main
-Task: Fix "overdueCount is not defined" crash when connecting to a cabinet
+Task: Fix NaN FCFA affiché dans la section "Top clients impayés" de la vue Impayés
 
 Work Log:
-- Diagnostic : l'erreur `overdueCount is not defined` venait de la fonction Sidebar (ligne 447) qui référençait `overdueCount` défini uniquement dans la fonction Header (ligne 570-571)
-- Ce sont deux composants React séparés ; Sidebar ne peut pas accéder aux variables de Header
-- L'error boundary Next.js (error.tsx) capturait le crash et affichait "Une erreur est survenue - overdueCount is not defined"
-- Correction : déplacé le useQuery + la variable overdueCount dans le composant Sidebar avec queryKey 'sidebar-overdue-count'
-- Supprimé le useQuery doublon inutilisé dans le composant Header
-- Vérifié via agent-browser : la page de connexion s'affiche sans erreur, aucun error dans la console
-- Compilation Turbopack OK en 886ms
+- Diagnostic : l'API /api/invoices/overdue retournait `byClient` comme tableau de tuples `[clientId, {clientName, count, amount}]` via `Array.from(map.entries())`
+- Le frontend (ImpayesView ligne 3777-3778) accédait directement `c.clientName`, `c.count`, `c.amount` sur chaque élément
+- Comme chaque élément est un tuple `[string, object]`, `c.amount` = undefined → NaN dans fmtMoney()
+- Correction API : ajout de `.map(([id, v]) => ({ clientId: id, ...v }))` pour aplatir en objets
+- Aussi corrigé DATABASE_URL dans .env (SQLite → Supabase PostgreSQL)
+- Commit 2e22a22 poussé sur GitHub
 
 Stage Summary:
-- Le crash "overdueCount is not defined" est résolu
-- Les utilisateurs cabinet peuvent maintenant se connecter sans erreur
-- Le badge rouge sur l'onglet "Impayés" dans la sidebar fonctionne correctement
-- L'appel API /api/invoices/overdue est maintenant fait depuis Sidebar (queryKey différent pour éviter les conflits de cache)
+- La section "Top clients impayés" affiche maintenant les montants corrects
+- Le serveur dev ne crash plus à cause du DATABASE_URL SQLite
 
 ---
 ## PROJECT STATUS (updated)
@@ -587,3 +585,4 @@ Stage Summary:
 - Dashboard lent en dev (~15s) — nombreuses queries séquentielles vers Supabase
 - Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
 - Erreur UUID Prisma sur /api/admin/dashboard (header X-User-Id avec valeur non-UUID, probablement session obsolète) — non critique pour les utilisateurs cabinet
+- DATABASE_URL dans .env locale pointait vers SQLite (corrigé vers Supabase PostgreSQL)
