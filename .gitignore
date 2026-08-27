@@ -57,7 +57,7 @@ tool-results/
 *.db-journal
 /db/
 agent-ctx/
-download/
+/public/downloads/
 dev.log
 db/*.db
 .env
