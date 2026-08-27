@@ -548,3 +548,42 @@ Stage Summary:
 - Prisma schema change (aiAnalysis) needs `prisma db push` on production
 - Notification service needs `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` + `DATABASE_URL` env vars on Vercel
 - LLM_API_URL and LLM_API_KEY env vars needed for AI features
+
+---
+Task ID: 8.5
+Agent: Super Z (sub)
+Task: Phase 8.5 — Real-Time Notifications (Polling)
+
+Work Log:
+- Created `usePollingNotifications` hook (src/hooks/use-polling-notifications.ts)
+  - useQuery with refetchInterval: 30000 (30s polling)
+  - Accepts optional `enabled` parameter to pause/resume
+  - Returns notifications, unreadCount, isLoading, refetchNow
+  - Auto-toasts 'Nouvelle notification' when unread count increases
+  - Syncs Zustand store unreadCount via setUnreadCount
+- Enhanced Notification API (src/app/api/notifications/route.ts)
+  - When `?unreadOnly=true`, returns `{ count, notifications }` structured format
+  - When no unreadOnly param, returns raw array (backward compatible)
+  - Existing read-all route at /api/notifications/read-all confirmed working
+- Refactored Header.tsx to use polling hook
+  - Replaced inline useQuery with usePollingNotifications
+  - Fixed dropdown: was using `notifs?.notifications` which returned [] for raw array API — now correctly shows notifications from polling hook
+  - Added 'Tout marquer comme lu' button in dropdown (calls /api/notifications/read-all)
+  - Bell icon turns blue when unread count > 0
+  - Badge pulse animation on count change (animate-pulse-glow)
+  - Click on notification marks as read and navigates to resource
+  - refetchNow() on dropdown open for fresh data
+- Enhanced DashboardView with 'Notifications récentes' card
+  - Shows max 5 unread notifications with category icons
+  - Click navigates to resource and marks as read
+  - Badge shows total unread count
+  - 'Voir tout' link navigates to NotificationsView
+  - Reuses usePollingNotifications hook (shared cache via React Query)
+
+Stage Summary:
+- 4 files changed, 203 insertions, 11 deletions
+- 1 new file: src/hooks/use-polling-notifications.ts
+- 3 modified: Header.tsx, DashboardView.tsx, api/notifications/route.ts
+- Build: ✓ Compiled successfully
+- Lint: ✓ No errors
+- Commit: bdf25c5, pushed to main
