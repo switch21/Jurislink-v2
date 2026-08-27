@@ -177,3 +177,24 @@ Stage Summary:
 - Files changed: helpers.tsx, DocumentsView.tsx, CasesView.tsx, 5 document API route files
 - uploadWithProgress() utility ensures auth headers always come from localStorage
 - Error messages now show actual server response for easier debugging
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix ENOENT mkdir /var/task/uploads in serverless environment
+
+Work Log:
+- Created src/lib/uploads.ts utility that detects serverless env (VERCEL/AWS_LAMBDA) and uses os.tmpdir() instead of process.cwd()
+- Updated all 7 API route files that referenced uploads path:
+  - /api/documents/route.ts (POST upload)
+  - /api/documents/[id]/route.ts (DELETE file cleanup)
+  - /api/documents/[id]/download/route.ts (GET file read)
+  - /api/documents/[id]/versions/route.ts (POST version upload)
+  - /api/documents/[id]/versions/[versionId]/download/route.ts (GET version file)
+  - /api/portal/documents/[id]/download/route.ts (GET portal download)
+  - /api/tenants/logo/route.ts (POST logo upload)
+- Path is cached after first mkdir for performance
+
+Stage Summary:
+- Root cause: process.cwd() is read-only in Vercel/Lambda (/var/task/)
+- Fix: centralized getUploadsDir() uses /tmp/jurislink-uploads in serverless, cwd/uploads locally
+- Commit: fe041e2, pushed to main
