@@ -9,7 +9,6 @@ export async function GET(request: Request) {
   const db = getDb()
   try {
     const plans = await db.subscriptionPlan.findMany({
-      where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
     })
     return NextResponse.json(plans)
@@ -45,7 +44,7 @@ export async function POST(request: Request) {
         maxUsers: body.maxUsers || 3,
         maxStorageGb: body.maxStorageGb || 5,
         hasAI: body.hasAI ?? false,
-        features: body.features ? JSON.stringify(body.features) : '[]',
+        features: typeof body.features === 'string' ? body.features : (body.features ? JSON.stringify(body.features) : '[]'),
         isActive: body.isActive ?? true,
         sortOrder: body.sortOrder || 0,
       },

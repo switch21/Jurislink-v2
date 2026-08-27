@@ -53,7 +53,7 @@ export async function PUT(
         maxUsers: body.maxUsers,
         maxStorageGb: body.maxStorageGb,
         hasAI: body.hasAI,
-        features: body.features ? JSON.stringify(body.features) : undefined,
+        features: body.features ? (typeof body.features === 'string' ? body.features : JSON.stringify(body.features)) : undefined,
         isActive: body.isActive,
         sortOrder: body.sortOrder,
       },

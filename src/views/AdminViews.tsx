@@ -89,7 +89,7 @@ export function AdminCabinsView() {
   const subMut = useMutation({
     mutationFn: (body: { tenantId: string; planId: string; billingPeriod: string; action: string }) =>
       fetch('/api/subscriptions/admin', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => { if (!r.ok) throw new Error(); return r.json() }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-tenants'] }); toast.success('Abonnement mis à jour'); setSubDialogOpen(false) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-tenants'] }); qc.invalidateQueries({ queryKey: ['admin-plans-subs'] }); toast.success('Abonnement mis à jour'); setSubDialogOpen(false) },
     onError: () => toast.error('Erreur lors de la mise à jour de l\'abonnement')
   })
   const openSubDialog = (t: AdminTenant) => {
