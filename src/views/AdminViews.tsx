@@ -327,7 +327,7 @@ export function AdminPlansView() {
   })
   const openCreate = () => { setEditing(null); setForm({ name: '', slug: '', description: '', priceAnnual: 0, priceSemiAnnual: 0, priceQuarterly: 0, priceMonthly: 0, currencyCode: 'XAF', maxUsers: 5, maxStorageGb: 5, hasAI: false, isActive: true, sortOrder: 0 }); setFeaturesText(''); setDialogOpen(true) }
   const openEdit = (p: any) => { setEditing(p); setForm({ name: p.name, slug: p.slug, description: p.description || '', priceAnnual: p.priceAnnual || 0, priceSemiAnnual: p.priceSemiAnnual || 0, priceQuarterly: p.priceQuarterly || 0, priceMonthly: p.priceMonthly || 0, currencyCode: p.currencyCode || 'XAF', maxUsers: p.maxUsers || 5, maxStorageGb: p.maxStorageGb || 5, hasAI: p.hasAI || false, isActive: p.isActive ?? true, sortOrder: p.sortOrder || 0 }); try { setFeaturesText((JSON.parse(p.features || '[]') as string[]).join('\n')) } catch { setFeaturesText('') }; setDialogOpen(true) }
-  const parseFeatures = (f: string) => { try { return JSON.parse(f || '[]') as string[] } catch { return [] } }
+  const parseFeatures = (f: any): string[] => { if (Array.isArray(f)) return f; if (!f) return []; try { const parsed = JSON.parse(f); return Array.isArray(parsed) ? parsed : [String(parsed)]; } catch { return typeof f === 'string' && f.trim() ? f.split('\n').filter(Boolean) : [] } }
   return (<div className='p-6 space-y-4'>
     <div className='flex items-center justify-between flex-wrap gap-3'>
       <h2 className='text-lg font-bold text-jl-primary'>Abonnements</h2>
