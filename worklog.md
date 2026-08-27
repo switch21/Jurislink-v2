@@ -405,6 +405,23 @@ Stage Summary:
 - Templates de relance prêts (1ère, 2ème, 3ème relance + mise en demeure)
 
 ---
+Task ID: fix-duplicate-impayesview
+Agent: Main
+Task: Fix build error — duplicate ImpayesView function definition
+
+Work Log:
+- Build error: `the name 'ImpayesView' is defined multiple times` at page.tsx:3856
+- Found two definitions: line 3548 (older, simpler) and line 3856 (Phase 3, complete)
+- First ImpayesView (lines 3547-3734) was a leftover from earlier development
+- Second ImpayesView (line 3856+) is the Phase 3 version with remindDialog, historyDialog, byLevel/byClient breakdown
+- Removed the first definition (188 lines) using sed
+- Build now succeeds cleanly
+
+Stage Summary:
+- Build error resolved: `npm run build` passes
+- Only the Phase 3 complete ImpayesView remains (with KPIs, bar chart, top clients, manual remind, history)
+
+---
 ## PROJECT STATUS (updated)
 
 ### Current State
@@ -412,6 +429,7 @@ Stage Summary:
 - 10 phases prévues, 3 terminées (Timeline, GED avancée, Impayés)
 - Cron jobs actifs : check-expiry (1h), webDevReview (15min)
 - DB PostgreSQL Supabase avec Prisma ORM
+- Build: passing
 
 ### Completed Phases
 1. Timeline dossier (chronologie fusionnée, filtres, recherche, animations)
@@ -429,3 +447,28 @@ Stage Summary:
 ### Recommended Next Phase
 - Phase 4 : Portail client (valeur business élevée)
 - Ou Phase 6 : WhatsApp/Email automatique (complète la Phase 3 relances)
+
+---
+Task ID: phase3-impayes
+Agent: Main
+Task: Phase 3 — Relance automatique des impayés (dashboard, UI, cron)
+
+Work Log:
+- Schéma Prisma ReminderLog + reminderLevel/lastReminderAt sur Invoice
+- 3 endpoints API validés :
+  - GET /api/invoices/overdue — KPIs + factures enrichies + breakdown par niveau/client
+  - POST /api/invoices/overdue/auto-remind — Cron auto-relance (seuils 7/15/30/45j)
+  - POST /api/invoices/[id]/remind — Relance manuelle (crée ReminderLog + Communication + Notification)
+  - GET /api/invoices/[id]/remind — Historique relances
+- Script cron direct créé : scripts/auto-remind-direct.js
+- Cron exécuté : 5 relances générées
+- Vue Impayés complète (ImpayesView)
+- Commit c7b8e4f poussé sur GitHub
+
+Stage Summary:
+- Le système de relance automatique est opérationnel avec 4 seuils (7j, 15j, 30j, 45j)
+- 5 relances ont été générées sur les factures du cabinet SCP NDOKI
+- Le dashboard Impayés offre une vue complète avec KPIs, breakdown et actions manuelles
+- Le cron auto-remind peut être planifié (toutes les heures ou journalier)
+- Templates de relance prêts (1ère, 2ème, 3ème relance + mise en demeure)
+
