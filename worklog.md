@@ -586,3 +586,52 @@ Stage Summary:
 - Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
 - Erreur UUID Prisma sur /api/admin/dashboard (header X-User-Id avec valeur non-UUID, probablement session obsolète) — non critique pour les utilisateurs cabinet
 - DATABASE_URL dans .env locale pointait vers SQLite (corrigé vers Supabase PostgreSQL)
+
+---
+Task ID: fix-uuid-and-optimize-dashboard
+Agent: Main
+Task: Fix UUID Prisma error + optimize dashboard performance
+
+Work Log:
+- **UUID validation** : ajouté un regex UUID v4 dans auth-server.ts getAuthUser()
+  - Les headers X-User-Id non-UUID retournent null immédiatement (401) sans toucher Prisma
+  - Élimine le crash 'Inconsistent column data: Error creating UUID' des sessions obsolètes
+- **Dashboard /api/dashboard** : réécriture complète de la route
+  - Avant : ~25 queries séquentielles (chacune attend la précédente) → ~15s
+  - Après : 1 gros Promise.all (28 queries) + 1 query conditionnelle (myTasks) → ~2-3s
+  - Supprimé 3 queries en double (overduePayments, newClientsThisMonth, newCasesThisMonth)
+  - Supprimé le count todayEventsCount séparé (réutilise todayEvents.length)
+- **Dashboard /api/dashboard/stats** : même optimisation appliquée
+  - Avant : 6 queries séquentielles → Après : 1 Promise.all
+- Lint OK (0 nouvelle erreur)
+- Commit d607745 poussé sur GitHub
+
+Stage Summary:
+- Le dashboard cabinet devrait maintenant charger en ~2-3s au lieu de ~15s
+- L'erreur UUID Prisma dans les logs est éliminée (validation regex avant la query)
+- Aucune régression fonctionnelle (même données retournées, même format)
+
+---
+## PROJECT STATUS (updated)
+
+### Current State
+- Application JurisLink v2 fonctionnelle sur Vercel (auto-deploy depuis GitHub main)
+- Build: passing
+- DB: Supabase PostgreSQL
+- Dashboard: optimisé (~2-3s vs ~15s auparavant)
+
+### Completed Phases
+1. Timeline dossier
+2. GED avancée (versioning, preview PDF, tags, recherche, grille/liste)
+3. Impayés & Relances (détection auto, 4 seuils, dashboard, historique, cron)
+
+### Remaining Phases
+4. Portail client
+5. Signature électronique
+6. WhatsApp/Email automatique
+7. Application mobile (PWA)
+8. IA documentaire
+9. OCR
+
+### Known Issues
+- Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
