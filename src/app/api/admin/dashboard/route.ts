@@ -71,20 +71,19 @@ export async function GET(request: Request) {
       take: 5,
     })
 
-    // Monthly signups (last 12 months)
+    // Monthly signups (last 12 months) - use raw SQL for proper month grouping
     const twelveMonthsAgo = new Date()
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-    const monthlySignups = await db.tenant.groupBy({
-      by: ['createdAt'],
-      where: { createdAt: { gte: twelveMonthsAgo } },
-      _count: { id: true },
-    })
-
-    // Group monthly signups by YYYY-MM
+    const monthlySignupsRaw = await db.$queryRaw<Array<{ month: string; count: bigint }>>`
+      SELECT TO_CHAR(created_at, 'YYYY-MM') as month, COUNT(*)::bigint as count
+      FROM tenants
+      WHERE created_at >= ${twelveMonthsAgo}
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+      ORDER BY month
+    `
     const signupsByMonth: Record<string, number> = {}
-    for (const s of monthlySignups) {
-      const key = s.createdAt.toISOString().slice(0, 7)
-      signupsByMonth[key] = (signupsByMonth[key] || 0) + s._count.id
+    for (const s of monthlySignupsRaw) {
+      signupsByMonth[s.month] = Number(s.count)
     }
 
     return NextResponse.json({

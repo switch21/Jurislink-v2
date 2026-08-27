@@ -739,3 +739,107 @@ Stage Summary:
 - Fixed 3 query functions in InvoicesView (lines 2432-2434) to add Array.isArray guards
 - The error "(S || []).map is not a function" was caused by non-array API responses being passed to .map() calls
 - No changes to API routes — the fix is purely defensive on the frontend
+
+---
+Task ID: 5a
+Agent: Sub-agent (code-split)
+Task: Extract layout components + DashboardView + TasksView from page.tsx
+
+Work Log:
+- Created src/components/layout/ThemeToggle.tsx (20 lines)
+- Created src/components/layout/EmptyState.tsx (15 lines)
+- Created src/components/layout/LoginPage.tsx (103 lines)
+- Created src/components/layout/Sidebar.tsx (55 lines)
+- Created src/components/layout/AdminSidebar.tsx (54 lines)
+- Created src/components/layout/AdminHeader.tsx (25 lines)
+- Created src/components/layout/Header.tsx (117 lines)
+- Created src/components/views/DashboardView.tsx (234 lines)
+- Created src/components/views/TasksView.tsx (180 lines)
+
+Stage Summary:
+- Extracted 9 components from page.tsx lines 414-1081 (803 total lines)
+- All files use 'use client' and proper imports from @/types, @/lib/constants, @/lib/helpers
+- Header.tsx imports ThemeToggle from @/components/layout/ThemeToggle
+- TasksView.tsx imports EmptyState from @/components/layout/EmptyState
+- DashboardView uses declare for caseList/setSelectedCase (pre-existing module-level references)
+---
+Task ID: 5b
+Agent: Sub-agent (code-split)
+Task: Extract CasesView, ClientsView, DocumentsView, CalendarView from page.tsx
+
+Work Log:
+- Created src/components/views/CasesView.tsx
+- Created src/components/views/ClientsView.tsx
+- Created src/components/views/DocumentsView.tsx
+- Created src/components/views/CalendarView.tsx
+
+Stage Summary:
+- Extracted 4 major views from page.tsx lines 1082-2406
+- All files use 'use client' and proper imports from @/types, @/lib/constants, @/lib/helpers
+
+---
+Task ID: 5c
+Agent: Sub-agent (code-split)
+Task: Extract InvoicesView through CommunicationsView from page.tsx
+
+Work Log:
+- Created all 12 view components in /src/components/views/
+
+Stage Summary:
+- Extracted 12 views from page.tsx lines 2407-4553
+- All files use "use client" and proper imports from @/types, @/lib/constants, @/lib/helpers, @/store/appStore, @/lib/utils, @/hooks/use-toast, @/components/layout/EmptyState
+- Each component uses default export
+- Files created: InvoicesView (259), MessagesView (101), ReportsView (213), AuditLogsView (67), SettingsView (447), FinancesView (270), NotificationsView (106), ArchivesView (43), ImpayesView (233), TimeTrackingView (177), TemplatesView (261), CommunicationsView (192)
+- Total: 2369 lines
+
+---
+Task ID: 5c-1
+Agent: Sub-agent (code-split)
+Task: Extract InvoicesView, MessagesView, ReportsView, AuditLogsView, SettingsView, FinancesView
+
+Work Log:
+- Created 6 view components from page.tsx lines 2407-3652
+
+Stage Summary:
+- All files use 'use client' and proper imports
+- Preserved exact logic and JSX
+
+---
+Task ID: 5c-2
+Agent: Sub-agent (code-split)
+Task: Extract NotificationsView, ArchivesView, ImpayesView, TimeTrackingView, TemplatesView, CommunicationsView
+
+Work Log:
+- Created 6 view components from page.tsx lines 3653-4553
+
+Stage Summary:
+- All files use 'use client' and proper imports
+- Preserved exact logic and JSX
+
+---
+Task ID: 5d
+Agent: Sub-agent (code-split)
+Task: Extract admin views from page.tsx
+
+Work Log:
+- Created 5 admin view components from page.tsx lines 4554-4918
+
+Stage Summary:
+- All files use 'use client' and proper imports
+- Preserved exact logic and JSX---
+Task ID: 5e
+Agent: Sub-agent (code-split)
+Task: Extract portal views, PortalRouter, and Footer from page.tsx
+
+Work Log:
+- Created 12 portal/layout components from PortalViews.tsx into src/components/portal/
+- Files: PortalSidebar (65), PortalHeader (42), PortalDashboardView (92), PortalCasesView (72), PortalCaseDetailView (146), PortalInvoicesView (106), PortalDocumentsView (45), PortalMessagesView (72), PortalProfileView (89), InfoRow (6), PortalRouter (24), Footer (10)
+- Updated page.tsx to import from @/components/portal/ instead of @/views/PortalViews
+- Removed inline Footer from page.tsx
+- All imports use proper module paths (@/types, @/lib/constants, @/lib/helpers, @/store/appStore, @/hooks/use-toast, @/components/layout/EmptyState, shadcn/ui components)
+- Zero new lint errors introduced
+
+Stage Summary:
+- All 12 files use "use client" and proper imports
+- Preserved exact logic and JSX from original PortalViews.tsx
+- page.tsx now imports PortalSidebar, PortalHeader, PortalRouter, Footer from @/components/portal/

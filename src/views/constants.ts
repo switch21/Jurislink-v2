@@ -1,0 +1,95 @@
+'use client'
+
+import React from 'react'
+import { QueryClient } from '@tanstack/react-query'
+import { LayoutDashboard, Briefcase, Users, ClipboardList, FileText, Calendar, Receipt, TrendingUp, AlertOctagon, Timer, SendHorizontal, FileCode2, MessageSquare, BarChart3, Bell, Shield, Settings, BuildingIcon, CreditCardIcon, UsersRound } from 'lucide-react'
+import type { ViewName } from '@/store/appStore'
+
+// ==================== Query Client ====================
+export const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } })
+
+// ==================== Constants ====================
+export const STATUS_COLORS: Record<string, string> = {
+  nouveau: 'bg-[#E8F0F8] text-[#1E5A8A]',
+  ouvert: 'bg-[#E8F0F8] text-[#1E5A8A]',
+  en_cours: 'bg-[#F5F0E3] text-[#926B2D]',
+  en_attente: 'bg-[#FEF3C7] text-[#92400E]',
+  clos: 'bg-[#D1FAE5] text-[#065F46]',
+  archive: 'bg-[#F3F4F6] text-[#6B7280]',
+  non_paye: 'bg-[#FEE2E2] text-[#991B1B]',
+  partiel: 'bg-[#FEF3C7] text-[#92400E]',
+  paye: 'bg-[#D1FAE5] text-[#065F46]',
+  annule: 'bg-[#F3F4F6] text-[#6B7280]',
+  a_faire: 'bg-[#E8F0F8] text-[#1E5A8A]',
+  en_cours_t: 'bg-[#F5F0E3] text-[#926B2D]',
+  terminee: 'bg-[#D1FAE5] text-[#065F46]',
+  annulee: 'bg-[#F3F4F6] text-[#6B7280]',
+  todo: 'bg-[#E8F0F8] text-[#1E5A8A]',
+  in_progress: 'bg-[#F5F0E3] text-[#926B2D]',
+  done: 'bg-[#D1FAE5] text-[#065F46]',
+}
+export const STATUS_LABELS: Record<string, string> = {
+  nouveau: 'Nouveau', ouvert: 'Ouvert', en_cours: 'En cours', en_attente: 'En attente',
+  clos: 'Clos', archive: 'Archivé', non_paye: 'Non payé', partiel: 'Partiel',
+  paye: 'Payé', annule: 'Annulé',
+  a_faire: 'À faire', en_cours_t: 'En cours', terminee: 'Terminée', annulee: 'Annulée',
+  todo: 'À faire', in_progress: 'En cours', done: 'Terminée',
+}
+export const PRIORITY_COLORS: Record<string, string> = {
+  basse: 'bg-[#F3F4F6] text-[#6B7280]',
+  normal: 'bg-[#F3F4F6] text-[#374151]',
+  haute: 'bg-[#FEF3C7] text-[#92400E]',
+  urgente: 'bg-[#FEE2E2] text-[#991B1B]',
+}
+export const PRIORITY_LABELS: Record<string, string> = { basse: 'Basse', normal: 'Normal', haute: 'Haute', urgente: 'Urgente' }
+export const TYPE_LABELS: Record<string, string> = { civil: 'Civil', penal: 'Pénal', commercial: 'Commercial', social: 'Social', administratif: 'Administratif' }
+export const EVENT_TYPE_LABELS: Record<string, string> = { audience: 'Audience', rdv: 'Rendez-vous', echeance: 'Échéance', depot: 'Dépôt', autre: 'Autre' }
+export const CRIT_COLORS: Record<string, string> = {
+  basse: 'bg-[#D1D5DB]', normal: 'bg-[#C8A45D]', haute: 'bg-[#F59E0B]', urgente: 'bg-[#EF4444]',
+}
+export const ROLE_LABELS: Record<string, string> = {
+  root_admin: 'Admin Racine', associate: 'Associé', firm_admin: 'Admin Cabinet',
+  lawyer: 'Avocat', jurist: 'Juriste', assistant: 'Assistant', accountant: 'Comptable', client: 'Client', secretary: 'Secrétaire', collaborator: 'Collaborateur',
+}
+export const RISK_COLORS: Record<string, string> = {
+  faible: 'bg-[#D1FAE5] text-[#065F46]',
+  moyen: 'bg-[#F5F0E3] text-[#926B2D]',
+  eleve: 'bg-[#FEE2E2] text-[#991B1B]',
+}
+export const BILLING_LABELS: Record<string, string> = { forfait: 'Forfait', horaire: 'Horaire', abonnement: 'Abonnement', success_fee: 'Success fee', provision: 'Provision' }
+export const INVOICE_TYPE_LABELS: Record<string, string> = { devis: 'Devis', facture: 'Facture', avoir: 'Avoir', recu: 'Reçu' }
+export const INVOICE_TYPE_COLORS: Record<string, string> = { devis: 'bg-[#2563EB] text-white', facture: 'bg-[#1E5A8A] text-white', avoir: 'bg-[#DC2626] text-white', recu: 'bg-[#059669] text-white' }
+export const PAYMENT_METHOD_LABELS: Record<string, string> = { especes: 'Espèces', virement: 'Virement', mobile_money: 'Mobile Money', carte: 'Carte', cheque: 'Chèque' }
+export const PAYMENT_METHOD_COLORS: Record<string, string> = { especes: 'bg-[#059669]', virement: 'bg-[#1E5A8A]', mobile_money: 'bg-[#C8A45D]', carte: 'bg-[#7C3AED]', cheque: 'bg-[#6B7280]' }
+export const CHART_COLORS = ['#1E5A8A', '#C8A45D', '#059669', '#DC2626', '#6B7280', '#F59E0B']
+export const CHART_COLORS_DARK = ['#4A8FCA', '#E0C87A', '#34D399', '#FB7185', '#9CA3AF', '#FBBF24']
+export const CASE_STATUS_LABELS: Record<string, string> = { nouveau: 'Nouveau', ouvert: 'Ouvert', en_cours: 'En cours', en_attente: 'En attente', clos: 'Clos', archive: 'Archivé' }
+export const INVOICE_STATUS_LABELS: Record<string, string> = { non_paye: 'Non payé', partiel: 'Partiel', paye: 'Payé', annule: 'Annulé' }
+
+export const NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType; adminOnly?: boolean; permission?: { resource: string; action: string } }[] = [
+  { view: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { view: 'cases', label: 'Dossiers', icon: Briefcase, permission: { resource: 'case', action: 'view' } },
+  { view: 'clients', label: 'Clients', icon: Users, permission: { resource: 'client', action: 'view' } },
+  { view: 'tasks', label: 'Tâches', icon: ClipboardList, permission: { resource: 'task', action: 'view' } },
+  { view: 'documents', label: 'Documents', icon: FileText, permission: { resource: 'document', action: 'view' } },
+  { view: 'calendar', label: 'Calendrier', icon: Calendar, permission: { resource: 'event', action: 'view' } },
+  { view: 'invoices', label: 'Factures', icon: Receipt, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'finances', label: 'Finances', icon: TrendingUp, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'impayes', label: 'Impayés', icon: AlertOctagon, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'time-tracking', label: 'Temps', icon: Timer, permission: { resource: 'task', action: 'view' } },
+  { view: 'communications', label: 'Communications', icon: SendHorizontal, permission: { resource: 'message', action: 'view' } },
+  { view: 'templates', label: 'Modèles', icon: FileCode2, permission: { resource: 'document', action: 'view' } },
+  { view: 'messages', label: 'Messages', icon: MessageSquare, permission: { resource: 'message', action: 'view' } },
+  { view: 'reports', label: 'Rapports', icon: BarChart3, permission: { resource: 'report', action: 'view' } },
+  { view: 'notifications', label: 'Notifications', icon: Bell, permission: { resource: 'notification', action: 'view' } },
+  { view: 'audit-logs', label: "Journal d'audit", icon: Shield, adminOnly: true, permission: { resource: 'audit', action: 'view' } },
+  { view: 'settings', label: 'Paramètres', icon: Settings },
+]
+
+export const ADMIN_NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType }[] = [
+  { view: 'admin-dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { view: 'admin-cabinets', label: 'Cabinets', icon: BuildingIcon },
+  { view: 'admin-users', label: 'Utilisateurs', icon: UsersRound },
+  { view: 'admin-plans', label: 'Abonnements', icon: CreditCardIcon },
+  { view: 'settings', label: 'Paramètres', icon: Settings },
+]

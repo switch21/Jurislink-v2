@@ -1,0 +1,181 @@
+'use client'
+
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon } from './shared-ui'
+import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP } from './constants'
+import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
+// ==================== CALENDAR VIEW ====================
+export function CalendarView() {
+  const { user } = useAppStore()
+  const qc = useQueryClient()
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<EventItem | null>(null)
+  const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '' as string })
+  const [generateTasks, setGenerateTasks] = useState(false)
+  const monthStr = format(currentMonth, 'yyyy-MM')
+
+  const { data: events, isLoading } = useQuery({
+    queryKey: ['events', user?.tenantId, monthStr],
+    queryFn: () => fetch(`/api/events?tenantId=${user?.tenantId}&month=${monthStr}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+  })
+
+  const { data: tenantCases } = useQuery({
+    queryKey: ['cases-mini-cal', user?.tenantId],
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()),
+  })
+
+  const { data: tenantUsers } = useQuery({
+    queryKey: ['users-cal', user?.tenantId],
+    queryFn: () => fetch(`/api/users?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : d.users || []),
+  })
+
+  const createMut = useMutation({
+    mutationFn: (body: Record<string, unknown>) => fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, tenantId: user?.tenantId }) }).then(r => r.json()),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['events'] }); toast.success('Événement créé'); setDialogOpen(false)
+      if (generateTasks && data?.id) {
+        fetch('/api/workflow/generate-tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.id, tenantId: user?.tenantId }) }).then(r => r.json()).then(res => {
+          if (res.createdCount > 0) toast.success(`${res.createdCount} tâches générées automatiquement`)
+          else toast('Aucune nouvelle tâche générée')
+          qc.invalidateQueries({ queryKey: ['tasks'] })
+        }).catch(() => {})
+      }
+      resetForm()
+    },
+    onError: () => toast.error('Erreur lors de la création'),
+  })
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, ...body }: Record<string, unknown>) => fetch(`/api/events/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['events'] }); toast.success('Événement mis à jour'); setDialogOpen(false); resetForm() },
+    onError: () => toast.error('Erreur lors de la mise à jour'),
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => fetch(`/api/events/${id}`, { method: 'DELETE' }).then(r => r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['events'] }); toast.success('Événement supprimé'); setDialogOpen(false); resetForm() },
+    onError: () => toast.error('Erreur lors de la suppression'),
+  })
+
+  const resetForm = () => { setForm({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '' }); setEditing(null); setGenerateTasks(false) }
+  const openCreate = (day?: Date) => {
+    resetForm()
+    if (day) {
+      const start = day.getHours() === 0 ? '09:00' : format(day, 'HH:mm')
+      setForm(f => ({ ...f, startTime: `${format(day, 'yyyy-MM-dd')}T${start}`, endTime: `${format(day, 'yyyy-MM-dd')}T${String(parseInt(start) + 1).padStart(2, '0')}:00` }))
+    }
+    setDialogOpen(true)
+  }
+  const openEdit = (e: EventItem) => {
+    setEditing(e)
+    setForm({
+      title: e.title, description: e.description || '',
+      startTime: e.startTime?.slice(0, 16) || '',
+      endTime: e.endTime?.slice(0, 16) || '',
+      eventType: e.eventType || 'rdv', criticality: e.criticality || 'normale',
+      caseId: e.caseId || '',
+      assignments: (e.assignments || []).map((a: EventAssignment) => a.userId).join(','),
+    })
+    setDialogOpen(true)
+  }
+  const handleSubmit = () => {
+    if (!form.title.trim() || !form.startTime) return
+    const assignments = form.assignments ? form.assignments.split(',').filter(Boolean) : []
+    const payload = { title: form.title, description: form.description || null, startTime: form.startTime, endTime: form.endTime || null, eventType: form.eventType, criticality: form.criticality, caseId: form.caseId || null, assignments }
+    if (editing) { updateMut.mutate({ id: editing.id, ...payload }) } else { createMut.mutate(payload) }
+  }
+
+  const CRIT_EVENT_COLORS: Record<string, string> = {
+    normale: 'bg-[#C8A45D]', importante: 'bg-[#F59E0B]', urgente: 'bg-[#EF4444]',
+  }
+
+  const days = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth)
+    const monthEnd = endOfMonth(currentMonth)
+    const calStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+    return eachDayOfInterval({ start: calStart, end: calEnd })
+  }, [currentMonth])
+
+  const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+  const getEventsForDay = (day: Date) => (Array.isArray(events) ? events : []).filter((e: EventItem) => { try { return isSameDay(parseISO(e.startTime), day) } catch { return false } })
+
+  return (
+    <div className="p-4 md:p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Calendrier</h2>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="size-8" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}><ChevronLeft className="size-4" /></Button>
+          <span className="text-sm font-medium min-w-[140px] text-center">{format(currentMonth, 'MMMM yyyy', { locale: fr })}</span>
+          <Button variant="outline" size="icon" className="size-8" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight className="size-4" /></Button>
+          <Button size="sm" className="bg-[#1E5A8A] hover:bg-[#164070] ml-2" onClick={() => openCreate()}><CalendarPlus className="size-4 mr-1" />Nouvel événement</Button>
+        </div>
+      </div>
+
+      {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> : (
+        <Card><CardContent className="p-2">
+          <div className="grid grid-cols-7 gap-px bg-[#F3F4F6] rounded-lg overflow-hidden">
+            {weekDays.map(d => <div key={d} className="bg-white p-2 text-center text-xs font-medium text-[#6B7280]">{d}</div>)}
+            {days.map(day => {
+              const dayEvents = getEventsForDay(day)
+              return (
+                <div key={day.toISOString()} className={cn('bg-white p-1 min-h-[80px] md:min-h-[100px] border border-[#E5E7EB] cursor-pointer', !isSameMonth(day, currentMonth) && 'opacity-40', isToday(day) && 'bg-[#E8F0F8] ring-1 ring-[#1E5A8A]')} onClick={() => openCreate(day)}>
+                  <p className={cn('text-xs mb-1', isToday(day) ? 'font-bold text-[#926B2D]' : 'text-[#6B7280]')}>{format(day, 'd')}</p>
+                  <div className="space-y-0.5">
+                    {dayEvents.slice(0, 3).map(e => (
+                      <div key={e.id} onClick={ev => { ev.stopPropagation(); openEdit(e) }} className={cn('text-[10px] px-1 py-0.5 rounded truncate text-white flex items-center gap-1', CRIT_EVENT_COLORS[e.criticality] || CRIT_EVENT_COLORS.normale)} title={e.title}>
+                        {e.title}
+                        {(e.assignments || []).length > 0 && <span className="ml-auto shrink-0">{(e.assignments || []).slice(0, 2).map((a: EventAssignment) => <span key={a.userId} className="inline-block size-3 rounded-full bg-white/30 ml-0.5" title={a.user?.fullName || ''}><span className="text-[6px] leading-3 block text-center">{a.user?.fullName?.[0] || ''}</span></span>)}</span>}
+                      </div>
+                    ))}
+                    {dayEvents.length > 3 && <p className="text-[10px] text-[#9CA3AF] pl-1">+{dayEvents.length - 3}</p>}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent></Card>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) resetForm() }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{editing ? 'Modifier l\'événement' : 'Nouvel événement'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Titre *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Titre de l'événement" /></div>
+            <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Début *</Label><Input type="datetime-local" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} /></div>
+              <div><Label>Fin</Label><Input type="datetime-local" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Type</Label><Select value={form.eventType} onValueChange={v => setForm(f => ({ ...f, eventType: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="audience">Audience</SelectItem><SelectItem value="echeance">Échéance</SelectItem><SelectItem value="rdv">Rendez-vous</SelectItem><SelectItem value="reunion">Réunion</SelectItem><SelectItem value="autre">Autre</SelectItem></SelectContent></Select></div>
+              <div><Label>Criticité</Label><Select value={form.criticality} onValueChange={v => setForm(f => ({ ...f, criticality: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normale">Normale</SelectItem><SelectItem value="importante">Importante</SelectItem><SelectItem value="urgente">Urgente</SelectItem></SelectContent></Select></div>
+            </div>
+            <div><Label>Dossier lié</Label><Select value={form.caseId} onValueChange={v => setForm(f => ({ ...f, caseId: v }))}><SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger><SelectContent>{(tenantCases || []).map((c: CaseItem) => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Personnes assignées</Label><div className="border rounded-lg p-2 max-h-32 overflow-y-auto space-y-1">{(tenantUsers || []).map((u: UserItem) => {
+              const ids = form.assignments.split(',').filter(Boolean)
+              const checked = ids.includes(u.id)
+              return <label key={u.id} className="flex items-center gap-2 text-sm cursor-pointer py-0.5"><Checkbox checked={checked} onCheckedChange={v => { const arr = ids.filter(x => x !== u.id); if (v) arr.push(u.id); setForm(f => ({ ...f, assignments: arr.join(',') })) }} className="size-3.5" /><span>{u.fullName}</span></label>
+            })}</div></div>
+            {!editing && <div className="flex items-center gap-2 pt-1"><Checkbox checked={generateTasks} onCheckedChange={v => setGenerateTasks(!!v)} className="size-3.5" /><Label className="text-xs cursor-pointer" onClick={() => setGenerateTasks(!generateTasks)}>Générer automatiquement les tâches de préparation</Label></div>}
+            {editing && <div className="pt-1"><Button type="button" size="sm" variant="outline" className="text-xs h-8" onClick={async () => {
+              try {
+                const res = await fetch('/api/workflow/generate-tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: editing.id, tenantId: user?.tenantId }) }).then(r => r.json())
+                if (res.createdCount > 0) toast.success(`${res.createdCount} tâches générées automatiquement`)
+                else toast('Aucune nouvelle tâche générée')
+                qc.invalidateQueries({ queryKey: ['tasks'] })
+              } catch { toast.error('Erreur') }
+            }}><ZapIcon className="size-3.5 mr-1" />Générer les tâches</Button></div>}
+          </div>
+          <DialogFooter>
+            {editing && <Button variant="outline" className="text-[#DC2626] hover:text-[#DC2626] hover:bg-[#FEF2F2] mr-auto" onClick={() => deleteMut.mutate(editing.id)}><Trash2 className="size-3.5 mr-1" />Supprimer</Button>}
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleSubmit} disabled={!form.title.trim() || !form.startTime || createMut.isPending || updateMut.isPending}>{editing ? 'Enregistrer' : 'Créer'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
