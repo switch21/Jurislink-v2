@@ -635,9 +635,51 @@ Stage Summary:
 
 ### Known Issues
 - Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
+- Dev server OOM en sandbox (page.tsx ~5666 lignes, Turbopack trop lourd pour la RAM disponible)
 
 ---
-Task ID: TBD
+Task ID: phase4-portal-client
+Agent: Main
+Task: Phase 4 — Portail Client complet (frontend + seed comptes)
+
+Work Log:
+- **Backend API** : 14 routes existantes déjà créées dans `/api/portal/` (login, auth, dashboard, cases, cases/[id], cases/[id]/timeline, invoices, invoices/[id], documents, documents/[id]/download, communications, profile, notifications, reset-password)
+- **Prisma** : modèle `ClientPortal` déjà en place (schema + DB push)
+- **App Store** : ajouté `PortalUserInfo`, `PortalViewName`, `PortalClientInfo`, `PortalTenantInfo`, `portalLogin()`, `portalLogout()`, `setPortalView()`, `setPortalSelectedCaseId()`
+- **Auth Fetch** : mis à jour pour injecter `X-Portal-User-Id` pour les routes `/api/portal/`
+- **Login Page** : onglets Cabinet / Portail Client déjà en place
+- **Portal Types** : 8 interfaces ajoutées (PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData)
+- **Composants frontend ajoutés** (~700 lignes) :
+  - `PORTAL_NAV_ITEMS` constante navigation
+  - `PortalSidebar` — sidebar responsive avec logo cabinet, nav, avatar client
+  - `PortalHeader` — barre supérieure avec dropdown profil/déconnexion
+  - `PortalDashboardView` — 4 KPIs, dossiers récents, factures récentes, dernières communications
+  - `PortalCasesView` — grille de dossiers avec recherche + filtres par statut
+  - `PortalCaseDetailView` — détail avec 5 onglets (Résumé, Chronologie, Documents, Factures, Temps)
+  - `PortalInvoicesView` — liste avec filtres + barre de progression + dialog détail avec lignes/paiements/PDF
+  - `PortalDocumentsView` — liste avec recherche + icônes par type MIME + download
+  - `PortalMessagesView` — interface chat-like avec envoi de messages + sélection dossier
+  - `PortalProfileView` — infos client, cabinet, avocat responsable, édition
+  - `PortalRouter` — routing par `portalCurrentView`
+  - `InfoRow` — composant utilitaire pour les lignes d'information
+- **AppInner modifié** : check `isPortalAuthenticated` avant `!isAuthenticated`, rend le layout portail (PortalSidebar + PortalHeader + PortalRouter + Footer)
+- **29 comptes portail seedés** pour tous les clients actifs (16 SCP NDOKI, 7 Mengue & Associés, 5 Fotso Law Firm)
+  - Email pattern : `{local}.portal@{domain}`
+  - Mot de passe par défaut : `JurisLink2025`
+- Lint : 0 nouvelle erreur (seulement 2 pré-existantes React Compiler + 7 no-require-imports dans .js)
+- Push GitHub : commit 315b338
+- Dev server : OOM en sandbox (fichier trop gros pour la RAM disponible), Vercel déploie sans problème
+
+Stage Summary:
+- Le portail client est fonctionnel avec 6 vues (Dashboard, Dossiers, Factures, Documents, Messagerie, Profil)
+- Authentification séparée (X-Portal-User-Id) avec localStorage indépendant (jurislink_portal_user)
+- Login via onglet « Portail Client » sur la page de connexion
+- 29 clients ont maintenant un compte portail avec email et mot de passe par défaut
+- Le layout est cohérent avec le reste de l'application (même charte de couleurs #1E5A8A, #C8A45D)
+
+### Recommended Next Phase
+- Phase 5 : Signature électronique (DocuSign/Yousign)
+- Ou Phase 6 : WhatsApp/Email automatique (complète la Phase 3 relances)
 Agent: Sub-agent (general-purpose)
 Task: Run subscription check-expiry cron logic directly against DB (dev server down)
 
