@@ -70,11 +70,9 @@ export {
   Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown,
   FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2,
   FileImage, List, LayoutGrid, History,
-  Globe, ShieldUser, FileDown, MessageCircleReply, UserCog
+  Globe, ShieldUser, FileDown, MessageCircleReply, UserCog,
+  Building2 as BuildingIcon, CreditCard as CreditCardIcon, Zap as ZapIcon
 } from 'lucide-react'
 // ═══ Internal Components ═══
 export { EmptyState } from './EmptyState'
 export { ThemeToggle } from './ThemeToggle'
-
-// Aliased exports
-export { Building2 as BuildingIcon, CreditCard as CreditCardIcon, Zap as ZapIcon }

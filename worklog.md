@@ -112,3 +112,25 @@ Stage Summary:
 - Phase 7 is now 100% complete
 - Version: v3.8.68
 - Commit: 3d8d139
+
+---
+Task ID: 7c
+Agent: Super Z (main)
+Task: Hotfix — Fix runtime errors (ADMIN_NAV_ITEMS & BuildingIcon)
+
+Work Log:
+- Fixed `ADMIN_NAV_ITEMS is not defined` in 3 view files:
+  - Sidebar.tsx: added NAV_ITEMS to import from ./constants
+  - AdminSidebar.tsx: added ADMIN_NAV_ITEMS to import from ./constants
+  - Header.tsx: added NAV_ITEMS and ADMIN_NAV_ITEMS to import from ./constants
+- Fixed `Building2 is not defined` in shared-ui.tsx:
+  - Root cause: `export { Building2 } from 'lucide-react'` (re-export) doesn't create a local binding
+  - Then `export { Building2 as BuildingIcon }` failed because Building2 wasn't in local scope
+  - Fix: moved aliased exports into the lucide-react import block: `Building2 as BuildingIcon, CreditCard as CreditCardIcon, Zap as ZapIcon`
+- Cleared .next cache and restarted dev server
+- Verification: GET / 200, no runtime errors
+
+Stage Summary:
+- 4 files fixed (3 view imports + 1 shared-ui re-export)
+- Dev server compiles and runs without errors
+- Version: v3.8.68 (hotfix)
