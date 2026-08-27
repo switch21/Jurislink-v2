@@ -86,25 +86,32 @@ export async function GET(
     doc.on('data', (chunk: Buffer) => chunks.push(chunk))
 
     // ---- HEADER ----
+    // Blue accent bar at top
+    doc.rect(0, 0, 595.28, 6).fill(COLORS.primary)
+
     const logoPath = t.logoUrl ? path.join(process.cwd(), 'public', t.logoUrl) : null
     let logoW = 0
+    let hasLogo = false
     if (logoPath && fs.existsSync(logoPath)) {
       try {
         const imgBuf = fs.readFileSync(logoPath)
-        doc.image(imgBuf, 50, 40, { height: 60 })
+        doc.image(imgBuf, 50, 24, { height: 55 })
         logoW = 70
+        hasLogo = true
       } catch { /* skip broken logo */ }
     }
 
     const firmX = 50 + logoW + 10
-    doc.font('Helvetica-Bold').fontSize(14).fillColor(COLORS.primary).text(t.name || 'JurisLink', firmX, 45, { width: 300 })
+    doc.font('Helvetica-Bold').fontSize(16).fillColor(COLORS.primary).text(t.name || 'JurisLink', firmX, 28, { width: 300 })
     doc.font('Helvetica').fontSize(8).fillColor(COLORS.gray)
-    if (t.address) doc.text(t.address, firmX, 62, { width: 300 })
-    doc.text([t.phone, t.email].filter(Boolean).join('  |  '), firmX, t.address ? 74 : 62, { width: 300 })
-    if (t.niu) doc.text(`NIU: ${t.niu}`, firmX, t.address ? 86 : 74, { width: 300 })
+    let firmInfoY = 48
+    if (t.address) { doc.text(t.address + (t.city ? `, ${t.city}` : '') + (t.country ? ` — ${t.country}` : ''), firmX, firmInfoY, { width: 300 }); firmInfoY += 12 }
+    const contactLine = [t.phone, t.email].filter(Boolean).join('  |  ')
+    if (contactLine) { doc.text(contactLine, firmX, firmInfoY, { width: 300 }); firmInfoY += 12 }
+    if (t.niu) { doc.text(`NIU : ${t.niu}`, firmX, firmInfoY, { width: 300 }); firmInfoY += 12 }
 
     // Invoice title
-    const yTitle = logoPath && fs.existsSync(logoPath) ? 115 : 45
+    const yTitle = hasLogo ? 100 : 40
     doc.font('Helvetica-Bold').fontSize(20).fillColor(COLORS.primary)
     doc.text(invoice.type === 'devis' ? 'DEVIS' : invoice.type === 'avoir' ? 'AVOIR' : 'FACTURE', 380, yTitle, { align: 'right', width: 160 })
     doc.font('Helvetica-Bold').fontSize(11).fillColor(COLORS.dark)
@@ -208,10 +215,13 @@ export async function GET(
     }
 
     // Footer
-    doc.rect(50, 740, 490, 1).fill(COLORS.border)
+    doc.rect(50, 730, 490, 0.5).fill(COLORS.primary)
     doc.font('Helvetica').fontSize(7).fillColor(COLORS.gray)
-    doc.text(`${t.name} — ${t.address || ''} — ${t.phone || ''} — ${t.email || ''}`, 50, 748, { width: 490, align: 'center' })
-    if (t.niu) doc.text(`NIU: ${t.niu}`, 50, 758, { width: 490, align: 'center' })
+    const footerParts = [t.name, t.address, t.city, t.phone, t.email].filter(Boolean)
+    doc.text(footerParts.join('  —  '), 50, 738, { width: 490, align: 'center' })
+    if (t.niu) doc.text(`NIU : ${t.niu}`, 50, 748, { width: 490, align: 'center' })
+    doc.font('Helvetica').fontSize(6).fillColor(COLORS.gray)
+    doc.text('Document généré par JurisLink', 50, 758, { width: 490, align: 'center' })
 
     doc.end()
 

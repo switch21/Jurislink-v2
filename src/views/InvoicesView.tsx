@@ -23,6 +23,12 @@ export function InvoicesView() {
     queryFn: () => { const p = new URLSearchParams(); if (user?.tenantId) p.set('tenantId', user.tenantId); if (typeFilter !== 'all') p.set('type', typeFilter); if (statusFilter !== 'all') p.set('status', statusFilter); return fetch(`/api/invoices?${p}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []) },
   })
 
+  const { data: tenant } = useQuery({
+    queryKey: ['tenant-info', user?.tenantId],
+    queryFn: () => fetch(`/api/tenants/${user?.tenantId}`).then(r => r.json()),
+    enabled: !!user?.tenantId,
+  })
+
   const { data: invoiceDetail } = useQuery({
     queryKey: ['invoice-detail', selectedInvoice?.id],
     queryFn: () => fetch(`/api/invoices/${selectedInvoice!.id}?tenantId=${user?.tenantId}`).then(r => r.json()),
@@ -155,84 +161,159 @@ export function InvoicesView() {
         </DialogContent>
       </Dialog>
 
-      {/* DETAIL DIALOG */}
+      {/* DETAIL DIALOG — Executive Document Style */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center gap-3 flex-wrap">
-              <DialogTitle className="text-base">{invoiceDetail?.invoiceNumber || '—'}</DialogTitle>
-              <Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[invoiceDetail?.type || ''] || 'bg-jl-page text-white')}>{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || invoiceDetail?.type}</Badge>
-              <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[invoiceDetail?.status || ''])}>{STATUS_LABELS[invoiceDetail?.status || ''] || invoiceDetail?.status}</Badge>
-            </div>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-jl-secondary">Client :</span> <span className="font-medium">{invoiceDetail?.client?.fullName || '—'}</span></div>
-            {invoiceDetail?.client?.company && <div><span className="text-jl-secondary">Société :</span> <span className="font-medium">{invoiceDetail.client.company}</span></div>}
-            {invoiceDetail?.case && <div className="col-span-2"><span className="text-jl-secondary">Dossier :</span> <span className="font-medium">{invoiceDetail.case.reference} — {invoiceDetail.case.title}</span></div>}
-          </div>
-          <Separator />
-          {(invoiceDetail?.lineItems || []).length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-jl-secondary uppercase tracking-wider mb-2">Lignes de facturation</p>
-              <Table><TableHeader><TableRow><TableHead className="text-xs">Description</TableHead><TableHead className="text-xs text-right">Qté</TableHead><TableHead className="text-xs text-right">Prix unit.</TableHead><TableHead className="text-xs text-right">Total</TableHead></TableRow></TableHeader><TableBody>
-                {(invoiceDetail?.lineItems || []).map((li: InvoiceLineItem) => (
-                  <TableRow key={li.id}><TableCell className="text-sm">{li.description}</TableCell><TableCell className="text-sm text-right">{li.quantity}</TableCell><TableCell className="text-sm text-right">{fmtMoney(li.unitPrice, curCode)}</TableCell><TableCell className="text-sm text-right font-medium">{fmtMoney(li.total, curCode)}</TableCell></TableRow>
-                ))}
-              </TableBody></Table>
-            </div>
-          )}
-          <div className="flex justify-end p-4 bg-jl-page rounded-lg">
-            <div className="text-right"><p className="text-xs text-jl-secondary">Montant total</p><p className="text-xl font-bold text-jl-primary">{fmtMoney(total, curCode)}</p></div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm"><span className="text-jl-secondary">Payé : {fmtMoney(paid, curCode)} / {fmtMoney(total, curCode)}</span><span className="font-semibold">{Math.round(payPercent)}%</span></div>
-            <Progress value={payPercent} className="h-2" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-jl-secondary">Changer le statut :</span>
-            <Select value={invoiceDetail?.status || ''} onValueChange={v => { if (selectedInvoice) updateStatusMut.mutate({ id: selectedInvoice.id, status: v }) }}>
-              <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="non_paye">Non payé</SelectItem><SelectItem value="partiel">Partiel</SelectItem><SelectItem value="paye">Payé</SelectItem><SelectItem value="annule">Annulé</SelectItem></SelectContent>
-            </Select>
-          </div>
-          <Separator />
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">Paiements ({(invoiceDetail?.payments || []).length})</p>
-              <div className="flex gap-2">
-                {(invoiceDetail?.status === 'non_paye' || invoiceDetail?.status === 'partiel') && <Button size="sm" variant="outline" className="text-xs" onClick={() => { setPayForm({ amount: remaining.toString(), method: 'virement', reference: '', paidAt: new Date().toISOString().slice(0, 10), notes: '' }); setShowPayForm(!showPayForm) }}><CreditCard className="size-3.5 mr-1" />Enregistrer un paiement</Button>}
-                <Button size="sm" variant="outline" className="text-xs" onClick={handlePrint}><Printer className="size-3.5 mr-1" />Imprimer</Button>
-              </div>
-            </div>
-            {showPayForm && (
-              <div className="border rounded-lg p-4 bg-jl-page space-y-3">
-                <p className="text-xs font-semibold">Enregistrer un paiement</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Montant *</Label><Input type="number" min={0} step={0.01} value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} placeholder="0" /></div>
-                  <div><Label>Méthode *</Label><Select value={payForm.method} onValueChange={v => setPayForm(f => ({ ...f, method: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="especes">Espèces</SelectItem><SelectItem value="virement">Virement</SelectItem><SelectItem value="mobile_money">Mobile Money</SelectItem><SelectItem value="carte">Carte</SelectItem><SelectItem value="cheque">Chèque</SelectItem></SelectContent></Select></div>
-                  <div><Label>Référence</Label><Input value={payForm.reference} onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))} placeholder="Ref. transaction" /></div>
-                  <div><Label>Date</Label><Input type="date" value={payForm.paidAt} onChange={e => setPayForm(f => ({ ...f, paidAt: e.target.value }))} /></div>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+          {/* === FIRM HEADER === */}
+          <div className="border-b border-jl px-6 py-4">
+            <div className="flex items-start gap-4">
+              {tenant?.logoUrl ? (
+                <img src={tenant.logoUrl} alt={tenant.name || 'Cabinet'} className="size-16 rounded-lg object-contain border border-jl shrink-0" />
+              ) : (
+                <div className="size-16 rounded-lg bg-jl-blue flex items-center justify-center shrink-0">
+                  <Scale className="size-8 text-white" />
                 </div>
-                <div><Label>Notes</Label><Input value={payForm.notes} onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes optionnelles" /></div>
-                <div className="flex gap-2"><Button size="sm" className="bg-[var(--success)] hover:bg-[var(--success)] text-white" onClick={handlePay} disabled={!payForm.amount || parseFloat(payForm.amount) <= 0 || payMut.isPending}>{payMut.isPending ? <RefreshCw className="size-3.5 mr-1 animate-spin" /> : <Banknote className="size-3.5 mr-1" />}Enregistrer</Button><Button size="sm" variant="outline" onClick={() => setShowPayForm(false)}>Annuler</Button></div>
+              )}
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold text-jl-primary">{tenant?.name || 'Cabinet'}</h3>
+                {tenant?.address && <p className="text-xs text-jl-secondary mt-0.5">{tenant.address}{tenant.city ? `, ${tenant.city}` : ''}{tenant.country ? ` — ${tenant.country}` : ''}</p>}
+                <p className="text-xs text-jl-muted mt-0.5">{[tenant?.phone, tenant?.email].filter(Boolean).join('  |  ')}</p>
+                {tenant?.niu && <p className="text-xs text-jl-muted">NIU : {tenant.niu}</p>}
               </div>
-            )}
-            {(invoiceDetail?.payments || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-4">Aucun paiement enregistré</p> : (
-              <div className="space-y-2">
-                {(invoiceDetail?.payments || []).map((p: Payment) => (
-                  <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
-                    <div className={cn('size-8 rounded-lg flex items-center justify-center shrink-0', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')}><span className="text-white text-xs font-bold">{(PAYMENT_METHOD_LABELS[p.method] || '?')[0]}</span></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{fmtMoney(p.amount, curCode)}</p>
-                      <p className="text-[10px] text-jl-muted">{PAYMENT_METHOD_LABELS[p.method] || p.method}{p.reference ? ` • ${p.reference}` : ''} • {p.recorder?.fullName || '—'}</p>
-                    </div>
-                    <span className="text-xs text-jl-muted shrink-0">{fmtDate(p.paidAt)}</span>
-                  </div>
-                ))}
+              <div className="text-right shrink-0">
+                <p className="text-xl font-bold text-jl-blue">{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || 'FACTURE'}</p>
+                <p className="text-sm font-mono font-semibold text-jl-primary mt-1">{invoiceDetail?.invoiceNumber || '—'}</p>
+                <div className="flex items-center gap-2 justify-end mt-2">
+                  <Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[invoiceDetail?.type || ''] || 'bg-jl-page text-white')}>{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || invoiceDetail?.type}</Badge>
+                  <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[invoiceDetail?.status || ''])}>{STATUS_LABELS[invoiceDetail?.status || ''] || invoiceDetail?.status}</Badge>
+                </div>
               </div>
-            )}
+            </div>
           </div>
-          {invoiceDetail?.notes && <><Separator /><div><p className="text-xs font-semibold text-jl-secondary mb-1">Notes</p><p className="text-sm text-jl-secondary whitespace-pre-wrap">{invoiceDetail.notes}</p></div></>}
+
+          <div className="px-6 py-4 space-y-4">
+            {/* === CLIENT & INVOICE INFO === */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="border border-jl rounded-lg p-3 space-y-1">
+                <p className="text-[10px] font-semibold text-jl-muted uppercase tracking-wider">Client</p>
+                <p className="text-sm font-semibold text-jl-primary">{invoiceDetail?.client?.fullName || '—'}</p>
+                {invoiceDetail?.client?.company && <p className="text-xs text-jl-secondary">{invoiceDetail.client.company}</p>}
+                {invoiceDetail?.client?.address && <p className="text-xs text-jl-muted">{invoiceDetail.client.address}</p>}
+                <p className="text-xs text-jl-muted">{[invoiceDetail?.client?.email, invoiceDetail?.client?.phone].filter(Boolean).join(' | ')}</p>
+              </div>
+              <div className="border border-jl rounded-lg p-3 space-y-1">
+                <p className="text-[10px] font-semibold text-jl-muted uppercase tracking-wider">Détails</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <span className="text-jl-muted">Date d'émission :</span><span className="font-medium text-right">{fmtDate(invoiceDetail?.issuedAt)}</span>
+                  <span className="text-jl-muted">Échéance :</span><span className="font-medium text-right">{fmtDate(invoiceDetail?.dueDate)}</span>
+                  {invoiceDetail?.case && <><span className="text-jl-muted">Dossier :</span><span className="font-medium text-right">{invoiceDetail.case.reference}</span></>}
+                  <span className="text-jl-muted">Devise :</span><span className="font-medium text-right">{curCode === 'XAF' ? 'FCFA' : curCode}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* === LINE ITEMS TABLE === */}
+            {(invoiceDetail?.lineItems || []).length > 0 && (
+              <div className="border border-jl rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-jl-blue hover:bg-jl-blue">
+                      <TableHead className="text-[11px] text-white font-semibold">Description</TableHead>
+                      <TableHead className="text-[11px] text-white font-semibold text-right w-16">Qté</TableHead>
+                      <TableHead className="text-[11px] text-white font-semibold text-right w-28">Prix unitaire</TableHead>
+                      <TableHead className="text-[11px] text-white font-semibold text-right w-28">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(invoiceDetail?.lineItems || []).map((li: InvoiceLineItem, idx: number) => (
+                      <TableRow key={li.id} className={cn(idx % 2 === 1 && 'bg-jl-page')}>
+                        <TableCell className="text-sm py-2.5">{li.description}</TableCell>
+                        <TableCell className="text-sm text-right py-2.5">{li.quantity}</TableCell>
+                        <TableCell className="text-sm text-right py-2.5 font-mono">{fmtMoney(li.unitPrice, curCode)}</TableCell>
+                        <TableCell className="text-sm text-right py-2.5 font-mono font-semibold">{fmtMoney(li.total, curCode)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {/* TOTALS FOOTER */}
+                <div className="border-t border-jl bg-jl-page px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-jl-secondary">Montant total</span>
+                    <span className="text-xl font-bold text-jl-primary font-mono">{fmtMoney(total, curCode)}</span>
+                  </div>
+                  {paid > 0 && (
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-jl-muted">Payé / Reste</span>
+                      <span className="text-xs font-medium"><span className="text-[var(--success)]">{fmtMoney(paid, curCode)}</span> / <span className={remaining > 0 ? 'text-[var(--danger)]' : 'text-[var(--success)]'}>{fmtMoney(remaining, curCode)}</span></span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* === PAYMENT PROGRESS === */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-jl-secondary">Payé : {fmtMoney(paid, curCode)}</span>
+                <span className="font-semibold">{Math.round(payPercent)}%</span>
+              </div>
+              <Progress value={payPercent} className="h-2" />
+            </div>
+
+            {/* === STATUS CHANGE === */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-jl-secondary">Changer le statut :</span>
+              <Select value={invoiceDetail?.status || ''} onValueChange={v => { if (selectedInvoice) updateStatusMut.mutate({ id: selectedInvoice.id, status: v }) }}>
+                <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="non_paye">Non payé</SelectItem><SelectItem value="partiel">Partiel</SelectItem><SelectItem value="paye">Payé</SelectItem><SelectItem value="annule">Annulé</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <Separator />
+
+            {/* === PAYMENTS SECTION === */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">Paiements ({(invoiceDetail?.payments || []).length})</p>
+                <div className="flex gap-2">
+                  {(invoiceDetail?.status === 'non_paye' || invoiceDetail?.status === 'partiel') && <Button size="sm" variant="outline" className="text-xs" onClick={() => { setPayForm({ amount: remaining.toString(), method: 'virement', reference: '', paidAt: new Date().toISOString().slice(0, 10), notes: '' }); setShowPayForm(!showPayForm) }}><CreditCard className="size-3.5 mr-1" />Enregistrer un paiement</Button>}
+                  <Button size="sm" variant="outline" className="text-xs" onClick={handlePrint}><Printer className="size-3.5 mr-1" />Imprimer PDF</Button>
+                </div>
+              </div>
+              {showPayForm && (
+                <div className="border rounded-lg p-4 bg-jl-page space-y-3">
+                  <p className="text-xs font-semibold">Enregistrer un paiement</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Montant *</Label><Input type="number" min={0} step={0.01} value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} placeholder="0" /></div>
+                    <div><Label>Méthode *</Label><Select value={payForm.method} onValueChange={v => setPayForm(f => ({ ...f, method: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="especes">Espèces</SelectItem><SelectItem value="virement">Virement</SelectItem><SelectItem value="mobile_money">Mobile Money</SelectItem><SelectItem value="carte">Carte</SelectItem><SelectItem value="cheque">Chèque</SelectItem></SelectContent></Select></div>
+                    <div><Label>Référence</Label><Input value={payForm.reference} onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))} placeholder="Ref. transaction" /></div>
+                    <div><Label>Date</Label><Input type="date" value={payForm.paidAt} onChange={e => setPayForm(f => ({ ...f, paidAt: e.target.value }))} /></div>
+                  </div>
+                  <div><Label>Notes</Label><Input value={payForm.notes} onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes optionnelles" /></div>
+                  <div className="flex gap-2"><Button size="sm" className="bg-[var(--success)] hover:bg-[var(--success)] text-white" onClick={handlePay} disabled={!payForm.amount || parseFloat(payForm.amount) <= 0 || payMut.isPending}>{payMut.isPending ? <RefreshCw className="size-3.5 mr-1 animate-spin" /> : <Banknote className="size-3.5 mr-1" />}Enregistrer</Button><Button size="sm" variant="outline" onClick={() => setShowPayForm(false)}>Annuler</Button></div>
+                </div>
+              )}
+              {(invoiceDetail?.payments || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-4">Aucun paiement enregistré</p> : (
+                <div className="space-y-2">
+                  {(invoiceDetail?.payments || []).map((p: Payment) => (
+                    <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
+                      <div className={cn('size-8 rounded-lg flex items-center justify-center shrink-0', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')}><span className="text-white text-xs font-bold">{(PAYMENT_METHOD_LABELS[p.method] || '?')[0]}</span></div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium font-mono">{fmtMoney(p.amount, curCode)}</p>
+                        <p className="text-[10px] text-jl-muted">{PAYMENT_METHOD_LABELS[p.method] || p.method}{p.reference ? ` • ${p.reference}` : ''} • {p.recorder?.fullName || '—'}</p>
+                      </div>
+                      <span className="text-xs text-jl-muted shrink-0">{fmtDate(p.paidAt)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {invoiceDetail?.notes && <><Separator /><div><p className="text-xs font-semibold text-jl-secondary mb-1">Notes</p><p className="text-sm text-jl-secondary whitespace-pre-wrap">{invoiceDetail.notes}</p></div></>}
+          </div>
+
+          {/* === FIRM FOOTER === */}
+          <div className="border-t border-jl px-6 py-3 bg-jl-page">
+            <p className="text-[10px] text-jl-muted text-center">{tenant?.name || 'Cabinet'}{tenant?.address ? ` — ${tenant.address}` : ''}{tenant?.phone ? ` — ${tenant.phone}` : ''}{tenant?.email ? ` — ${tenant.email}` : ''}</p>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

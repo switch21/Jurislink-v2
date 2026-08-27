@@ -13,6 +13,24 @@ export function fmtDateTime(d: string | null | undefined) {
   try { return format(parseISO(d), 'dd/MM/yyyy HH:mm', { locale: fr }) } catch { return '—' }
 }
 export function fmtMoney(amount: number, code: string = 'XAF', compact = false) {
+  // XAF/FCFA is not a standard ISO 4217 currency code recognized by Intl.NumberFormat
+  // Use manual formatting to avoid garbled output with "/" characters
+  const isXaf = (code || '').toUpperCase() === 'XAF'
+  const formatted = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
+  if (isXaf) {
+    const suffix = compact ? (amount >= 1000000 ? ' M FCFA' : amount >= 1000 ? ' K FCFA' : ' FCFA') : ' FCFA'
+    if (compact) {
+      if (amount >= 1000000) {
+        const m = amount / 1000000
+        return m % 1 === 0 ? `${m} M FCFA` : `${m.toFixed(1)} M FCFA`
+      }
+      if (amount >= 1000) {
+        const k = amount / 1000
+        return k % 1 === 0 ? `${k} K FCFA` : `${k.toFixed(0)} K FCFA`
+      }
+    }
+    return `${formatted} FCFA`
+  }
   if (compact) {
     if (amount >= 1000000) {
       const m = amount / 1000000
@@ -22,7 +40,7 @@ export function fmtMoney(amount: number, code: string = 'XAF', compact = false) 
       const k = amount / 1000
       return k % 1 === 0 ? `${k} K ${code}` : `${k.toFixed(0)} K ${code}`
     }
-    return `${amount} ${code}`
+    return `${formatted} ${code}`
   }
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: code, minimumFractionDigits: 0 }).format(amount)
 }
