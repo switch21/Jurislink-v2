@@ -102,7 +102,7 @@ export function TemplatesView() {
 
   const highlightVars = (text: string) => {
     const parts = text.split(/({{[^}]+}})/g)
-    return parts.map((p, i) => /{{[^}]+}}/.test(p) ? <span key={i} className="bg-[#C8A45D]/20 text-[#C8A45D] font-semibold px-0.5 rounded">{p}</span> : p)
+    return parts.map((p, i) => /{{[^}]+}}/.test(p) ? <span key={i} className="bg-jl-gold/20 text-jl-gold font-semibold px-0.5 rounded">{p}</span> : p)
   }
 
   return (
@@ -146,12 +146,12 @@ export function TemplatesView() {
                     <div className="flex items-center gap-2 mt-1">
                       {cat && <Badge className={cn('text-[10px]', cat.color)}>{cat.label}</Badge>}
                       {getVarCount(t) > 0 && <Badge variant="outline" className="text-[10px]"><Hash className="size-2.5 mr-0.5" />{getVarCount(t)} variables</Badge>}
-                      <Badge variant="outline" className={cn('text-[10px]', t.isActive ? 'text-[#059669]' : 'text-[#9CA3AF]')}>{t.isActive ? 'Actif' : 'Inactif'}</Badge>
+                      <Badge variant="outline" className={cn('text-[10px]', t.isActive ? 'text-[var(--success)]' : 'text-jl-muted')}>{t.isActive ? 'Actif' : 'Inactif'}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="p-4 pt-0 space-y-2">
-                    {t.description && <p className="text-xs text-[#6B7280] line-clamp-2">{t.description}</p>}
-                    <p className="text-[10px] text-[#9CA3AF]">Modifié {relativeTime(t.updatedAt)}</p>
+                    {t.description && <p className="text-xs text-jl-secondary line-clamp-2">{t.description}</p>}
+                    <p className="text-[10px] text-jl-muted">Modifié {relativeTime(t.updatedAt)}</p>
                   </CardContent>
                 </Card>
               )
@@ -166,9 +166,9 @@ export function TemplatesView() {
                 <TableRow key={t.id}>
                   <TableCell className="text-sm font-medium">{t.name}</TableCell>
                   <TableCell className="hidden md:table-cell">{TEMPLATE_CATEGORIES[t.category] && <Badge className={cn('text-[10px]', TEMPLATE_CATEGORIES[t.category].color)}>{TEMPLATE_CATEGORIES[t.category].label}</Badge>}</TableCell>
-                  <TableCell className="hidden lg:table-cell text-xs text-[#6B7280]">{getVarCount(t)}</TableCell>
-                  <TableCell><Badge variant="outline" className={cn('text-[10px]', t.isActive ? 'text-[#059669]' : 'text-[#9CA3AF]')}>{t.isActive ? 'Actif' : 'Inactif'}</Badge></TableCell>
-                  <TableCell className="hidden md:table-cell text-xs text-[#9CA3AF]">{fmtDate(t.updatedAt)}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-xs text-jl-secondary">{getVarCount(t)}</TableCell>
+                  <TableCell><Badge variant="outline" className={cn('text-[10px]', t.isActive ? 'text-[var(--success)]' : 'text-jl-muted')}>{t.isActive ? 'Actif' : 'Inactif'}</Badge></TableCell>
+                  <TableCell className="hidden md:table-cell text-xs text-jl-muted">{fmtDate(t.updatedAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="size-7" onClick={() => openEdit(t)}><Edit className="size-3.5" /></Button>
@@ -191,8 +191,8 @@ export function TemplatesView() {
               <div className="space-y-2"><Label className="text-xs">Catégorie</Label><Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TEMPLATE_CATEGORIES).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="space-y-2"><Label className="text-xs">Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Description (optionnel)" className="text-sm min-h-[60px]" /></div>
-            <div className="space-y-2"><Label className="text-xs">Contenu <span className="text-[#9CA3AF]">(utilisez {'{{variable}}'} pour les variables)</span></Label><Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="Contenu du modèle..." className="text-sm font-mono min-h-[200px]" /></div>
-            <div className="space-y-2"><Label className="text-xs">Variables <span className="text-[#9CA3AF]">(séparées par des virgules)</span></Label><Input value={form.variables} onChange={e => setForm(f => ({ ...f, variables: e.target.value }))} placeholder="nom, date, montant" className="h-9 text-sm" /></div>
+            <div className="space-y-2"><Label className="text-xs">Contenu <span className="text-jl-muted">(utilisez {'{{variable}}'} pour les variables)</span></Label><Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="Contenu du modèle..." className="text-sm font-mono min-h-[200px]" /></div>
+            <div className="space-y-2"><Label className="text-xs">Variables <span className="text-jl-muted">(séparées par des virgules)</span></Label><Input value={form.variables} onChange={e => setForm(f => ({ ...f, variables: e.target.value }))} placeholder="nom, date, montant" className="h-9 text-sm" /></div>
             <div className="flex items-center gap-2"><Checkbox checked={form.isActive} onCheckedChange={v => setForm(f => ({ ...f, isActive: v as boolean }))} /><Label className="text-xs">Modèle actif</Label></div>
           </div>
           <DialogFooter>
@@ -206,7 +206,7 @@ export function TemplatesView() {
       <Dialog open={!!showPreview} onOpenChange={() => setShowPreview(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Aperçu : {previewTemplate?.name}</DialogTitle></DialogHeader>
-          <div className="bg-white rounded-lg border border-[#E5E7EB] p-6 text-sm leading-relaxed whitespace-pre-wrap">{previewTemplate ? highlightVars(previewTemplate.content) : ''}</div>
+          <div className="bg-jl-card rounded-lg border border-jl p-6 text-sm leading-relaxed whitespace-pre-wrap">{previewTemplate ? highlightVars(previewTemplate.content) : ''}</div>
         </DialogContent>
       </Dialog>
 
@@ -222,7 +222,7 @@ export function TemplatesView() {
             {Object.keys(genVars).length > 0 && <div className="space-y-3">{Object.entries(genVars).map(([key, val]) => (
               <div key={key} className="space-y-1"><Label className="text-xs font-medium">{'{{'}{key}{'}}'}</Label><Input value={val} onChange={e => setGenVars(g => ({ ...g, [key]: e.target.value }))} placeholder={`Valeur pour ${key}`} className="h-9 text-sm" /></div>
             ))}</div>}
-            <div className="space-y-2"><Label className="text-xs font-semibold">Aperçu généré</Label><div className="bg-white rounded-lg border border-[#E5E7EB] p-4 text-sm leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">{highlightVars(generatePreview)}</div></div>
+            <div className="space-y-2"><Label className="text-xs font-semibold">Aperçu généré</Label><div className="bg-jl-card rounded-lg border border-jl p-4 text-sm leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">{highlightVars(generatePreview)}</div></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowGenerate(null)}>Fermer</Button>

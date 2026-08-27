@@ -92,9 +92,9 @@ export function CommunicationsView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-[#1E5A8A]/10 flex items-center justify-center"><Mail className="size-5 text-[#1E5A8A]" /></div><div><p className="text-xs text-[#6B7280]">Emails envoyés</p><p className="text-lg font-bold text-[#1E5A8A]">{summary.totalEmails}</p></div></CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-[#059669]/10 flex items-center justify-center"><MessageCircle className="size-5 text-[#059669]" /></div><div><p className="text-xs text-[#6B7280]">SMS envoyés</p><p className="text-lg font-bold text-[#059669]">{summary.totalSms}</p></div></CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-[#C8A45D]/10 flex items-center justify-center"><MailCheck className="size-5 text-[#C8A45D]" /></div><div><p className="text-xs text-[#6B7280]">Taux d'envoi réussi</p><p className="text-lg font-bold text-[#C8A45D]">{summary.successRate}%</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-blue/10 flex items-center justify-center"><Mail className="size-5 text-jl-blue" /></div><div><p className="text-xs text-jl-secondary">Emails envoyés</p><p className="text-lg font-bold text-jl-blue">{summary.totalEmails}</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--success)]/10 flex items-center justify-center"><MessageCircle className="size-5 text-[var(--success)]" /></div><div><p className="text-xs text-jl-secondary">SMS envoyés</p><p className="text-lg font-bold text-[var(--success)]">{summary.totalSms}</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-gold/10 flex items-center justify-center"><MailCheck className="size-5 text-jl-gold" /></div><div><p className="text-xs text-jl-secondary">Taux d'envoi réussi</p><p className="text-lg font-bold text-jl-gold">{summary.successRate}%</p></div></CardContent></Card>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -120,12 +120,12 @@ export function CommunicationsView() {
           </TableRow></TableHeader><TableBody>
             {(comms || []).map((c: Communication) => (
               <TableRow key={c.id}>
-                <TableCell className="text-xs text-[#6B7280]">{fmtDateTime(c.sentAt || c.createdAt)}</TableCell>
+                <TableCell className="text-xs text-jl-secondary">{fmtDateTime(c.sentAt || c.createdAt)}</TableCell>
                 <TableCell><Badge className={cn('text-[10px]', COMM_TYPE_COLORS[c.type])}><span className="flex items-center gap-1">{typeIcon(c.type)}{COMM_TYPE_LABELS[c.type] || c.type}</span></Badge></TableCell>
                 <TableCell className="text-sm">{c.client?.fullName || c.recipientEmail || c.recipientPhone || '—'}</TableCell>
-                <TableCell className="hidden md:table-cell text-sm text-[#6B7280] truncate max-w-[200px]">{c.subject || c.content.slice(0, 50)}</TableCell>
+                <TableCell className="hidden md:table-cell text-sm text-jl-secondary truncate max-w-[200px]">{c.subject || c.content.slice(0, 50)}</TableCell>
                 <TableCell><Badge className={cn('text-[10px]', COMM_STATUS_COLORS[c.status])}>{COMM_STATUS_LABELS[c.status] || c.status}</Badge></TableCell>
-                <TableCell className="hidden lg:table-cell text-xs text-[#9CA3AF]">{c.sentBy?.fullName || '—'}</TableCell>
+                <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{c.sentBy?.fullName || '—'}</TableCell>
                 <TableCell><Button variant="ghost" size="icon" className="size-7" onClick={() => deleteMut.mutate(c.id)}><Trash2 className="size-3.5 text-red-500" /></Button></TableCell>
               </TableRow>
             ))}

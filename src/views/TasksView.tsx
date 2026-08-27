@@ -112,18 +112,18 @@ export function TasksView() {
             {tasks.map(t => {
               const isDone = t.status === 'terminee' || t.status === 'done'
               return <TableRow key={t.id} className={cn(isDone && 'opacity-60')}>
-                <TableCell><span className={cn('size-2.5 rounded-full inline-block', t.priority === 'urgente' ? 'bg-[#EF4444]' : t.priority === 'haute' ? 'bg-[#D97706]' : 'bg-[#C8A45D]')} /></TableCell>
-                <TableCell className="font-medium"><span className={cn(isDone && 'line-through')}>{t.title}</span>{t.case?.reference && <p className="text-[10px] text-[#9CA3AF]">{t.case.reference}</p>}</TableCell>
+                <TableCell><span className={cn('size-2.5 rounded-full inline-block', t.priority === 'urgente' ? 'bg-[var(--danger)]' : t.priority === 'haute' ? 'bg-[var(--accent)]' : 'bg-jl-gold')} /></TableCell>
+                <TableCell className="font-medium"><span className={cn(isDone && 'line-through')}>{t.title}</span>{t.case?.reference && <p className="text-[10px] text-jl-muted">{t.case.reference}</p>}</TableCell>
                 <TableCell className="hidden md:table-cell"><Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[t.priority])}>{PRIORITY_LABELS[t.priority] || t.priority}</Badge></TableCell>
                 <TableCell className="hidden sm:table-cell">
                   <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="text-[10px] h-7 gap-1"><Badge variant="outline" className={cn('text-[10px] border-0 p-0', taskStatusColor(t.status))}>{taskStatusLabel(t.status)}</Badge><ChevronDown className="size-3" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => { if (t.status !== 'a_faire') updateMut.mutate({ id: t.id, status: 'a_faire' }) }}><CircleDot className="size-3 mr-2" />À faire</DropdownMenuItem><DropdownMenuItem onClick={() => { if (t.status !== 'en_cours') updateMut.mutate({ id: t.id, status: 'en_cours' }) }}><Timer className="size-3 mr-2" />En cours</DropdownMenuItem><DropdownMenuItem onClick={() => { if (t.status !== 'terminee') updateMut.mutate({ id: t.id, status: 'terminee' }) }}><CheckCircle2 className="size-3 mr-2" />Terminée</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
                 </TableCell>
-                <TableCell className="hidden lg:table-cell"><div className="flex items-center gap-1.5">{t.assignedToUser ? <><Avatar className="size-5"><AvatarFallback className="text-[8px] bg-[#1E5A8A] text-white">{initials(t.assignedToUser.fullName)}</AvatarFallback></Avatar><span className="text-xs text-[#6B7280]">{t.assignedToUser.fullName}</span></> : <span className="text-xs text-[#9CA3AF]">—</span>}</div></TableCell>
-                <TableCell className="hidden lg:table-cell text-sm text-[#6B7280]">{fmtDate(t.dueDate)}</TableCell>
+                <TableCell className="hidden lg:table-cell"><div className="flex items-center gap-1.5">{t.assignedToUser ? <><Avatar className="size-5"><AvatarFallback className="text-[8px] bg-jl-blue text-white">{initials(t.assignedToUser.fullName)}</AvatarFallback></Avatar><span className="text-xs text-jl-secondary">{t.assignedToUser.fullName}</span></> : <span className="text-xs text-jl-muted">—</span>}</div></TableCell>
+                <TableCell className="hidden lg:table-cell text-sm text-jl-secondary">{fmtDate(t.dueDate)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="size-7" onClick={() => openEdit(t)}><Edit className="size-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="size-7 text-[#EF4444] hover:text-[#DC2626]" onClick={() => deleteMut.mutate(t.id)}><Trash2 className="size-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="size-7 text-[var(--danger)] hover:text-[var(--danger)]" onClick={() => deleteMut.mutate(t.id)}><Trash2 className="size-3.5" /></Button>
                   </div>
                 </TableCell>
               </TableRow>

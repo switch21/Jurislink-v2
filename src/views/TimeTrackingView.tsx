@@ -6,16 +6,16 @@ import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fm
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== TIME TRACKING VIEW ====================
 const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
-  contrat: { label: 'Contrat', color: 'bg-[#1E5A8A] text-white' },
-  conclusion: { label: 'Conclusion', color: 'bg-[#C8A45D] text-white' },
-  correspondance: { label: 'Correspondance', color: 'bg-[#059669] text-white' },
-  assignation: { label: 'Assignation', color: 'bg-[#DC2626] text-white' },
-  general: { label: 'Général', color: 'bg-[#6B7280] text-white' },
+  contrat: { label: 'Contrat', color: 'bg-jl-blue text-white' },
+  conclusion: { label: 'Conclusion', color: 'bg-jl-gold text-white' },
+  correspondance: { label: 'Correspondance', color: 'bg-[var(--success)] text-white' },
+  assignation: { label: 'Assignation', color: 'bg-[var(--danger)] text-white' },
+  general: { label: 'Général', color: 'bg-jl-page text-white' },
 }
 const COMM_TYPE_LABELS: Record<string, string> = { email: 'Email', sms: 'SMS', whatsapp: 'WhatsApp' }
-const COMM_TYPE_COLORS: Record<string, string> = { email: 'bg-[#1E5A8A] text-white', sms: 'bg-[#059669] text-white', whatsapp: 'bg-[#25D366] text-white' }
+const COMM_TYPE_COLORS: Record<string, string> = { email: 'bg-jl-blue text-white', sms: 'bg-[var(--success)] text-white', whatsapp: 'bg-[var(--success)] text-white' }
 const COMM_STATUS_COLORS: Record<string, string> = {
-  sent: 'bg-[#D1FAE5] text-[#065F46]', pending: 'bg-[#FEF3C7] text-[#92400E]', failed: 'bg-[#FEE2E2] text-[#991B1B]', bounced: 'bg-[#F3F4F6] text-[#6B7280]',
+  sent: 'bg-[#D1FAE5] text-[#065F46]', pending: 'bg-[var(--accent-light)] text-[#92400E]', failed: 'bg-[#FEE2E2] text-[#991B1B]', bounced: 'bg-jl-page text-jl-secondary',
 }
 const COMM_STATUS_LABELS: Record<string, string> = { sent: 'Envoyé', pending: 'En attente', failed: 'Échoué', bounced: 'Rebondi' }
 const QUICK_TEMPLATES = [
@@ -113,12 +113,12 @@ export function TimeTrackingView() {
     <div className="p-4 md:p-6 space-y-6">
       <h2 className="text-lg font-semibold">Suivi du Temps</h2>
 
-      <Card className="bg-[#F5F7FA] border-[#E5E7EB]">
+      <Card className="bg-jl-page border-jl">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="relative">
               {timerState === 'running' && <span className="absolute -top-1 -right-1 size-3 rounded-full bg-red-500 animate-pulse" />}
-              <span className="text-5xl md:text-6xl font-mono font-bold text-[#1E5A8A] tabular-nums tracking-wider">{timerDisplay}</span>
+              <span className="text-5xl md:text-6xl font-mono font-bold text-jl-blue tabular-nums tracking-wider">{timerDisplay}</span>
             </div>
             <div className="flex-1 flex flex-col gap-3 w-full max-w-md">
               <div className="flex gap-2">
@@ -127,13 +127,13 @@ export function TimeTrackingView() {
                   <SelectContent>{(cases || []).map((c: CaseItem) => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent>
                 </Select>
                 <Checkbox checked={timerIsBillable} onCheckedChange={v => setTimerIsBillable(!!v)} disabled={timerState === 'running'} />
-                <Label className="text-xs text-[#6B7280] whitespace-nowrap">Facturable</Label>
+                <Label className="text-xs text-jl-secondary whitespace-nowrap">Facturable</Label>
               </div>
               <Input value={timerDesc} onChange={e => setTimerDesc(e.target.value)} placeholder="Description du travail..." className="h-9 text-sm" disabled={timerState === 'running'} />
               <div className="flex gap-2">
-                {timerState === 'idle' && <Button onClick={handleStart} className="bg-[#059669] hover:bg-[#047857] text-white" size="sm"><Play className="size-4 mr-1" />Démarrer</Button>}
+                {timerState === 'idle' && <Button onClick={handleStart} className="bg-[var(--success)] hover:bg-[var(--success)] text-white" size="sm"><Play className="size-4 mr-1" />Démarrer</Button>}
                 {timerState === 'running' && <><Button onClick={handlePause} variant="outline" size="sm"><Pause className="size-4 mr-1" />Pause</Button><Button onClick={handleStop} variant="destructive" size="sm"><Square className="size-4 mr-1" />Arrêter</Button></>}
-                {timerState === 'paused' && <><Button onClick={handleResume} className="bg-[#059669] hover:bg-[#047857] text-white" size="sm"><Play className="size-4 mr-1" />Reprendre</Button><Button onClick={handleStop} variant="destructive" size="sm"><Square className="size-4 mr-1" />Arrêter</Button></>}
+                {timerState === 'paused' && <><Button onClick={handleResume} className="bg-[var(--success)] hover:bg-[var(--success)] text-white" size="sm"><Play className="size-4 mr-1" />Reprendre</Button><Button onClick={handleStop} variant="destructive" size="sm"><Square className="size-4 mr-1" />Arrêter</Button></>}
               </div>
             </div>
           </div>
@@ -141,10 +141,10 @@ export function TimeTrackingView() {
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Total heures (sem.)</p><p className="text-xl font-bold text-[#1E5A8A] mt-1">{fmtDuration(sum?.totalSeconds || 0)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Heures facturables</p><p className="text-xl font-bold text-[#059669] mt-1">{fmtDuration(sum?.totalBillableSeconds || 0)}</p></CardContent></Card>
-        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-[#6B7280]">Montant estimé</p><p className="text-lg sm:text-xl font-bold text-[#C8A45D] mt-1 truncate" title={fmtMoney(sum?.totalAmount || 0)}>{fmtMoney(sum?.totalAmount || 0, 'XAF', true)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Entrées cette semaine</p><p className="text-xl font-bold mt-1">{sum?.totalEntries || 0}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-jl-secondary">Total heures (sem.)</p><p className="text-xl font-bold text-jl-blue mt-1">{fmtDuration(sum?.totalSeconds || 0)}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-jl-secondary">Heures facturables</p><p className="text-xl font-bold text-[var(--success)] mt-1">{fmtDuration(sum?.totalBillableSeconds || 0)}</p></CardContent></Card>
+        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-jl-secondary">Montant estimé</p><p className="text-lg sm:text-xl font-bold text-jl-gold mt-1 truncate" title={fmtMoney(sum?.totalAmount || 0)}>{fmtMoney(sum?.totalAmount || 0, 'XAF', true)}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-jl-secondary">Entrées cette semaine</p><p className="text-xl font-bold mt-1">{sum?.totalEntries || 0}</p></CardContent></Card>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -166,11 +166,11 @@ export function TimeTrackingView() {
           </TableRow></TableHeader><TableBody>
             {(entries || []).map((e: TimeEntry) => (
               <TableRow key={e.id}>
-                <TableCell className="text-xs text-[#6B7280]">{fmtDate(e.createdAt)}</TableCell>
+                <TableCell className="text-xs text-jl-secondary">{fmtDate(e.createdAt)}</TableCell>
                 <TableCell className="text-sm">{e.description}</TableCell>
-                <TableCell className="hidden md:table-cell text-xs text-[#6B7280]">{e.case ? `${e.case.reference}` : '—'}</TableCell>
+                <TableCell className="hidden md:table-cell text-xs text-jl-secondary">{e.case ? `${e.case.reference}` : '—'}</TableCell>
                 <TableCell className="text-sm font-medium">{fmtDuration(e.duration)}</TableCell>
-                <TableCell><Badge className={cn('text-[10px]', e.isBillable ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#F3F4F6] text-[#6B7280]')}>{e.isBillable ? 'Oui' : 'Non'}</Badge></TableCell>
+                <TableCell><Badge className={cn('text-[10px]', e.isBillable ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-jl-page text-jl-secondary')}>{e.isBillable ? 'Oui' : 'Non'}</Badge></TableCell>
                 <TableCell className="hidden md:table-cell text-sm text-right font-medium">{e.totalAmount ? fmtMoney(e.totalAmount) : '—'}</TableCell>
               </TableRow>
             ))}

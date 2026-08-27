@@ -23,9 +23,9 @@ export function ArchivesView() {
             <Card key={c.id} className="opacity-80">
               <CardHeader className="pb-2"><div className="flex items-start justify-between"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS.archive)}>{STATUS_LABELS.archive}</Badge></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-1">
-                <p className="text-xs text-[#6B7280]">{c.client?.fullName || '—'}</p>
-                <p className="text-xs text-[#9CA3AF]">Type : {TYPE_LABELS[c.caseType] || c.caseType}</p>
-                {c.closingDate && <p className="text-xs text-[#9CA3AF]">Clôture : {fmtDate(c.closingDate)}</p>}
+                <p className="text-xs text-jl-secondary">{c.client?.fullName || '—'}</p>
+                <p className="text-xs text-jl-muted">Type : {TYPE_LABELS[c.caseType] || c.caseType}</p>
+                {c.closingDate && <p className="text-xs text-jl-muted">Clôture : {fmtDate(c.closingDate)}</p>}
               </CardContent>
             </Card>
           ))}

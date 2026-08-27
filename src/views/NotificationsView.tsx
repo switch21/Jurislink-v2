@@ -43,20 +43,20 @@ export function NotificationsView() {
 
   const catIcons: Record<string, React.ElementType> = { dossier: Briefcase, echeance: Clock, facture: Receipt, document: FileText, tache: ClipboardList, message: MessageSquare }
   const viewMap: Record<string, ViewName> = { dossier: 'cases', echeance: 'calendar', facture: 'invoices', document: 'documents', tache: 'tasks', message: 'messages' }
-  const catColors: Record<string, string> = { dossier: 'text-[#926B2D]', echeance: 'text-[#D97706]', facture: 'text-[#DC2626]', document: 'text-[#6B7280]', tache: 'text-[#1E5A8A]', message: 'text-[#059669]' }
+  const catColors: Record<string, string> = { dossier: 'text-jl-gold', echeance: 'text-[var(--accent)]', facture: 'text-[var(--danger)]', document: 'text-jl-secondary', tache: 'text-jl-blue', message: 'text-[var(--success)]' }
 
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3"><h2 className="text-lg font-semibold">Notifications</h2>{unreadCount > 0 && <Badge className="bg-[#EF4444] text-white text-[10px]">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</Badge>}</div>
+        <div className="flex items-center gap-3"><h2 className="text-lg font-semibold">Notifications</h2>{unreadCount > 0 && <Badge className="bg-[var(--danger)] text-white text-[10px]">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</Badge>}</div>
         <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending || unreadCount === 0}><CheckCheck className="size-4 mr-1" />Tout marquer comme lu</Button>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {catTabs.map(ct => (
-          <Button key={ct.value} size="sm" variant={category === ct.value ? 'default' : 'outline'} className={cn('text-xs h-8', category === ct.value && 'bg-[#1E5A8A] hover:bg-[#164070]')} onClick={() => setCategory(ct.value)}>{ct.label}</Button>
+          <Button key={ct.value} size="sm" variant={category === ct.value ? 'default' : 'outline'} className={cn('text-xs h-8', category === ct.value && 'bg-jl-blue hover:bg-jl-blue')} onClick={() => setCategory(ct.value)}>{ct.label}</Button>
         ))}
-        <Button size="sm" variant={unreadOnly ? 'default' : 'outline'} className={cn('text-xs h-8', unreadOnly && 'bg-[#C8A45D] hover:bg-[#926B2D]')} onClick={() => setUnreadOnly(!unreadOnly)}>{unreadOnly ? 'Non lues uniquement' : 'Toutes'}</Button>
+        <Button size="sm" variant={unreadOnly ? 'default' : 'outline'} className={cn('text-xs h-8', unreadOnly && 'bg-jl-gold hover:bg-[#926B2D]')} onClick={() => setUnreadOnly(!unreadOnly)}>{unreadOnly ? 'Non lues uniquement' : 'Toutes'}</Button>
       </div>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
@@ -66,22 +66,22 @@ export function NotificationsView() {
             const CatIcon = catIcons[n.category] || Bell
             const targetView = viewMap[n.category]
             return (
-              <Card key={n.id} className={cn(!n.read && 'border-l-4 border-l-[#1E5A8A] bg-white', n.read && 'opacity-70')}>
+              <Card key={n.id} className={cn(!n.read && 'border-l-4 border-l-[#1E5A8A] bg-jl-card', n.read && 'opacity-70')}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <div className="flex items-center gap-2 shrink-0 mt-0.5">
-                      {!n.read && <span className="size-2 rounded-full bg-[#1E5A8A] shrink-0" />}
-                      <CatIcon className={cn('size-4', catColors[n.category] || 'text-[#6B7280]')} />
+                      {!n.read && <span className="size-2 rounded-full bg-jl-blue shrink-0" />}
+                      <CatIcon className={cn('size-4', catColors[n.category] || 'text-jl-secondary')} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <p className={cn('text-sm font-medium', !n.read && 'text-[#111827]')}>{n.title}</p>
+                        <p className={cn('text-sm font-medium', !n.read && 'text-jl-primary')}>{n.title}</p>
                         <Badge variant="outline" className="text-[9px] shrink-0">{n.category}</Badge>
                       </div>
-                      <p className="text-xs text-[#6B7280] line-clamp-2">{n.message}</p>
+                      <p className="text-xs text-jl-secondary line-clamp-2">{n.message}</p>
                       <div className="flex items-center gap-3 mt-1.5">
-                        <span className="text-[10px] text-[#9CA3AF]">{relativeTime(n.createdAt)}</span>
-                        {targetView && n.resourceId && <button className="text-[10px] text-[#1E5A8A] hover:underline flex items-center gap-0.5" onClick={() => setCurrentView(targetView)}>Voir <ExternalLink className="size-2.5" /></button>}
+                        <span className="text-[10px] text-jl-muted">{relativeTime(n.createdAt)}</span>
+                        {targetView && n.resourceId && <button className="text-[10px] text-jl-blue hover:underline flex items-center gap-0.5" onClick={() => setCurrentView(targetView)}>Voir <ExternalLink className="size-2.5" /></button>}
                       </div>
                     </div>
                   </div>

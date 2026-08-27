@@ -210,7 +210,7 @@ export function CasesView() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-[200px] max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-[#9CA3AF]" /><Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-xs" /></div>
+        <div className="relative flex-1 min-w-[200px] max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-xs" /></div>
         <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Statut" /></SelectTrigger><SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="nouveau">Nouveau</SelectItem><SelectItem value="ouvert">Ouvert</SelectItem><SelectItem value="en_cours">En cours</SelectItem><SelectItem value="en_attente">En attente</SelectItem><SelectItem value="clos">Clos</SelectItem></SelectContent></Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Type" /></SelectTrigger><SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="civil">Civil</SelectItem><SelectItem value="penal">Pénal</SelectItem><SelectItem value="commercial">Commercial</SelectItem><SelectItem value="social">Social</SelectItem><SelectItem value="administratif">Administratif</SelectItem></SelectContent></Select>
         <Select value={priorityFilter} onValueChange={setPriorityFilter}><SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Priorité" /></SelectTrigger><SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="normal">Normal</SelectItem><SelectItem value="haute">Haute</SelectItem><SelectItem value="urgente">Urgente</SelectItem></SelectContent></Select>
@@ -221,12 +221,12 @@ export function CasesView() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
           {(cases || []).map(c => (
             <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication'])); setShowInlineNote(false); setShowInlineEvent(false); setTimelineSearch('') }}>
-              <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[#D97706]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
+              <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[var(--accent)]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-2">
-                <p className="text-xs text-[#6B7280]"><Users className="size-3 inline mr-1" />{getClientName(c)}</p>
-                {c.adversary && <p className="text-xs text-[#6B7280]"><Scale className="size-3 inline mr-1" />Contre : {c.adversary}</p>}
-                {c.jurisdiction && <p className="text-xs text-[#6B7280]"><MapPin className="size-3 inline mr-1" />{c.jurisdiction}</p>}
-                {c.amountInDispute != null && c.amountInDispute > 0 && <p className="text-xs font-medium text-[#926B2D]"><Banknote className="size-3 inline mr-1" />{fmtMoney(c.amountInDispute)}</p>}
+                <p className="text-xs text-jl-secondary"><Users className="size-3 inline mr-1" />{getClientName(c)}</p>
+                {c.adversary && <p className="text-xs text-jl-secondary"><Scale className="size-3 inline mr-1" />Contre : {c.adversary}</p>}
+                {c.jurisdiction && <p className="text-xs text-jl-secondary"><MapPin className="size-3 inline mr-1" />{c.jurisdiction}</p>}
+                {c.amountInDispute != null && c.amountInDispute > 0 && <p className="text-xs font-medium text-jl-gold"><Banknote className="size-3 inline mr-1" />{fmtMoney(c.amountInDispute)}</p>}
                 {c.billingType && <Badge variant="secondary" className="text-[10px]">{BILLING_LABELS[c.billingType] || c.billingType}</Badge>}
                 <div className="flex items-center justify-between pt-2">
                   <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[c.caseType] || c.caseType}</Badge>
@@ -242,7 +242,7 @@ export function CasesView() {
       <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) resetForm() }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Modifier le dossier' : 'Nouveau dossier'}</DialogTitle></DialogHeader>
-          {conflicts.length > 0 && <div className="bg-[#FEF3C7] border border-amber-200 rounded-lg p-3 space-y-1">{conflicts.map((c, i) => <div key={i} className="flex items-start gap-2 text-xs"><AlertTriangle className="size-4 text-[#C8A45D] shrink-0 mt-0.5" /><span className="text-[#926B2D]">{c.description}</span></div>)}</div>}
+          {conflicts.length > 0 && <div className="bg-[var(--accent-light)] border border-amber-200 rounded-lg p-3 space-y-1">{conflicts.map((c, i) => <div key={i} className="flex items-start gap-2 text-xs"><AlertTriangle className="size-4 text-jl-gold shrink-0 mt-0.5" /><span className="text-jl-gold">{c.description}</span></div>)}</div>}
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Référence *</Label><Input value={form.reference} onChange={e => setForm(f => ({ ...f, reference: e.target.value }))} placeholder="REF-001" /></div>
@@ -266,17 +266,17 @@ export function CasesView() {
             </div>
             <div className="flex items-center gap-6 mt-2">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => setForm(f => ({ ...f, isSecret: !f.isSecret }))}>
-                <div className={cn('size-5 rounded border-2 flex items-center justify-center transition-colors', form.isSecret ? 'bg-[#1E5A8A] border-[#1E5A8A]' : 'border-[#D1D5DB]')}>{form.isSecret && <Check className="size-3 text-white" />}</div>
+                <div className={cn('size-5 rounded border-2 flex items-center justify-center transition-colors', form.isSecret ? 'bg-jl-blue border-jl-blue' : 'border-jl')}>{form.isSecret && <Check className="size-3 text-white" />}</div>
                 <Label className="cursor-pointer text-sm flex items-center gap-1.5"><Lock className="size-3.5" />Dossier confidentiel</Label>
               </div>
             </div>
             <div className="mt-3">
               <Label className="text-xs mb-1.5 block">Collaborateurs du dossier</Label>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 border rounded-lg bg-[#F9FAFB]">
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 border rounded-lg bg-jl-page">
                 {users && users.map(u => (
-                  <label key={u.id} className={cn('flex items-center gap-1 px-2 py-1 rounded-md text-xs cursor-pointer transition-colors', selectedCollabs.includes(u.id) ? 'bg-[#1E5A8A] text-white' : 'bg-white border border-[#D1D5DB] hover:bg-[#E8F0F8]')}>
+                  <label key={u.id} className={cn('flex items-center gap-1 px-2 py-1 rounded-md text-xs cursor-pointer transition-colors', selectedCollabs.includes(u.id) ? 'bg-jl-blue text-white' : 'bg-jl-card border border-jl hover:bg-jl-blue-light')}>
                     <input type="checkbox" className="hidden" checked={selectedCollabs.includes(u.id)} onChange={e => { if (e.target.checked) setSelectedCollabs(prev => [...prev, u.id]); else setSelectedCollabs(prev => prev.filter(id => id !== u.id)) }} />
-                    <Avatar className="size-4 mr-1"><AvatarFallback className="text-[7px] bg-[#E8F0F8] text-[#374151]">{initials(u.fullName)}</AvatarFallback></Avatar>
+                    <Avatar className="size-4 mr-1"><AvatarFallback className="text-[7px] bg-jl-blue-light text-jl-secondary">{initials(u.fullName)}</AvatarFallback></Avatar>
                     <span className="truncate max-w-[100px]">{u.fullName}</span>
                   </label>
                 ))}
@@ -292,39 +292,39 @@ export function CasesView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">{selectedCase?.reference} — {selectedCase?.title}</DialogTitle>
             {(caseDetail?.assignments || []).length > 0 && (
-              <div className="flex items-center gap-1 mt-1">{caseDetail.assignments.slice(0, 6).map((a: CaseAssignment) => (<TooltipProvider key={a.userId}><Tooltip><TooltipTrigger asChild><Avatar className="size-6 -ml-1 first:ml-0 border-2 border-white"><AvatarFallback className="text-[8px] bg-[#1E5A8A] text-white">{a.user?.fullName ? initials(a.user.fullName) : 'U'}</AvatarFallback></Avatar></TooltipTrigger><TooltipContent>{a.user?.fullName || ''}</TooltipContent></Tooltip></TooltipProvider>))}{caseDetail.assignments.length > 6 && <span className="text-[10px] text-[#9CA3AF] ml-1">+{caseDetail.assignments.length - 6}</span>}</div>
+              <div className="flex items-center gap-1 mt-1">{caseDetail.assignments.slice(0, 6).map((a: CaseAssignment) => (<TooltipProvider key={a.userId}><Tooltip><TooltipTrigger asChild><Avatar className="size-6 -ml-1 first:ml-0 border-2 border-white"><AvatarFallback className="text-[8px] bg-jl-blue text-white">{a.user?.fullName ? initials(a.user.fullName) : 'U'}</AvatarFallback></Avatar></TooltipTrigger><TooltipContent>{a.user?.fullName || ''}</TooltipContent></Tooltip></TooltipProvider>))}{caseDetail.assignments.length > 6 && <span className="text-[10px] text-jl-muted ml-1">+{caseDetail.assignments.length - 6}</span>}</div>
             )}
           </DialogHeader>
           <Tabs defaultValue="resume" className="flex-1 overflow-hidden">
             <TabsList className="w-full flex-wrap h-auto"><TabsTrigger value="resume">Résumé</TabsTrigger><TabsTrigger value="timeline">Chronologie</TabsTrigger><TabsTrigger value="taches">Tâches</TabsTrigger><TabsTrigger value="events">Événements</TabsTrigger><TabsTrigger value="equipe">Équipe</TabsTrigger><TabsTrigger value="factures">Factures</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger><TabsTrigger value="documents">Documents</TabsTrigger></TabsList>
             <TabsContent value="resume" className="mt-4 space-y-3 overflow-y-auto max-h-[50vh]">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-[#6B7280]">Client :</span> <span className="font-medium">{caseDetail?.client ? caseDetail.client.fullName : '—'}</span></div>
-                <div><span className="text-[#6B7280]">Type :</span> <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[caseDetail?.caseType || ''] || caseDetail?.caseType}</Badge></div>
-                <div><span className="text-[#6B7280]">Statut :</span> <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[caseDetail?.status || ''])}>{STATUS_LABELS[caseDetail?.status || ''] || caseDetail?.status}</Badge></div>
-                <div><span className="text-[#6B7280]">Priorité :</span> <Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[caseDetail?.priority || ''])}>{PRIORITY_LABELS[caseDetail?.priority || ''] || caseDetail?.priority}</Badge></div>
-                {caseDetail?.adversary && <div className="col-span-2"><span className="text-[#6B7280]">Partie adverse :</span> <span className="font-medium">{caseDetail.adversary}</span></div>}
-                {caseDetail?.jurisdiction && <div className="col-span-2"><span className="text-[#6B7280]">Juridiction :</span> <span className="font-medium">{caseDetail.jurisdiction}</span></div>}
-                {caseDetail?.amountInDispute != null && <div><span className="text-[#6B7280]">Montant en jeu :</span> <span className="font-medium">{fmtMoney(caseDetail.amountInDispute)}</span></div>}
-                {caseDetail?.billingType && <div><span className="text-[#6B7280]">Facturation :</span> <Badge variant="secondary" className="text-[10px]">{BILLING_LABELS[caseDetail.billingType] || caseDetail.billingType}</Badge></div>}
-                <div className="col-span-2"><span className="text-[#6B7280]">Description :</span><p className="mt-1 text-sm text-[#374151] whitespace-pre-wrap">{caseDetail?.description || 'Aucune description'}</p></div>
+                <div><span className="text-jl-secondary">Client :</span> <span className="font-medium">{caseDetail?.client ? caseDetail.client.fullName : '—'}</span></div>
+                <div><span className="text-jl-secondary">Type :</span> <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[caseDetail?.caseType || ''] || caseDetail?.caseType}</Badge></div>
+                <div><span className="text-jl-secondary">Statut :</span> <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[caseDetail?.status || ''])}>{STATUS_LABELS[caseDetail?.status || ''] || caseDetail?.status}</Badge></div>
+                <div><span className="text-jl-secondary">Priorité :</span> <Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[caseDetail?.priority || ''])}>{PRIORITY_LABELS[caseDetail?.priority || ''] || caseDetail?.priority}</Badge></div>
+                {caseDetail?.adversary && <div className="col-span-2"><span className="text-jl-secondary">Partie adverse :</span> <span className="font-medium">{caseDetail.adversary}</span></div>}
+                {caseDetail?.jurisdiction && <div className="col-span-2"><span className="text-jl-secondary">Juridiction :</span> <span className="font-medium">{caseDetail.jurisdiction}</span></div>}
+                {caseDetail?.amountInDispute != null && <div><span className="text-jl-secondary">Montant en jeu :</span> <span className="font-medium">{fmtMoney(caseDetail.amountInDispute)}</span></div>}
+                {caseDetail?.billingType && <div><span className="text-jl-secondary">Facturation :</span> <Badge variant="secondary" className="text-[10px]">{BILLING_LABELS[caseDetail.billingType] || caseDetail.billingType}</Badge></div>}
+                <div className="col-span-2"><span className="text-jl-secondary">Description :</span><p className="mt-1 text-sm text-jl-secondary whitespace-pre-wrap">{caseDetail?.description || 'Aucune description'}</p></div>
               </div>
             </TabsContent>
             <TabsContent value="timeline" className="mt-3">
               {/* Search & Sort toolbar */}
               <div className="flex items-center gap-2 mb-3">
                 <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-[#9CA3AF]" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-jl-muted" />
                   <Input placeholder="Rechercher dans la timeline…" value={timelineSearch} onChange={e => setTimelineSearch(e.target.value)} className="pl-8 h-8 text-xs" />
-                  {timelineSearch && <button onClick={() => setTimelineSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#374151]"><X className="size-3" /></button>}
+                  {timelineSearch && <button onClick={() => setTimelineSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-jl-muted hover:text-jl-secondary"><X className="size-3" /></button>}
                 </div>
-                <button onClick={() => setTimelineSort(s => s === 'desc' ? 'asc' : 'desc')} className={cn('flex items-center gap-1 px-2.5 h-8 rounded-md border text-[11px] font-medium transition-colors', timelineSort === 'asc' ? 'bg-[#1E5A8A]/5 border-[#1E5A8A]/20 text-[#1E5A8A]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]')}>
+                <button onClick={() => setTimelineSort(s => s === 'desc' ? 'asc' : 'desc')} className={cn('flex items-center gap-1 px-2.5 h-8 rounded-md border text-[11px] font-medium transition-colors', timelineSort === 'asc' ? 'bg-jl-blue/5 border-jl-blue/20 text-jl-blue' : 'bg-jl-card border-jl text-jl-secondary hover:bg-jl-page')}>
                   <ArrowUpDown className="size-3" />{timelineSort === 'desc' ? 'Récent' : 'Ancien'}
                 </button>
               </div>
               {/* Filter pills */}
-              <div className="flex flex-wrap items-center gap-1.5 mb-4 pb-3 border-b border-[#E5E7EB]">
-                <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mr-1">Filtrer :</span>
+              <div className="flex flex-wrap items-center gap-1.5 mb-4 pb-3 border-b border-jl">
+                <span className="text-[10px] font-semibold text-jl-secondary uppercase tracking-wider mr-1">Filtrer :</span>
                 {[
                   { type: 'event', label: 'Événements', icon: Calendar, color: '#C8A45D' },
                   { type: 'note', label: 'Notes', icon: MessageSquare, color: '#6366F1' },
@@ -338,10 +338,10 @@ export function CasesView() {
                   const FI = f.icon
                   const count = timelineCounts[f.type] || 0
                   return (
-                    <button key={f.type} onClick={() => toggleTimelineFilter(f.type)} className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border', active ? 'border-current/20 shadow-sm' : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#9CA3AF] hover:bg-[#F3F4F6]')} style={active ? { backgroundColor: f.color + '12', color: f.color, borderColor: f.color + '30' } : undefined}>
+                    <button key={f.type} onClick={() => toggleTimelineFilter(f.type)} className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border', active ? 'border-current/20 shadow-sm' : 'border-jl bg-jl-page text-jl-muted hover:bg-jl-page')} style={active ? { backgroundColor: f.color + '12', color: f.color, borderColor: f.color + '30' } : undefined}>
                       <FI className="size-3" />
                       <span>{f.label}</span>
-                      <span className={cn('text-[9px] ml-0.5', active ? 'opacity-70' : 'text-[#D1D5DB]')}>{count}</span>
+                      <span className={cn('text-[9px] ml-0.5', active ? 'opacity-70' : 'text-jl-muted')}>{count}</span>
                     </button>
                   )
                 })}
@@ -377,10 +377,10 @@ export function CasesView() {
               <AnimatePresence>
               {showInlineEvent && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                <div className="border border-[#C8A45D]/30 bg-[#C8A45D]/[0.03] rounded-lg p-3 mb-4">
+                <div className="border border-jl-gold/30 bg-jl-gold/[0.03] rounded-lg p-3 mb-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="size-4 text-[#C8A45D]" />
-                    <span className="text-xs font-semibold text-[#926B2D]">Nouvel événement</span>
+                    <Calendar className="size-4 text-jl-gold" />
+                    <span className="text-xs font-semibold text-jl-gold">Nouvel événement</span>
                   </div>
                   <div className="space-y-2">
                     <Input value={inlineEvent.title} onChange={e => setInlineEvent(f => ({ ...f, title: e.target.value }))} placeholder="Titre de l'événement" className="text-sm h-8" autoFocus />
@@ -407,7 +407,7 @@ export function CasesView() {
                   <div className="space-y-4 py-4">
                     {[1, 2, 3].map(i => (
                       <div key={i} className="space-y-3">
-                        <div className="flex items-center gap-2"><Skeleton className="size-3 rounded-full" /><Skeleton className="h-3 w-36" /><div className="flex-1 h-px bg-[#E5E7EB]" /></div>
+                        <div className="flex items-center gap-2"><Skeleton className="size-3 rounded-full" /><Skeleton className="h-3 w-36" /><div className="flex-1 h-px bg-jl-page" /></div>
                         <div className="pl-8 space-y-3">
                           <Skeleton className="h-16 w-full rounded-lg" />
                           <Skeleton className="h-16 w-3/4 rounded-lg" />
@@ -416,13 +416,13 @@ export function CasesView() {
                     ))}
                   </div>
                 ) : timelineGrouped.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-[#9CA3AF]">
-                    <div className="size-16 rounded-2xl bg-[#F3F4F6] flex items-center justify-center mb-4">
+                  <div className="flex flex-col items-center justify-center py-16 text-jl-muted">
+                    <div className="size-16 rounded-2xl bg-jl-page flex items-center justify-center mb-4">
                       {timelineSearch ? <SearchX className="size-7 opacity-40" /> : <Activity className="size-7 opacity-40" />}
                     </div>
                     <p className="text-sm font-medium mb-1">{timelineSearch ? `Aucun r\u00E9sultat pour \u00AB ${timelineSearch} \u00BB` : 'Aucune activit\u00E9'}</p>
                     <p className="text-xs">{timelineSearch ? 'Essayez un autre terme' : timelineFilter.size < 7 ? 'Ajustez les filtres ou ajoutez une note' : 'Ajoutez une note ou un \u00E9v\u00E9nement pour commencer'}</p>
-                    {timelineSearch && <button onClick={() => setTimelineSearch('')} className="text-xs text-[#1E5A8A] hover:underline mt-2">Effacer la recherche</button>}
+                    {timelineSearch && <button onClick={() => setTimelineSearch('')} className="text-xs text-jl-blue hover:underline mt-2">Effacer la recherche</button>}
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -430,10 +430,10 @@ export function CasesView() {
                       <div key={group.key}>
                         {/* Date header */}
                         <div className="flex items-center gap-2.5 mb-3">
-                          <div className="size-2.5 rounded-full bg-[#1E5A8A] ring-4 ring-[#1E5A8A]/10" />
-                          <span className="text-[11px] font-bold text-[#374151] tracking-wide">{group.label}</span>
+                          <div className="size-2.5 rounded-full bg-jl-blue ring-4 ring-[#1E5A8A]/10" />
+                          <span className="text-[11px] font-bold text-jl-secondary tracking-wide">{group.label}</span>
                           <div className="flex-1 h-px bg-gradient-to-r from-[#E5E7EB] to-transparent" />
-                          <span className="text-[10px] text-[#9CA3AF] tabular-nums">{group.items.length} élément{group.items.length > 1 ? 's' : ''}</span>
+                          <span className="text-[10px] text-jl-muted tabular-nums">{group.items.length} élément{group.items.length > 1 ? 's' : ''}</span>
                         </div>
                         {/* Timeline items */}
                         <div className="relative pl-9">
@@ -450,52 +450,52 @@ export function CasesView() {
                               <motion.div key={item.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2, delay: idx * 0.04 }} className="relative pb-4 last:pb-0 group/item">
                                 {/* Timeline dot */}
                                 <div className="absolute -left-9 top-2 flex items-center justify-center">
-                                  <div className={cn('size-[22px] rounded-full bg-white border-2 flex items-center justify-center transition-all group-hover/item:scale-110 group-hover/item:shadow-md', isCritical && 'ring-2 ring-[#EF4444]/30')} style={{ borderColor: item.color }}>
+                                  <div className={cn('size-[22px] rounded-full bg-jl-card border-2 flex items-center justify-center transition-all group-hover/item:scale-110 group-hover/item:shadow-md', isCritical && 'ring-2 ring-[#EF4444]/30')} style={{ borderColor: item.color }}>
                                     <Icon className="size-2.5" style={{ color: item.color }} />
                                   </div>
                                 </div>
                                 {/* Content card */}
                                 <div className={cn(
-                                  'rounded-lg border p-3 transition-all ml-1 group-hover/item:shadow-sm group-hover/item:border-[#D1D5DB] cursor-default',
+                                  'rounded-lg border p-3 transition-all ml-1 group-hover/item:shadow-sm group-hover/item:border-jl cursor-default',
                                   isTaskDone && 'opacity-60',
                                   isDeleting && 'opacity-40 pointer-events-none',
-                                  isCritical && 'border-[#EF4444]/20 bg-[#EF4444]/[0.02]',
-                                  isOverdue && 'border-[#EF4444]/15 bg-[#EF4444]/[0.01]',
+                                  isCritical && 'border-[#EF4444]/20 bg-[var(--danger)]/[0.02]',
+                                  isOverdue && 'border-[#EF4444]/15 bg-[var(--danger)]/[0.01]',
                                 )} style={{ borderColor: isCritical || isOverdue ? undefined : item.color + '20' }}>
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <p className={cn('text-sm font-medium', isTaskDone && 'line-through')}>{item.title}</p>
                                         {item.amount != null && (
-                                          <span className={cn('text-xs font-bold', item.type === 'payment' ? 'text-[#059669]' : item.status === 'non_paye' ? 'text-[#EF4444]' : 'text-[#374151]')}>
+                                          <span className={cn('text-xs font-bold', item.type === 'payment' ? 'text-[var(--success)]' : item.status === 'non_paye' ? 'text-[var(--danger)]' : 'text-jl-secondary')}>
                                             {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: item.currency || 'XAF', minimumFractionDigits: 0 }).format(item.amount)}
                                           </span>
                                         )}
-                                        {isCritical && <Badge variant="outline" className="text-[9px] border-[#EF4444]/40 text-[#EF4444] animate-pulse">Urgent</Badge>}
-                                        {isOverdue && <Badge variant="outline" className="text-[9px] border-[#EF4444]/40 text-[#EF4444]">Impayé</Badge>}
+                                        {isCritical && <Badge variant="outline" className="text-[9px] border-[#EF4444]/40 text-[var(--danger)] animate-pulse">Urgent</Badge>}
+                                        {isOverdue && <Badge variant="outline" className="text-[9px] border-[#EF4444]/40 text-[var(--danger)]">Impayé</Badge>}
                                       </div>
-                                      {item.author && <p className="text-[10px] text-[#9CA3AF] mt-0.5 flex items-center gap-1"><UserCircle className="size-3" />{item.author}</p>}
-                                      <p className="text-xs text-[#6B7280] mt-1 leading-relaxed line-clamp-3">{item.description}</p>
+                                      {item.author && <p className="text-[10px] text-jl-muted mt-0.5 flex items-center gap-1"><UserCircle className="size-3" />{item.author}</p>}
+                                      <p className="text-xs text-jl-secondary mt-1 leading-relaxed line-clamp-3">{item.description}</p>
                                       {/* Comm type & recipient details */}
                                       {item.type === 'communication' && item.metadata?.commType && (
-                                        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-[#0891B2]">
+                                        <div className="flex items-center gap-2 mt-1.5 text-[10px] text-jl-blue">
                                           {item.metadata.commType === 'email' ? <Mail className="size-3" /> : item.metadata.commType === 'sms' ? <MessageSquare className="size-3" /> : item.metadata.commType === 'whatsapp' ? <MessageCircle className="size-3" /> : <Send className="size-3" />}
                                           <span>{item.metadata.recipientEmail || item.metadata.recipientPhone || ''}</span>
                                         </div>
                                       )}
                                     </div>
                                     <div className="flex flex-col items-end gap-1 shrink-0">
-                                      <span className="text-[10px] text-[#9CA3AF]">{relativeTime(item.date)}</span>
+                                      <span className="text-[10px] text-jl-muted">{relativeTime(item.date)}</span>
                                       <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap" style={{ backgroundColor: item.color + '15', color: item.color }}>{timelineTypeLabels[item.type] || item.type}</span>
                                     </div>
                                   </div>
                                   {/* Footer: full time + delete action */}
                                   <div className="flex items-center justify-between mt-1.5">
-                                    <p className="text-[9px] text-[#D1D5DB] opacity-0 group-hover/item:opacity-100 transition-opacity">{fmtDateTime(item.date)}</p>
+                                    <p className="text-[9px] text-jl-muted opacity-0 group-hover/item:opacity-100 transition-opacity">{fmtDateTime(item.date)}</p>
                                     {isDeletable && (
                                       <button
                                         className={cn(
-                                          'opacity-0 group-hover/item:opacity-100 transition-all p-1 rounded-md hover:bg-[#FEE2E2] text-[#D1D5DB] hover:text-[#EF4444]',
+                                          'opacity-0 group-hover/item:opacity-100 transition-all p-1 rounded-md hover:bg-[#FEE2E2] text-jl-muted hover:text-[var(--danger)]',
                                           isDeleting && 'opacity-100 animate-pulse'
                                         )}
                                         onClick={(e) => {
@@ -525,31 +525,31 @@ export function CasesView() {
               </ScrollArea>
             </TabsContent>
             <TabsContent value="notes" className="mt-4 space-y-3 overflow-y-auto max-h-[50vh]">
-              {(caseDetail?.notes || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune note</p> :
+              {(caseDetail?.notes || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune note</p> :
                 (caseDetail?.notes || []).map(n => (
-                  <div key={n.id} className="border rounded-lg p-3"><div className="flex items-center justify-between mb-1"><span className="text-xs font-medium">{n.author?.fullName || '—'}</span><span className="text-[10px] text-[#9CA3AF]">{fmtDateTime(n.createdAt)}</span></div><p className="text-sm text-[#374151] whitespace-pre-wrap">{n.content}</p></div>
+                  <div key={n.id} className="border rounded-lg p-3"><div className="flex items-center justify-between mb-1"><span className="text-xs font-medium">{n.author?.fullName || '—'}</span><span className="text-[10px] text-jl-muted">{fmtDateTime(n.createdAt)}</span></div><p className="text-sm text-jl-secondary whitespace-pre-wrap">{n.content}</p></div>
                 ))}
             </TabsContent>
             <TabsContent value="documents" className="mt-4 overflow-y-auto max-h-[50vh]">
               {(() => {
                 const docs = caseDetail?.documents || []
-                if (docs.length === 0) return <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun document</p>
+                if (docs.length === 0) return <p className="text-sm text-jl-muted text-center py-8">Aucun document</p>
                 return (
                   <div className="space-y-1.5">
                     {docs.map((d: Doc) => (
-                      <div key={d.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F9FAFB] border border-[#F3F4F6] group">
-                        <div className="shrink-0 p-1.5 rounded bg-[#F9FAFB]">
-                          {d.mimeType?.includes('pdf') ? <FileText className="size-4 text-red-500" /> : d.mimeType?.includes('image') ? <FileImage className="size-4 text-emerald-500" /> : <FileText className="size-4 text-[#9CA3AF]" />}
+                      <div key={d.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-jl-page border border-jl group">
+                        <div className="shrink-0 p-1.5 rounded bg-jl-page">
+                          {d.mimeType?.includes('pdf') ? <FileText className="size-4 text-red-500" /> : d.mimeType?.includes('image') ? <FileImage className="size-4 text-emerald-500" /> : <FileText className="size-4 text-jl-muted" />}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate cursor-pointer hover:text-[#1E5A8A]" onClick={() => { if (d.mimeType?.includes('pdf') || d.mimeType?.includes('image')) setCasePreviewDoc(d) }}>{d.fileName}</p>
+                          <p className="text-sm font-medium truncate cursor-pointer hover:text-jl-blue" onClick={() => { if (d.mimeType?.includes('pdf') || d.mimeType?.includes('image')) setCasePreviewDoc(d) }}>{d.fileName}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] text-[#9CA3AF]">{fmtFileSize(d.fileSize)}</span>
-                            {d.version > 1 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-[#1E5A8A] border-[#1E5A8A]/30">v{d.version}</Badge>}
-                            {d.tags && d.tags.split(',').slice(0, 2).map((t: string, i: number) => <Badge key={i} variant="outline" className="text-[9px] px-1 py-0 border-[#E5E7EB] text-[#6B7280]"><Tag className="size-2 mr-0.5" />{t.trim()}</Badge>)}
+                            <span className="text-[10px] text-jl-muted">{fmtFileSize(d.fileSize)}</span>
+                            {d.version > 1 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-jl-blue border-jl-blue/30">v{d.version}</Badge>}
+                            {d.tags && d.tags.split(',').slice(0, 2).map((t: string, i: number) => <Badge key={i} variant="outline" className="text-[9px] px-1 py-0 border-jl text-jl-secondary"><Tag className="size-2 mr-0.5" />{t.trim()}</Badge>)}
                           </div>
                         </div>
-                        <a href={`/api/documents/${d.id}/download`} onClick={e => e.stopPropagation()} className="shrink-0 text-xs text-[#1E5A8A] hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href={`/api/documents/${d.id}/download`} onClick={e => e.stopPropagation()} className="shrink-0 text-xs text-jl-blue hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Download className="size-3" />Télécharger
                         </a>
                       </div>
@@ -559,40 +559,40 @@ export function CasesView() {
               })()}
             </TabsContent>
             <TabsContent value="taches" className="mt-4 overflow-y-auto max-h-[50vh]">
-              {(caseTasks || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune tâche</p> :
+              {(caseTasks || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune tâche</p> :
               <div className="space-y-2">{(caseTasks || []).map((t: TaskItem) => (
-                <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg border border-[#E5E7EB]">
-                  <span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[#EF4444]' : t.priority === 'haute' ? 'bg-[#D97706]' : 'bg-[#C8A45D]')} />
-                  <div className="min-w-0 flex-1"><p className={cn('text-sm font-medium', t.status === 'terminee' && 'line-through')}>{t.title}</p>{t.dueDate && <p className="text-[10px] text-[#9CA3AF]">Échéance: {fmtDate(t.dueDate)}</p>}</div>
+                <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
+                  <span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[var(--danger)]' : t.priority === 'haute' ? 'bg-[var(--accent)]' : 'bg-jl-gold')} />
+                  <div className="min-w-0 flex-1"><p className={cn('text-sm font-medium', t.status === 'terminee' && 'line-through')}>{t.title}</p>{t.dueDate && <p className="text-[10px] text-jl-muted">Échéance: {fmtDate(t.dueDate)}</p>}</div>
                   <Badge variant="outline" className={cn('text-[10px] shrink-0', taskStatusColor(t.status))}>{taskStatusLabel(t.status)}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
             <TabsContent value="events" className="mt-4 overflow-y-auto max-h-[50vh]">
-              {(caseDetail?.events || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun événement</p> :
+              {(caseDetail?.events || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucun événement</p> :
               <div className="space-y-2">{(caseDetail?.events || []).map((e: EventItem) => (
-                <div key={e.id} className="flex items-center gap-3 p-2 rounded-lg border border-[#E5E7EB]">
-                  <Calendar className="size-4 text-[#C8A45D] shrink-0" />
-                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-[10px] text-[#9CA3AF]">{fmtDateTime(e.startTime)}{e.description ? ` • ${e.description}` : ''}</p></div>
+                <div key={e.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
+                  <Calendar className="size-4 text-jl-gold shrink-0" />
+                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-[10px] text-jl-muted">{fmtDateTime(e.startTime)}{e.description ? ` • ${e.description}` : ''}</p></div>
                   <Badge variant="outline" className="text-[10px] shrink-0">{EVENT_TYPE_LABELS[e.eventType] || e.eventType}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
             <TabsContent value="equipe" className="mt-4 overflow-y-auto max-h-[50vh]">
-              {(caseDetail?.assignments || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun membre assigné</p> :
+              {(caseDetail?.assignments || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucun membre assigné</p> :
               <div className="space-y-2">{(caseDetail?.assignments || []).map((a: CaseAssignment) => (
-                <div key={a.id} className="flex items-center gap-3 p-2 rounded-lg border border-[#E5E7EB]">
-                  <Avatar className="size-8"><AvatarFallback className="text-[10px] bg-[#1E5A8A] text-white">{a.user?.fullName ? initials(a.user.fullName) : 'U'}</AvatarFallback></Avatar>
-                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{a.user?.fullName || '—'}</p><p className="text-[10px] text-[#9CA3AF]">{ROLE_LABELS[a.user?.role || ''] || a.user?.role || ''}</p></div>
+                <div key={a.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
+                  <Avatar className="size-8"><AvatarFallback className="text-[10px] bg-jl-blue text-white">{a.user?.fullName ? initials(a.user.fullName) : 'U'}</AvatarFallback></Avatar>
+                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{a.user?.fullName || '—'}</p><p className="text-[10px] text-jl-muted">{ROLE_LABELS[a.user?.role || ''] || a.user?.role || ''}</p></div>
                 </div>
               ))}</div>}
             </TabsContent>
             <TabsContent value="factures" className="mt-4 overflow-y-auto max-h-[50vh]">
-              {(caseInvoices || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune facture</p> :
+              {(caseInvoices || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune facture</p> :
               <div className="space-y-2">{(caseInvoices || []).map((inv: Invoice) => (
-                <div key={inv.id} className="flex items-center gap-3 p-2 rounded-lg border border-[#E5E7EB]">
-                  <Receipt className="size-4 text-[#926B2D] shrink-0" />
-                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{inv.id.slice(0,8)}</p><p className="text-[10px] text-[#9CA3AF]">{fmtDate(inv.createdAt)}{inv.dueDate ? ` • Échéance: ${fmtDate(inv.dueDate)}` : ''}</p></div>
+                <div key={inv.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
+                  <Receipt className="size-4 text-jl-gold shrink-0" />
+                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{inv.id.slice(0,8)}</p><p className="text-[10px] text-jl-muted">{fmtDate(inv.createdAt)}{inv.dueDate ? ` • Échéance: ${fmtDate(inv.dueDate)}` : ''}</p></div>
                   <span className="text-sm font-semibold shrink-0">{fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</span>
                   <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[inv.status])}>{STATUS_LABELS[inv.status] || inv.status}</Badge>
                 </div>
@@ -611,7 +611,7 @@ export function CasesView() {
               <iframe src={`/api/documents/${casePreviewDoc.id}/download`} className="w-full h-full border-0" title="Aperçu PDF" />
             )}
             {casePreviewDoc && casePreviewDoc.mimeType?.includes('image') && (
-              <div className="flex items-center justify-center h-full bg-[#F9FAFB] p-4"><img src={`/api/documents/${casePreviewDoc.id}/download`} alt={casePreviewDoc.fileName} className="max-w-full max-h-full object-contain rounded" /></div>
+              <div className="flex items-center justify-center h-full bg-jl-page p-4"><img src={`/api/documents/${casePreviewDoc.id}/download`} alt={casePreviewDoc.fileName} className="max-w-full max-h-full object-contain rounded" /></div>
             )}
           </div>
           <DialogFooter className="px-4 py-3 border-t shrink-0">

@@ -87,7 +87,7 @@ export function CalendarView() {
   }
 
   const CRIT_EVENT_COLORS: Record<string, string> = {
-    normale: 'bg-[#C8A45D]', importante: 'bg-[#F59E0B]', urgente: 'bg-[#EF4444]',
+    normale: 'bg-jl-gold', importante: 'bg-[#F59E0B]', urgente: 'bg-[var(--danger)]',
   }
 
   const days = useMemo(() => {
@@ -109,27 +109,27 @@ export function CalendarView() {
           <Button variant="outline" size="icon" className="size-8" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}><ChevronLeft className="size-4" /></Button>
           <span className="text-sm font-medium min-w-[140px] text-center">{format(currentMonth, 'MMMM yyyy', { locale: fr })}</span>
           <Button variant="outline" size="icon" className="size-8" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight className="size-4" /></Button>
-          <Button size="sm" className="bg-[#1E5A8A] hover:bg-[#164070] ml-2" onClick={() => openCreate()}><CalendarPlus className="size-4 mr-1" />Nouvel événement</Button>
+          <Button size="sm" className="bg-jl-blue hover:bg-jl-blue ml-2" onClick={() => openCreate()}><CalendarPlus className="size-4 mr-1" />Nouvel événement</Button>
         </div>
       </div>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> : (
         <Card><CardContent className="p-2">
-          <div className="grid grid-cols-7 gap-px bg-[#F3F4F6] rounded-lg overflow-hidden">
-            {weekDays.map(d => <div key={d} className="bg-white p-2 text-center text-xs font-medium text-[#6B7280]">{d}</div>)}
+          <div className="grid grid-cols-7 gap-px bg-jl-page rounded-lg overflow-hidden">
+            {weekDays.map(d => <div key={d} className="bg-jl-card p-2 text-center text-xs font-medium text-jl-secondary">{d}</div>)}
             {days.map(day => {
               const dayEvents = getEventsForDay(day)
               return (
-                <div key={day.toISOString()} className={cn('bg-white p-1 min-h-[80px] md:min-h-[100px] border border-[#E5E7EB] cursor-pointer', !isSameMonth(day, currentMonth) && 'opacity-40', isToday(day) && 'bg-[#E8F0F8] ring-1 ring-[#1E5A8A]')} onClick={() => openCreate(day)}>
-                  <p className={cn('text-xs mb-1', isToday(day) ? 'font-bold text-[#926B2D]' : 'text-[#6B7280]')}>{format(day, 'd')}</p>
+                <div key={day.toISOString()} className={cn('bg-jl-card p-1 min-h-[80px] md:min-h-[100px] border border-jl cursor-pointer', !isSameMonth(day, currentMonth) && 'opacity-40', isToday(day) && 'bg-jl-blue-light ring-1 ring-[#1E5A8A]')} onClick={() => openCreate(day)}>
+                  <p className={cn('text-xs mb-1', isToday(day) ? 'font-bold text-jl-gold' : 'text-jl-secondary')}>{format(day, 'd')}</p>
                   <div className="space-y-0.5">
                     {dayEvents.slice(0, 3).map(e => (
                       <div key={e.id} onClick={ev => { ev.stopPropagation(); openEdit(e) }} className={cn('text-[10px] px-1 py-0.5 rounded truncate text-white flex items-center gap-1', CRIT_EVENT_COLORS[e.criticality] || CRIT_EVENT_COLORS.normale)} title={e.title}>
                         {e.title}
-                        {(e.assignments || []).length > 0 && <span className="ml-auto shrink-0">{(e.assignments || []).slice(0, 2).map((a: EventAssignment) => <span key={a.userId} className="inline-block size-3 rounded-full bg-white/30 ml-0.5" title={a.user?.fullName || ''}><span className="text-[6px] leading-3 block text-center">{a.user?.fullName?.[0] || ''}</span></span>)}</span>}
+                        {(e.assignments || []).length > 0 && <span className="ml-auto shrink-0">{(e.assignments || []).slice(0, 2).map((a: EventAssignment) => <span key={a.userId} className="inline-block size-3 rounded-full bg-jl-card/30 ml-0.5" title={a.user?.fullName || ''}><span className="text-[6px] leading-3 block text-center">{a.user?.fullName?.[0] || ''}</span></span>)}</span>}
                       </div>
                     ))}
-                    {dayEvents.length > 3 && <p className="text-[10px] text-[#9CA3AF] pl-1">+{dayEvents.length - 3}</p>}
+                    {dayEvents.length > 3 && <p className="text-[10px] text-jl-muted pl-1">+{dayEvents.length - 3}</p>}
                   </div>
                 </div>
               )
@@ -169,7 +169,7 @@ export function CalendarView() {
             }}><ZapIcon className="size-3.5 mr-1" />Générer les tâches</Button></div>}
           </div>
           <DialogFooter>
-            {editing && <Button variant="outline" className="text-[#DC2626] hover:text-[#DC2626] hover:bg-[#FEF2F2] mr-auto" onClick={() => deleteMut.mutate(editing.id)}><Trash2 className="size-3.5 mr-1" />Supprimer</Button>}
+            {editing && <Button variant="outline" className="text-[var(--danger)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 mr-auto" onClick={() => deleteMut.mutate(editing.id)}><Trash2 className="size-3.5 mr-1" />Supprimer</Button>}
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
             <Button onClick={handleSubmit} disabled={!form.title.trim() || !form.startTime || createMut.isPending || updateMut.isPending}>{editing ? 'Enregistrer' : 'Créer'}</Button>
           </DialogFooter>

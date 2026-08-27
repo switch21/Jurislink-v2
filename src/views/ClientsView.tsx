@@ -64,7 +64,7 @@ export function ClientsView() {
         <Button onClick={() => { resetForm(); setDialogOpen(true) }} size="sm"><Plus className="size-4 mr-1" />Nouveau client</Button>
       </div>
 
-      <div className="relative max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-[#9CA3AF]" /><Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-xs" /></div>
+      <div className="relative max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-xs" /></div>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
         (clients || []).length === 0 ? <EmptyState icon={Users} title="Aucun client" description="Ajoutez votre premier client" /> :
@@ -78,21 +78,21 @@ export function ClientsView() {
             <TableHead className="w-24">Actions</TableHead>
           </TableRow></TableHeader><TableBody>
             {(clients || []).map((c: Client, i: number) => (
-              <TableRow key={c.id} className={cn(i % 2 === 1 && 'bg-[#F9FAFB]', 'cursor-pointer')} onClick={() => { setSelectedClient(c); setDetailOpen(true) }}>
+              <TableRow key={c.id} className={cn(i % 2 === 1 && 'bg-jl-page', 'cursor-pointer')} onClick={() => { setSelectedClient(c); setDetailOpen(true) }}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Avatar className="size-7"><AvatarFallback className="text-[10px] bg-[#F3F4F6]">{initials(c.fullName)}</AvatarFallback></Avatar>
-                    <div><p className="text-sm font-medium">{c.fullName}</p>{c.company && <p className="text-[10px] text-[#9CA3AF]">{c.company}</p>}</div>
+                    <Avatar className="size-7"><AvatarFallback className="text-[10px] bg-jl-page">{initials(c.fullName)}</AvatarFallback></Avatar>
+                    <div><p className="text-sm font-medium">{c.fullName}</p>{c.company && <p className="text-[10px] text-jl-muted">{c.company}</p>}</div>
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{c.clientType === 'entreprise' ? 'Entreprise' : 'Particulier'}</Badge></TableCell>
-                <TableCell className="hidden lg:table-cell text-sm text-[#6B7280]">{c.city || '—'}</TableCell>
+                <TableCell className="hidden lg:table-cell text-sm text-jl-secondary">{c.city || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell"><Badge variant="outline" className={cn('text-[10px]', RISK_COLORS[c.riskLevel || 'faible'])}>{c.riskLevel === 'eleve' ? 'Élevé' : c.riskLevel === 'moyen' ? 'Moyen' : 'Faible'}</Badge></TableCell>
-                <TableCell className="hidden sm:table-cell text-sm text-[#6B7280]">{c._count?.cases || 0}</TableCell>
+                <TableCell className="hidden sm:table-cell text-sm text-jl-secondary">{c._count?.cases || 0}</TableCell>
                 <TableCell>
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" className="size-7" onClick={() => openEdit(c)}><Edit className="size-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="size-7 text-[#EF4444] hover:text-[#DC2626]" onClick={() => deleteMut.mutate(c.id)}><Trash2 className="size-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="size-7 text-[var(--danger)] hover:text-[var(--danger)]" onClick={() => deleteMut.mutate(c.id)}><Trash2 className="size-3.5" /></Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -133,12 +133,12 @@ export function ClientsView() {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <Avatar className="size-10"><AvatarFallback className="bg-[#1E5A8A] text-white text-sm">{initials(selectedClient?.fullName || '')}</AvatarFallback></Avatar>
-              <div><div>{selectedClient?.fullName}{selectedClient?.company && <span className="text-[#6B7280] font-normal"> — {selectedClient.company}</span>}</div>
+              <Avatar className="size-10"><AvatarFallback className="bg-jl-blue text-white text-sm">{initials(selectedClient?.fullName || '')}</AvatarFallback></Avatar>
+              <div><div>{selectedClient?.fullName}{selectedClient?.company && <span className="text-jl-secondary font-normal"> — {selectedClient.company}</span>}</div>
               <div className="flex items-center gap-2 mt-1"><Badge variant="outline" className="text-[10px]">{selectedClient?.clientType === 'entreprise' ? 'Entreprise' : 'Particulier'}</Badge><Badge variant="outline" className={cn('text-[10px]', RISK_COLORS[selectedClient?.riskLevel || 'faible'])}>{selectedClient?.riskLevel === 'eleve' ? 'Élevé' : selectedClient?.riskLevel === 'moyen' ? 'Moyen' : 'Faible'}</Badge></div></div>
             </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-2 text-xs text-[#6B7280] px-1 py-2">
+          <div className="grid grid-cols-2 gap-2 text-xs text-jl-secondary px-1 py-2">
             {selectedClient?.email && <div className="flex items-center gap-1.5"><Mail className="size-3" />{selectedClient.email}</div>}
             {selectedClient?.phone && <div className="flex items-center gap-1.5"><Phone className="size-3" />{selectedClient.phone}</div>}
             {selectedClient?.address && <div className="flex items-center gap-1.5"><MapPin className="size-3" />{selectedClient.address}</div>}
@@ -148,29 +148,29 @@ export function ClientsView() {
           <Tabs defaultValue="dossiers" className="flex-1 overflow-hidden">
             <TabsList className="w-full"><TabsTrigger value="dossiers">Dossiers ({(clientDetail?.cases || []).length})</TabsTrigger><TabsTrigger value="factures">Factures ({(clientDetail?.invoices || []).length})</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger></TabsList>
             <TabsContent value="dossiers" className="mt-3 overflow-y-auto max-h-[45vh]">
-              {(clientDetail?.cases || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun dossier</p> :
+              {(clientDetail?.cases || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucun dossier</p> :
               <div className="space-y-2">{(clientDetail?.cases || []).map((c: CaseItem) => (
-                <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg border border-[#E5E7EB] hover:bg-[#F9FAFB] cursor-pointer" onClick={() => { setDetailOpen(false); setCurrentView('cases') }}>
-                  <Briefcase className="size-4 text-[#C8A45D] shrink-0" />
-                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{c.reference} — {c.title}</p><p className="text-[10px] text-[#9CA3AF]">{TYPE_LABELS[c.caseType] || c.caseType} • Créé le {fmtDate(c.createdAt)}</p></div>
+                <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl hover:bg-jl-page cursor-pointer" onClick={() => { setDetailOpen(false); setCurrentView('cases') }}>
+                  <Briefcase className="size-4 text-jl-gold shrink-0" />
+                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{c.reference} — {c.title}</p><p className="text-[10px] text-jl-muted">{TYPE_LABELS[c.caseType] || c.caseType} • Créé le {fmtDate(c.createdAt)}</p></div>
                   <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
             <TabsContent value="factures" className="mt-3 overflow-y-auto max-h-[45vh]">
-              {(clientDetail?.invoices || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune facture</p> :
+              {(clientDetail?.invoices || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune facture</p> :
               <div className="space-y-2">{(clientDetail?.invoices || []).map((inv: Invoice) => (
-                <div key={inv.id} className="flex items-center gap-3 p-2 rounded-lg border border-[#E5E7EB] hover:bg-[#F9FAFB] cursor-pointer" onClick={() => { setDetailOpen(false); setCurrentView('invoices') }}>
-                  <Receipt className="size-4 text-[#926B2D] shrink-0" />
-                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{inv.id.slice(0,8)}{inv.case?.reference ? ` — ${inv.case.reference}` : ''}</p><p className="text-[10px] text-[#9CA3AF]">{fmtDate(inv.createdAt)}</p></div>
+                <div key={inv.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl hover:bg-jl-page cursor-pointer" onClick={() => { setDetailOpen(false); setCurrentView('invoices') }}>
+                  <Receipt className="size-4 text-jl-gold shrink-0" />
+                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{inv.id.slice(0,8)}{inv.case?.reference ? ` — ${inv.case.reference}` : ''}</p><p className="text-[10px] text-jl-muted">{fmtDate(inv.createdAt)}</p></div>
                   <span className="text-sm font-semibold shrink-0">{fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</span>
                   <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[inv.status])}>{STATUS_LABELS[inv.status] || inv.status}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
             <TabsContent value="notes" className="mt-3 overflow-y-auto max-h-[45vh]">
-              <div className="p-4 border rounded-lg bg-[#F9FAFB]">
-                <p className="text-sm text-[#6B7280] whitespace-pre-wrap">{selectedClient?.notes || clientDetail?.notes || 'Aucune note'}</p>
+              <div className="p-4 border rounded-lg bg-jl-page">
+                <p className="text-sm text-jl-secondary whitespace-pre-wrap">{selectedClient?.notes || clientDetail?.notes || 'Aucune note'}</p>
               </div>
             </TabsContent>
           </Tabs>

@@ -50,10 +50,10 @@ export function ImpayesView() {
 
   const levelColor = (level: number) => {
     if (level >= 4) return 'bg-[#991B1B] text-white'
-    if (level >= 3) return 'bg-[#DC2626] text-white'
-    if (level >= 2) return 'bg-[#EA580C] text-white'
-    if (level >= 1) return 'bg-[#D97706] text-white'
-    return 'bg-[#6B7280] text-white'
+    if (level >= 3) return 'bg-[var(--danger)] text-white'
+    if (level >= 2) return 'bg-[var(--accent)] text-white'
+    if (level >= 1) return 'bg-[var(--accent)] text-white'
+    return 'bg-jl-page text-white'
   }
 
   const levelLabel = (level: number) => {
@@ -69,8 +69,8 @@ export function ImpayesView() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2"><AlertOctagon className="size-5 text-[#DC2626]" />Impayés & Relances</h2>
-          <p className="text-xs text-[#6B7280]">Suivi des factures en retard et gestion des relances automatiques</p>
+          <h2 className="text-lg font-semibold flex items-center gap-2"><AlertOctagon className="size-5 text-[var(--danger)]" />Impayés & Relances</h2>
+          <p className="text-xs text-jl-secondary">Suivi des factures en retard et gestion des relances automatiques</p>
         </div>
       </div>
 
@@ -78,11 +78,11 @@ export function ImpayesView() {
       <>
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <Card className="border-l-4 border-l-[#DC2626]"><CardContent className="p-3"><p className="text-[10px] text-[#6B7280] uppercase tracking-wide">Factures impayées</p><p className="text-2xl font-bold text-[#DC2626] mt-1">{kpis.totalOverdue || 0}</p></CardContent></Card>
-          <Card className="border-l-4 border-l-[#D97706]"><CardContent className="p-3"><p className="text-[10px] text-[#6B7280] uppercase tracking-wide">Montant total dû</p><p className="text-lg font-bold text-[#D97706] mt-1">{fmtMoney(kpis.totalAmount || 0, 'XAF')}</p></CardContent></Card>
-          <Card className="border-l-4 border-l-[#EA580C]"><CardContent className="p-3"><p className="text-[10px] text-[#6B7280] uppercase tracking-wide">Retard moyen</p><p className="text-2xl font-bold text-[#EA580C] mt-1">{kpis.avgDaysOverdue || 0}<span className="text-xs font-normal ml-1">jours</span></p></CardContent></Card>
-          <Card className="border-l-4 border-l-[#991B1B]"><CardContent className="p-3"><p className="text-[10px] text-[#6B7280] uppercase tracking-wide">Retard max</p><p className="text-2xl font-bold text-[#991B1B] mt-1">{kpis.maxDaysOverdue || 0}<span className="text-xs font-normal ml-1">jours</span></p></CardContent></Card>
-          <Card className="border-l-4 border-l-[#1E5A8A]"><CardContent className="p-3"><p className="text-[10px] text-[#6B7280] uppercase tracking-wide">Actions possibles</p><p className="text-2xl font-bold text-[#1E5A8A] mt-1">{kpis.actionable || 0}</p></CardContent></Card>
+          <Card className="border-l-4 border-l-[#DC2626]"><CardContent className="p-3"><p className="text-[10px] text-jl-secondary uppercase tracking-wide">Factures impayées</p><p className="text-2xl font-bold text-[var(--danger)] mt-1">{kpis.totalOverdue || 0}</p></CardContent></Card>
+          <Card className="border-l-4 border-l-[#D97706]"><CardContent className="p-3"><p className="text-[10px] text-jl-secondary uppercase tracking-wide">Montant total dû</p><p className="text-lg font-bold text-[var(--accent)] mt-1">{fmtMoney(kpis.totalAmount || 0, 'XAF')}</p></CardContent></Card>
+          <Card className="border-l-4 border-l-[#EA580C]"><CardContent className="p-3"><p className="text-[10px] text-jl-secondary uppercase tracking-wide">Retard moyen</p><p className="text-2xl font-bold text-[var(--accent)] mt-1">{kpis.avgDaysOverdue || 0}<span className="text-xs font-normal ml-1">jours</span></p></CardContent></Card>
+          <Card className="border-l-4 border-l-[#991B1B]"><CardContent className="p-3"><p className="text-[10px] text-jl-secondary uppercase tracking-wide">Retard max</p><p className="text-2xl font-bold text-[#991B1B] mt-1">{kpis.maxDaysOverdue || 0}<span className="text-xs font-normal ml-1">jours</span></p></CardContent></Card>
+          <Card className="border-l-4 border-l-[#1E5A8A]"><CardContent className="p-3"><p className="text-[10px] text-jl-secondary uppercase tracking-wide">Actions possibles</p><p className="text-2xl font-bold text-jl-blue mt-1">{kpis.actionable || 0}</p></CardContent></Card>
         </div>
 
         {/* By Level Progress + By Client */}
@@ -93,14 +93,14 @@ export function ImpayesView() {
               const data = (byLevel as any[]).find(b => b.level === l)
               const count = data?.count || 0
               const pct = (kpis.totalOverdue || 0) > 0 ? Math.round((count / (kpis.totalOverdue || 1)) * 100) : 0
-              const colors = ['', 'bg-[#D97706]', 'bg-[#EA580C]', 'bg-[#DC2626]', 'bg-[#991B1B]']
+              const colors = ['', 'bg-[var(--accent)]', 'bg-[var(--accent)]', 'bg-[var(--danger)]', 'bg-[#991B1B]']
               return (
                 <div key={l}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium flex items-center gap-1.5"><span className={cn('inline-block size-2 rounded-full', colors[l])} />{levelLabel(l)}</span>
-                    <span className="text-xs text-[#6B7280]">{count} facture{count > 1 ? 's' : ''} • {fmtMoney(data?.amount || 0, 'XAF')}</span>
+                    <span className="text-xs text-jl-secondary">{count} facture{count > 1 ? 's' : ''} • {fmtMoney(data?.amount || 0, 'XAF')}</span>
                   </div>
-                  <div className="h-2 bg-[#F3F4F6] rounded-full overflow-hidden"><motion.div className={cn('h-full rounded-full', colors[l])} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} /></div>
+                  <div className="h-2 bg-jl-page rounded-full overflow-hidden"><motion.div className={cn('h-full rounded-full', colors[l])} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} /></div>
                 </div>
               )
             })}
@@ -108,11 +108,11 @@ export function ImpayesView() {
 
           {/* Top clients with overdue */}
           <Card><CardHeader className="pb-2 px-4 pt-3"><CardTitle className="text-sm">Top clients impayés</CardTitle></CardHeader><CardContent className="px-4 pb-4 space-y-2">
-            {byClient.length === 0 ? <p className="text-xs text-[#9CA3AF] text-center py-4">Aucun impayé</p> :
+            {byClient.length === 0 ? <p className="text-xs text-jl-muted text-center py-4">Aucun impayé</p> :
             (byClient as any[]).slice(0, 6).map((c: any, i: number) => (
-              <div key={c.clientId || i} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#F9FAFB]">
-                <div className="flex items-center gap-2"><span className="text-xs font-bold text-[#6B7280] w-5">{i + 1}</span><span className="text-sm font-medium">{c.clientName}</span><Badge variant="outline" className="text-[10px]">{c.count} facture{c.count > 1 ? 's' : ''}</Badge></div>
-                <span className="text-sm font-semibold text-[#DC2626]">{fmtMoney(c.amount, 'XAF')}</span>
+              <div key={c.clientId || i} className="flex items-center justify-between p-2 rounded-lg hover:bg-jl-page">
+                <div className="flex items-center gap-2"><span className="text-xs font-bold text-jl-secondary w-5">{i + 1}</span><span className="text-sm font-medium">{c.clientName}</span><Badge variant="outline" className="text-[10px]">{c.count} facture{c.count > 1 ? 's' : ''}</Badge></div>
+                <span className="text-sm font-semibold text-[var(--danger)]">{fmtMoney(c.amount, 'XAF')}</span>
               </div>
             ))}
           </CardContent></Card>
@@ -120,16 +120,16 @@ export function ImpayesView() {
 
         {/* Filter bar */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-[#6B7280]">Filtrer :</span>
-          <button onClick={() => setLevelFilter('all')} className={cn('text-[10px] px-2.5 py-1 rounded-full transition-colors', levelFilter === 'all' ? 'bg-[#1E5A8A] text-white' : 'bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]')}>Tous</button>
-          <button onClick={() => setLevelFilter('0')} className={cn('text-[10px] px-2.5 py-1 rounded-full transition-colors', levelFilter === '0' ? 'bg-[#6B7280] text-white' : 'bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]')}>Non relancé</button>
+          <span className="text-xs text-jl-secondary">Filtrer :</span>
+          <button onClick={() => setLevelFilter('all')} className={cn('text-[10px] px-2.5 py-1 rounded-full transition-colors', levelFilter === 'all' ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary hover:bg-jl-page')}>Tous</button>
+          <button onClick={() => setLevelFilter('0')} className={cn('text-[10px] px-2.5 py-1 rounded-full transition-colors', levelFilter === '0' ? 'bg-jl-page text-white' : 'bg-jl-page text-jl-secondary hover:bg-jl-page')}>Non relancé</button>
           {[1, 2, 3, 4].map(l => (
-            <button key={l} onClick={() => setLevelFilter(String(l))} className={cn('text-[10px] px-2.5 py-1 rounded-full transition-colors', levelFilter === String(l) ? levelColor(l) : 'bg-[#F3F4F6] text-[#374151] hover:bg-[#E5E7EB]')}>{levelLabel(l)}</button>
+            <button key={l} onClick={() => setLevelFilter(String(l))} className={cn('text-[10px] px-2.5 py-1 rounded-full transition-colors', levelFilter === String(l) ? levelColor(l) : 'bg-jl-page text-jl-secondary hover:bg-jl-page')}>{levelLabel(l)}</button>
           ))}
         </div>
 
         {/* Invoice list */}
-        {invoices.length === 0 ? <Card className="border-dashed"><CardContent className="py-16 text-center"><CheckCircle2 className="size-12 mx-auto text-[#D1D5DB] mb-3" /><p className="text-sm font-medium">Aucune facture impayée</p><p className="text-xs text-[#9CA3AF] mt-1">Toutes les factures sont à jour</p></CardContent></Card> :
+        {invoices.length === 0 ? <Card className="border-dashed"><CardContent className="py-16 text-center"><CheckCircle2 className="size-12 mx-auto text-jl-muted mb-3" /><p className="text-sm font-medium">Aucune facture impayée</p><p className="text-xs text-jl-muted mt-1">Toutes les factures sont à jour</p></CardContent></Card> :
         <div className="space-y-2 max-h-[500px] overflow-y-auto">
           {invoices.map((inv: any) => (
             <motion.div key={inv.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
@@ -145,25 +145,25 @@ export function ImpayesView() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold">{inv.invoiceNumber || inv.id.slice(0, 8)}</p>
                         {inv.case && <Badge variant="outline" className="text-[9px]">{inv.case.reference}</Badge>}
-                        <Badge variant="secondary" className="text-[9px] bg-[#F3F4F6] text-[#6B7280]">{inv._count?.reminders || 0} relance{(inv._count?.reminders || 0) > 1 ? 's' : ''}</Badge>
+                        <Badge variant="secondary" className="text-[9px] bg-jl-page text-jl-secondary">{inv._count?.reminders || 0} relance{(inv._count?.reminders || 0) > 1 ? 's' : ''}</Badge>
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-[10px] text-[#6B7280]">
+                      <div className="flex items-center gap-3 mt-0.5 text-[10px] text-jl-secondary">
                         <span>{inv.client?.fullName}{inv.client?.company ? ` (${inv.client.company})` : ''}</span>
                         <span>•</span>
                         <span>Échéance : {fmtDate(inv.dueDate)}</span>
-                        <span className={cn('font-bold', inv.daysOverdue >= 30 ? 'text-[#DC2626]' : inv.daysOverdue >= 15 ? 'text-[#EA580C]' : 'text-[#D97706]')}>{inv.daysOverdue}j de retard</span>
+                        <span className={cn('font-bold', inv.daysOverdue >= 30 ? 'text-[var(--danger)]' : inv.daysOverdue >= 15 ? 'text-[var(--accent)]' : 'text-[var(--accent)]')}>{inv.daysOverdue}j de retard</span>
                       </div>
                     </div>
                     {/* Amount */}
                     <div className="text-right shrink-0">
                       <p className="text-sm font-bold">{fmtMoney(inv.remaining, inv.currency?.code || 'XAF')}</p>
-                      <p className="text-[10px] text-[#9CA3AF]">sur {fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</p>
+                      <p className="text-[10px] text-jl-muted">sur {fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</p>
                     </div>
                     {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0">
                       <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="size-7" onClick={() => setHistoryDialog(inv.id)}><History className="size-3.5" /></Button></TooltipTrigger><TooltipContent>Historique</TooltipContent></Tooltip></TooltipProvider>
                       {inv.suggestedAction && (
-                        <Button size="sm" className={cn('text-[10px] h-7 px-2', inv.suggestedAction.level >= 3 ? 'bg-[#DC2626] hover:bg-[#B91C1C]' : 'bg-[#D97706] hover:bg-[#B45309]')} onClick={() => setRemindDialog({ invoiceId: inv.id, invoiceNumber: inv.invoiceNumber || inv.id.slice(0, 8), clientName: inv.client?.fullName || '?', level: inv.suggestedAction.level, label: inv.suggestedAction.label, remaining: inv.remaining, daysOverdue: inv.daysOverdue })}><Send className="size-3 mr-1" />{inv.suggestedAction.label}</Button>
+                        <Button size="sm" className={cn('text-[10px] h-7 px-2', inv.suggestedAction.level >= 3 ? 'bg-[var(--danger)] hover:bg-[var(--danger)]' : 'bg-[var(--accent)] hover:bg-[var(--accent)]')} onClick={() => setRemindDialog({ invoiceId: inv.id, invoiceNumber: inv.invoiceNumber || inv.id.slice(0, 8), clientName: inv.client?.fullName || '?', level: inv.suggestedAction.level, label: inv.suggestedAction.label, remaining: inv.remaining, daysOverdue: inv.daysOverdue })}><Send className="size-3 mr-1" />{inv.suggestedAction.label}</Button>
                       )}
                       {inv.reminderLevel >= 4 && <Badge className="text-[9px] bg-[#991B1B] text-white">Max atteint</Badge>}
                     </div>
@@ -181,19 +181,19 @@ export function ImpayesView() {
           <DialogHeader><DialogTitle>Confirmer la relance</DialogTitle><DialogDescription>Vous allez envoyer une relance au client.</DialogDescription></DialogHeader>
           {remindDialog && (
             <div className="space-y-3">
-              <div className="p-3 rounded-lg bg-[#FEF3C7] border border-[#D97706]/20 space-y-1">
+              <div className="p-3 rounded-lg bg-[var(--accent-light)] border border-[#D97706]/20 space-y-1">
                 <p className="text-sm font-medium">{remindDialog.invoiceNumber}</p>
-                <p className="text-xs text-[#6B7280]">Client : {remindDialog.clientName}</p>
-                <p className="text-xs text-[#6B7280]">Montant dû : <span className="font-bold text-[#D97706]">{fmtMoney(remindDialog.remaining, 'XAF')}</span></p>
-                <p className="text-xs text-[#6B7280]">Retard : <span className="font-bold text-[#D97706]">{remindDialog.daysOverdue} jours</span></p>
+                <p className="text-xs text-jl-secondary">Client : {remindDialog.clientName}</p>
+                <p className="text-xs text-jl-secondary">Montant dû : <span className="font-bold text-[var(--accent)]">{fmtMoney(remindDialog.remaining, 'XAF')}</span></p>
+                <p className="text-xs text-jl-secondary">Retard : <span className="font-bold text-[var(--accent)]">{remindDialog.daysOverdue} jours</span></p>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-[#F9FAFB]">
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-jl-page">
                 <span className={cn('text-[10px] px-2 py-0.5 rounded font-bold', levelColor(remindDialog.level))}>{remindDialog.label}</span>
-                <span className="text-xs text-[#6B7280]">Cette action créera un journal de relance et une notification.</span>
+                <span className="text-xs text-jl-secondary">Cette action créera un journal de relance et une notification.</span>
               </div>
             </div>
           )}
-          <DialogFooter><Button variant="outline" onClick={() => setRemindDialog(null)}>Annuler</Button><Button onClick={handleRemind} disabled={sendingRemind} className="bg-[#D97706] hover:bg-[#B45309]"><Send className="size-4 mr-1" />{sendingRemind ? 'Envoi...' : 'Envoyer la relance'}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setRemindDialog(null)}>Annuler</Button><Button onClick={handleRemind} disabled={sendingRemind} className="bg-[var(--accent)] hover:bg-[var(--accent)]"><Send className="size-4 mr-1" />{sendingRemind ? 'Envoi...' : 'Envoyer la relance'}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -202,14 +202,14 @@ export function ImpayesView() {
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle className="flex items-center gap-2"><History className="size-5" />Historique des relances</DialogTitle></DialogHeader>
           <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-            {(!reminderHistory || (reminderHistory as any[]).length === 0) ? <p className="text-xs text-[#9CA3AF] text-center py-8">Aucune relance envoyée</p> :
+            {(!reminderHistory || (reminderHistory as any[]).length === 0) ? <p className="text-xs text-jl-muted text-center py-8">Aucune relance envoyée</p> :
             (reminderHistory as any[]).map((r: any) => (
-              <div key={r.id} className="flex items-start gap-3 p-3 rounded-lg border border-[#E5E7EB]">
+              <div key={r.id} className="flex items-start gap-3 p-3 rounded-lg border border-jl">
                 <div className={cn('shrink-0 mt-0.5 p-1 rounded text-[10px] font-bold text-white', levelColor(r.level))}>{levelLabel(r.level)}</div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">{r.subject}</p>
-                  <p className="text-[10px] text-[#6B7280] mt-0.5">{fmtDateTime(r.sentAt)} • {r.daysOverdue}j de retard • {fmtMoney(r.amountDue, 'XAF')}</p>
-                  <p className="text-[10px] text-[#9CA3AF] mt-1">{r.sentBy?.fullName ? `par ${r.sentBy.fullName}` : 'Automatique'}</p>
+                  <p className="text-[10px] text-jl-secondary mt-0.5">{fmtDateTime(r.sentAt)} • {r.daysOverdue}j de retard • {fmtMoney(r.amountDue, 'XAF')}</p>
+                  <p className="text-[10px] text-jl-muted mt-1">{r.sentBy?.fullName ? `par ${r.sentBy.fullName}` : 'Automatique'}</p>
                 </div>
                 <Badge variant={r.status === 'sent' ? 'outline' : 'secondary'} className={cn('text-[10px] shrink-0', r.status === 'sent' ? 'border-green-300 text-green-700' : 'border-red-300 text-red-700')}>{r.status === 'sent' ? 'Envoyée' : 'Échouée'}</Badge>
               </div>

@@ -43,11 +43,11 @@ export function AuditLogsView() {
           </TableRow></TableHeader><TableBody>
             {(logs || []).map((log: AuditLogItem) => (
               <TableRow key={log.id}>
-                <TableCell className="text-xs text-[#6B7280]">{fmtDateTime(log.timestamp)}</TableCell>
+                <TableCell className="text-xs text-jl-secondary">{fmtDateTime(log.timestamp)}</TableCell>
                 <TableCell className="text-sm">{log.user?.fullName || 'Système'}</TableCell>
                 <TableCell className="text-sm font-medium">{log.action}</TableCell>
                 <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{log.resourceType || '—'}</Badge></TableCell>
-                <TableCell className="hidden lg:table-cell text-xs text-[#9CA3AF]">{log.ipAddress || '—'}</TableCell>
+                <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{log.ipAddress || '—'}</TableCell>
               </TableRow>
             ))}
           </TableBody></Table>

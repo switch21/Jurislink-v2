@@ -45,8 +45,8 @@ export function DashboardView() {
     <div className="p-4 lg:p-6 space-y-6 transition-colors duration-300">
       {/* Subscription expiry alert */}
       {subscriptionAlert && (
-        <div className={cn('rounded-xl p-4 border-l-4 flex items-center gap-3', subscriptionAlert.daysLeft <= 0 ? 'border-l-[#DC2626] bg-[#FEF2F2] dark:bg-red-950/50' : subscriptionAlert.daysLeft <= 5 ? 'border-l-[#DC2626] bg-[#FEE2E2]' : 'border-l-[#D97706] bg-[#FEF3C7]')}>
-          {subscriptionAlert.daysLeft <= 0 ? <AlertOctagon className="size-5 text-[#DC2626] shrink-0" /> : <AlertTriangle className="size-5 text-[#D97706] shrink-0" />}
+        <div className={cn('rounded-xl p-4 border-l-4 flex items-center gap-3', subscriptionAlert.daysLeft <= 0 ? 'border-l-[#DC2626] bg-[var(--danger)]/10 dark:bg-red-950/50' : subscriptionAlert.daysLeft <= 5 ? 'border-l-[#DC2626] bg-[#FEE2E2]' : 'border-l-[#D97706] bg-[var(--accent-light)]')}>
+          {subscriptionAlert.daysLeft <= 0 ? <AlertOctagon className="size-5 text-[var(--danger)] shrink-0" /> : <AlertTriangle className="size-5 text-[var(--accent)] shrink-0" />}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">{subscriptionAlert.daysLeft <= 0 ? 'Abonnement expiré' : `Abonnement expire dans ${subscriptionAlert.daysLeft} jour${subscriptionAlert.daysLeft > 1 ? 's' : ''}`}</p>
             <p className="text-xs text-[var(--text-secondary)]">Votre abonnement {subscriptionAlert.planName} se termine le {subscriptionAlert.endDate}. {subscriptionAlert.daysLeft <= 0 ? 'Votre cabinet a été désactivé. Contactez l\'administrateur.' : 'Renouvelez-le dans les Paramètres > Abonnement.'}</p>
@@ -65,12 +65,12 @@ export function DashboardView() {
             </div>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className={cn('rounded-xl p-3 border-l-4', urgencyCount > 0 ? 'border-l-[#EF4444] bg-[#FEF2F2] dark:bg-red-950/50' : 'border-l-[#059669] bg-[#ECFDF5]')}>
+              <div className={cn('rounded-xl p-3 border-l-4', urgencyCount > 0 ? 'border-l-[#EF4444] bg-[var(--danger)]/10 dark:bg-red-950/50' : 'border-l-[#059669] bg-[var(--success)]/10')}>
                 <p className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] mb-1">Aujourd'hui</p>
-                <p className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{urgencyCount > 0 ? <><span className="text-[#DC2626]">{urgencyCount}</span> <span className="text-xs sm:text-sm font-normal">urgence{urgencyCount > 1 ? 's' : ''}</span></> : <><CheckCircle2 className="size-5 sm:size-6 text-[#059669] inline" /> <span className="text-xs sm:text-sm font-normal text-[#059669]">Tout va bien</span></>}</p>
+                <p className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{urgencyCount > 0 ? <><span className="text-[var(--danger)]">{urgencyCount}</span> <span className="text-xs sm:text-sm font-normal">urgence{urgencyCount > 1 ? 's' : ''}</span></> : <><CheckCircle2 className="size-5 sm:size-6 text-[var(--success)] inline" /> <span className="text-xs sm:text-sm font-normal text-[var(--success)]">Tout va bien</span></>}</p>
                 {todayEvtCount > 0 && <p className="text-[10px] text-[var(--primary)] mt-0.5"><Calendar className="size-3 inline mr-0.5" />{todayEvtCount} événement{todayEvtCount > 1 ? 's' : ''}</p>}
               </div>
-              <div className="rounded-xl p-3 border-l-4 border-l-[var(--accent)] bg-[#FEF3C7]">
+              <div className="rounded-xl p-3 border-l-4 border-l-[var(--accent)] bg-[var(--accent-light)]">
                 <p className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] mb-1">Actions à faire</p>
                 <p className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{myTaskCount} <span className="text-xs sm:text-sm font-normal text-[var(--text-secondary)]">tâche{myTaskCount > 1 ? 's' : ''}</span></p>
               </div>
@@ -78,28 +78,28 @@ export function DashboardView() {
                 <p className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] mb-1">Dossiers actifs</p>
                 <p className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">{stats.activeCases}</p>
               </div>
-              <div className="rounded-xl p-3 border-l-4 border-l-[#D97706] bg-[#FEF3C7] min-w-0 overflow-hidden">
+              <div className="rounded-xl p-3 border-l-4 border-l-[#D97706] bg-[var(--accent-light)] min-w-0 overflow-hidden">
                 <p className="text-[10px] sm:text-xs font-medium text-[var(--text-secondary)] mb-1">Honoraires en attente</p>
-                <p className="text-lg sm:text-xl font-bold text-[#D97706] truncate" title={fmtMoney(totalPending, 'XAF')}>{fmtMoney(totalPending, 'XAF', true)}</p>
+                <p className="text-lg sm:text-xl font-bold text-[var(--accent)] truncate" title={fmtMoney(totalPending, 'XAF')}>{fmtMoney(totalPending, 'XAF', true)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         {/* My Tasks quick panel */}
-        <Card><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><ClipboardList className="size-4 text-[var(--accent)]" />Mes tâches en cours</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-48 overflow-y-auto">{(stats.myTasks || []).length === 0 ? <p className="text-xs text-[var(--text-muted)] py-4 text-center">Aucune tâche en cours</p> : (stats.myTasks || []).map(t => (<div key={t.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--border-light)] cursor-pointer" onClick={() => setCurrentView('tasks')}><span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[#EF4444]' : t.priority === 'haute' ? 'bg-[#D97706]' : 'bg-[var(--accent)]')} /><div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{t.title}</p><p className="text-xs text-[var(--text-muted)]">{t.caseReference ? `${t.caseReference} — ` : ''}{t.dueDate ? `Échéance: ${fmtDate(t.dueDate)}` : ''}</p></div></div>))}</div></CardContent></Card>
+        <Card><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><ClipboardList className="size-4 text-[var(--accent)]" />Mes tâches en cours</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-48 overflow-y-auto">{(stats.myTasks || []).length === 0 ? <p className="text-xs text-[var(--text-muted)] py-4 text-center">Aucune tâche en cours</p> : (stats.myTasks || []).map(t => (<div key={t.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--border-light)] cursor-pointer" onClick={() => setCurrentView('tasks')}><span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[var(--danger)]' : t.priority === 'haute' ? 'bg-[var(--accent)]' : 'bg-[var(--accent)]')} /><div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{t.title}</p><p className="text-xs text-[var(--text-muted)]">{t.caseReference ? `${t.caseReference} — ` : ''}{t.dueDate ? `Échéance: ${fmtDate(t.dueDate)}` : ''}</p></div></div>))}</div></CardContent></Card>
       </div>
 
       {/* Today's events + Urgencies + Upcoming Events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Today's events or Urgencies */}
-        <Card className={cn('border-l-4', todayEvtCount > 0 ? 'border-l-[var(--primary)]' : urgencyCount > 0 ? 'border-l-[#DC2626]' : 'border-l-[#059669]')}><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2">{todayEvtCount > 0 ? <><Calendar className="size-4 text-[var(--primary)]" />Événements aujourd'hui ({todayEvtCount})</> : urgencyCount > 0 ? <><AlertOctagon className="size-4 text-[#DC2626]" />Urgences ({urgencyCount})</> : <><CheckCircle2 className="size-4 text-[#059669]" />Aucune urgence</>}</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">
+        <Card className={cn('border-l-4', todayEvtCount > 0 ? 'border-l-[var(--primary)]' : urgencyCount > 0 ? 'border-l-[#DC2626]' : 'border-l-[#059669]')}><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2">{todayEvtCount > 0 ? <><Calendar className="size-4 text-[var(--primary)]" />Événements aujourd'hui ({todayEvtCount})</> : urgencyCount > 0 ? <><AlertOctagon className="size-4 text-[var(--danger)]" />Urgences ({urgencyCount})</> : <><CheckCircle2 className="size-4 text-[var(--success)]" />Aucune urgence</>}</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">
             {todayEvtCount > 0 ? (stats.todayEvents || []).map((e: { id: string; title: string; startTime: string; eventType: string; criticality: string; caseReference: string | null; assignments: Array<{ userName: string }> }) => (
               <div key={e.id} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--primary-light)] cursor-pointer" onClick={() => setCurrentView('calendar')}><span className={cn('w-1 h-8 rounded-full shrink-0', CRIT_COLORS[e.criticality] || CRIT_COLORS.normal)} /><div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-[var(--text-secondary)]">{fmtDateTime(e.startTime)}{e.caseReference ? ` • ${e.caseReference}` : ''}</p><p className="text-[10px] text-[var(--text-muted)] mt-0.5">{e.assignments.map(a => a.userName).join(', ') || 'Non assigné'}</p></div><Badge variant="outline" className="text-[10px] shrink-0">{EVENT_TYPE_LABELS[e.eventType] || e.eventType}</Badge></div>
             )) : urgencyCount > 0 ? <>
-              {stats.urgencies?.map(u => (<div key={u.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF2F2] dark:bg-red-950/50 cursor-pointer hover:bg-[#FEE2E2]" onClick={() => setCurrentView('cases')}><div className="mt-0.5"><Gavel className="size-4 text-[#EF4444]" /></div><div className="min-w-0"><p className="text-sm font-medium">{u.reference} — {u.title}</p><p className="text-xs text-[var(--text-secondary)]">{u.clientName} • <span className="font-semibold text-[#DC2626]">{u.daysRemaining <= 0 ? 'Aujourd\'hui !' : `Dans ${u.daysRemaining} jour${u.daysRemaining > 1 ? 's' : ''}`}</span></p></div></div>))}
-              {stats.overdueInvoices?.map(inv => (<div key={inv.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF3C7] cursor-pointer hover:bg-[#FDE68A]" onClick={() => setCurrentView('invoices')}><div className="mt-0.5"><AlertTriangle className="size-4 text-[#D97706]" /></div><div className="min-w-0"><p className="text-sm font-medium">{inv.clientName}</p><p className="text-xs text-[var(--text-secondary)]">{fmtMoney(inv.amount, inv.currencyCode)} • <span className="font-semibold text-[#D97706]">{inv.daysOverdue}j de retard</span></p></div></div>))}
-              {stats.urgentTasks?.slice(0, 3).map(t => (<div key={t.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#FEF3C7] cursor-pointer hover:bg-[#FDE68A]" onClick={() => setCurrentView('tasks')}><div className="mt-0.5"><Timer className="size-4 text-[var(--accent)]" /></div><div className="min-w-0"><p className="text-sm font-medium">{t.title}</p><p className="text-xs text-[var(--text-secondary)]">{t.caseReference ? `• ${t.caseReference}` : ''}</p></div></div>))}
-            </> : <p className="text-xs text-[#059669] text-center py-6">Aucun événement aujourd'hui, aucune urgence ni impayé. Parfait ! 🎉</p>}
+              {stats.urgencies?.map(u => (<div key={u.id} className="flex items-start gap-3 p-2 rounded-lg bg-[var(--danger)]/10 dark:bg-red-950/50 cursor-pointer hover:bg-[#FEE2E2]" onClick={() => setCurrentView('cases')}><div className="mt-0.5"><Gavel className="size-4 text-[var(--danger)]" /></div><div className="min-w-0"><p className="text-sm font-medium">{u.reference} — {u.title}</p><p className="text-xs text-[var(--text-secondary)]">{u.clientName} • <span className="font-semibold text-[var(--danger)]">{u.daysRemaining <= 0 ? 'Aujourd\'hui !' : `Dans ${u.daysRemaining} jour${u.daysRemaining > 1 ? 's' : ''}`}</span></p></div></div>))}
+              {stats.overdueInvoices?.map(inv => (<div key={inv.id} className="flex items-start gap-3 p-2 rounded-lg bg-[var(--accent-light)] cursor-pointer hover:bg-[var(--accent-light)]" onClick={() => setCurrentView('invoices')}><div className="mt-0.5"><AlertTriangle className="size-4 text-[var(--accent)]" /></div><div className="min-w-0"><p className="text-sm font-medium">{inv.clientName}</p><p className="text-xs text-[var(--text-secondary)]">{fmtMoney(inv.amount, inv.currencyCode)} • <span className="font-semibold text-[var(--accent)]">{inv.daysOverdue}j de retard</span></p></div></div>))}
+              {stats.urgentTasks?.slice(0, 3).map(t => (<div key={t.id} className="flex items-start gap-3 p-2 rounded-lg bg-[var(--accent-light)] cursor-pointer hover:bg-[var(--accent-light)]" onClick={() => setCurrentView('tasks')}><div className="mt-0.5"><Timer className="size-4 text-[var(--accent)]" /></div><div className="min-w-0"><p className="text-sm font-medium">{t.title}</p><p className="text-xs text-[var(--text-secondary)]">{t.caseReference ? `• ${t.caseReference}` : ''}</p></div></div>))}
+            </> : <p className="text-xs text-[var(--success)] text-center py-6">Aucun événement aujourd'hui, aucune urgence ni impayé. Parfait ! 🎉</p>}
           </div></CardContent></Card>
           {/* Upcoming Events */}
           <Card><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Calendar className="size-4 text-[var(--accent)]" />Prochains événements (7j)</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">{(stats.upcomingEventsEnhanced || []).length === 0 ? <p className="text-xs text-[var(--text-muted)] py-4 text-center">Aucun événement à venir</p> : (stats.upcomingEventsEnhanced || []).map(e => (<div key={e.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--border-light)] cursor-pointer" onClick={() => setCurrentView('calendar')}><span className={cn('w-1 h-8 rounded-full shrink-0', CRIT_COLORS[e.criticality] || CRIT_COLORS.normal)} /><div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-[var(--text-secondary)]">{fmtDateTime(e.startTime)}{e.caseReference ? ` • ${e.caseReference}` : ''}</p><p className="text-xs text-[var(--text-muted)] mt-0.5">{e.assignments.map(a => a.userName).join(', ')}</p></div><Badge variant="outline" className="text-[10px] shrink-0">{EVENT_TYPE_LABELS[e.eventType] || e.eventType}</Badge></div>))}</div></CardContent></Card>
@@ -111,10 +111,10 @@ export function DashboardView() {
           <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><FileText className="size-4 text-[#7C3AED]" />Documents en attente{(stats.pendingDocumentsCount ?? 0) > 0 && <Badge className="bg-[#7C3AED] text-white text-[10px] ml-auto">{stats.pendingDocumentsCount}</Badge>}</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">
             {(stats.pendingDocuments || []).length === 0 ? <p className="text-xs text-[var(--text-muted)] py-4 text-center">Tous les documents sont traités</p> : (stats.pendingDocuments || []).map(d => (
-              <div key={d.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#F5F3FF] hover:bg-[#EDE9FE] cursor-pointer" onClick={() => setCurrentView('documents')}>
+              <div key={d.id} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--primary-light)] hover:bg-[var(--primary-light)] cursor-pointer" onClick={() => setCurrentView('documents')}>
                 <div className="size-8 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center shrink-0"><FileText className="size-4 text-[#7C3AED]" /></div>
                 <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{d.fileName}</p><p className="text-[10px] text-[var(--text-secondary)]">{d.caseReference ? `${d.caseReference} — ${d.caseTitle || ''}` : 'Hors dossier'}{d.uploadedBy ? ` • Par ${d.uploadedBy}` : ''}</p><p className="text-[10px] text-[var(--text-muted)]">{fmtDateTime(d.createdAt)}</p></div>
-                <Badge variant="outline" className={cn('text-[10px] shrink-0', d.status === 'brouillon' ? 'border-[var(--text-muted)] text-[var(--text-secondary)]' : 'border-[#D97706] text-[#D97706]')}>{d.status === 'brouillon' ? 'Brouillon' : 'En attente'}</Badge>
+                <Badge variant="outline" className={cn('text-[10px] shrink-0', d.status === 'brouillon' ? 'border-[var(--text-muted)] text-[var(--text-secondary)]' : 'border-[#D97706] text-[var(--accent)]')}>{d.status === 'brouillon' ? 'Brouillon' : 'En attente'}</Badge>
               </div>
             ))}
           </div></CardContent>
@@ -122,8 +122,8 @@ export function DashboardView() {
         <Card className="border-l-4 border-l-[#6366F1]">
           <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><AlertCircle className="size-4 text-[#6366F1]" />Dossiers sans échéance{(stats.casesWithoutDeadlinesCount ?? 0) > 0 && <Badge className="bg-[#6366F1] text-white text-[10px] ml-auto">{stats.casesWithoutDeadlinesCount}</Badge>}</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">
-            {(stats.casesWithoutDeadlines || []).length === 0 ? <p className="text-xs text-[#059669] py-4 text-center">Tous les dossiers actifs ont des échéances</p> : (stats.casesWithoutDeadlines || []).map(c => (
-              <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#EEF2FF] hover:bg-[#E0E7FF] cursor-pointer" onClick={() => setCurrentView('cases')}>
+            {(stats.casesWithoutDeadlines || []).length === 0 ? <p className="text-xs text-[var(--success)] py-4 text-center">Tous les dossiers actifs ont des échéances</p> : (stats.casesWithoutDeadlines || []).map(c => (
+              <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--primary-light)] hover:bg-jl-blue-light cursor-pointer" onClick={() => setCurrentView('cases')}>
                 <div className="size-8 rounded-lg bg-[#6366F1]/10 flex items-center justify-center shrink-0"><FolderOpen className="size-4 text-[#6366F1]" /></div>
                 <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{c.reference} — {c.title}</p><p className="text-[10px] text-[var(--text-secondary)]">{c.clientName || 'Sans client'}{c.pendingTasksCount > 0 ? ` • ${c.pendingTasksCount} tâche${c.pendingTasksCount > 1 ? 's' : ''} en cours` : ''}</p><p className="text-[10px] text-[var(--text-muted)]">Dernière MAJ : {fmtDateTime(c.updatedAt)}</p></div>
                 <Badge variant="outline" className="text-[10px] shrink-0 border-[#6366F1] text-[#6366F1]">{STATUS_LABELS[c.status] || c.status}</Badge>
@@ -137,33 +137,33 @@ export function DashboardView() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {finData && (
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><TrendingUp className="size-4 text-[#059669]" />Activité du cabinet</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><TrendingUp className="size-4 text-[var(--success)]" />Activité du cabinet</CardTitle></CardHeader>
           <CardContent>
             {stats.activityCounts && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                 {stats.activityCounts.dossiersOuverts != null && <div className="rounded-xl p-3 border-l-4 border-l-[var(--primary)] bg-[var(--primary-light)]"><p className="text-[10px] text-[var(--text-secondary)]">Dossiers ouverts</p><p className="text-lg font-bold text-[var(--primary)]">{stats.activityCounts.dossiersOuverts}</p></div>}
-                {stats.activityCounts.dossiersCloses != null && <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[#ECFDF5]"><p className="text-[10px] text-[var(--text-secondary)]">Dossiers clos</p><p className="text-lg font-bold text-[#059669]">{stats.activityCounts.dossiersCloses}</p></div>}
-                {stats.activityCounts.nouveauxClients != null && <div className="rounded-xl p-3 border-l-4 border-l-[var(--accent)] bg-[#FEF3C7]"><p className="text-[10px] text-[var(--text-secondary)]">Nouveaux clients</p><p className="text-lg font-bold text-[var(--accent)]">{stats.activityCounts.nouveauxClients}</p></div>}
-                {stats.activityCounts.audiences != null && <div className="rounded-xl p-3 border-l-4 border-l-[#D97706] bg-[#FEF3C7]"><p className="text-[10px] text-[var(--text-secondary)]">Audiences</p><p className="text-lg font-bold text-[#D97706]">{stats.activityCounts.audiences}</p></div>}
-                {stats.activityCounts.facturesEmises != null && <div className="rounded-xl p-3 border-l-4 border-l-[#DC2626] bg-[#FEF2F2] dark:bg-red-950/50"><p className="text-[10px] text-[var(--text-secondary)]">Factures émises</p><p className="text-lg font-bold text-[#DC2626]">{stats.activityCounts.facturesEmises}</p></div>}
+                {stats.activityCounts.dossiersCloses != null && <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[var(--success)]/10"><p className="text-[10px] text-[var(--text-secondary)]">Dossiers clos</p><p className="text-lg font-bold text-[var(--success)]">{stats.activityCounts.dossiersCloses}</p></div>}
+                {stats.activityCounts.nouveauxClients != null && <div className="rounded-xl p-3 border-l-4 border-l-[var(--accent)] bg-[var(--accent-light)]"><p className="text-[10px] text-[var(--text-secondary)]">Nouveaux clients</p><p className="text-lg font-bold text-[var(--accent)]">{stats.activityCounts.nouveauxClients}</p></div>}
+                {stats.activityCounts.audiences != null && <div className="rounded-xl p-3 border-l-4 border-l-[#D97706] bg-[var(--accent-light)]"><p className="text-[10px] text-[var(--text-secondary)]">Audiences</p><p className="text-lg font-bold text-[var(--accent)]">{stats.activityCounts.audiences}</p></div>}
+                {stats.activityCounts.facturesEmises != null && <div className="rounded-xl p-3 border-l-4 border-l-[#DC2626] bg-[var(--danger)]/10 dark:bg-red-950/50"><p className="text-[10px] text-[var(--text-secondary)]">Factures émises</p><p className="text-lg font-bold text-[var(--danger)]">{stats.activityCounts.facturesEmises}</p></div>}
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[#ECFDF5] min-w-0 overflow-hidden">
+              <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[var(--success)]/10 min-w-0 overflow-hidden">
                 <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">CA ce mois</p>
                 <p className="text-base sm:text-lg font-bold truncate" title={fmtMoney(finData.revenueThisMonth || 0)}>{fmtMoney(finData.revenueThisMonth || 0, 'XAF', true)}</p>
-                {finData.revenueLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "text-[#059669]" : "text-[#DC2626]")}>{(finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "↑" : "↓"} vs mois dernier</p>}
+                {finData.revenueLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "text-[var(--success)]" : "text-[var(--danger)]")}>{(finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "↑" : "↓"} vs mois dernier</p>}
               </div>
-              <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[#ECFDF5] min-w-0 overflow-hidden">
+              <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[var(--success)]/10 min-w-0 overflow-hidden">
                 <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">Encaissé</p>
                 <p className="text-base sm:text-lg font-bold truncate" title={fmtMoney(finData.collectedThisMonth || 0)}>{fmtMoney(finData.collectedThisMonth || 0, 'XAF', true)}</p>
-                {finData.collectedLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "text-[#059669]" : "text-[#DC2626]")}>{(finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "↑" : "↓"} vs mois dernier</p>}
+                {finData.collectedLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "text-[var(--success)]" : "text-[var(--danger)]")}>{(finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "↑" : "↓"} vs mois dernier</p>}
               </div>
-              <div className="rounded-xl p-3 border-l-4 border-l-[#DC2626] bg-[#FEF2F2] dark:bg-red-950/50 min-w-0 overflow-hidden">
+              <div className="rounded-xl p-3 border-l-4 border-l-[#DC2626] bg-[var(--danger)]/10 dark:bg-red-950/50 min-w-0 overflow-hidden">
                 <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">À recouvrer</p>
-                <p className="text-base sm:text-lg font-bold text-[#DC2626] truncate" title={fmtMoney(finData.toRecover || 0)}>{fmtMoney(finData.toRecover || 0, 'XAF', true)}</p>
+                <p className="text-base sm:text-lg font-bold text-[var(--danger)] truncate" title={fmtMoney(finData.toRecover || 0)}>{fmtMoney(finData.toRecover || 0, 'XAF', true)}</p>
               </div>
-              <div className="rounded-xl p-3 border-l-4 border-l-[var(--accent)] bg-[#FEF3C7]">
+              <div className="rounded-xl p-3 border-l-4 border-l-[var(--accent)] bg-[var(--accent-light)]">
                 <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">Impayés</p>
                 <p className="text-base sm:text-lg font-bold text-[var(--accent)]">{finData.overdueInvoicesCount || 0} <span className="text-xs font-normal text-[var(--text-secondary)]">facture{finData.overdueInvoicesCount > 1 ? 's' : ''}</span></p>
               </div>

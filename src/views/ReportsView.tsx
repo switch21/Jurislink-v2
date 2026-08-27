@@ -139,25 +139,25 @@ export function ReportsView() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-[#6B7280]">CA total</p><p className="text-base sm:text-lg font-bold text-[#1E5A8A] mt-1 truncate" title={fmtMoney(stats.totalRevenue)}>{fmtMoney(stats.totalRevenue, 'XAF', true)}</p></CardContent></Card>
-        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-[#6B7280]">CA ce mois</p><p className="text-base sm:text-lg font-bold text-[#059669] mt-1 truncate" title={fmtMoney(stats.monthRevenue)}>{fmtMoney(stats.monthRevenue, 'XAF', true)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Factures payées</p><p className="text-lg font-bold text-[#059669] mt-1">{stats.paidCount}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Factures en attente</p><p className="text-lg font-bold text-[#D97706] mt-1">{stats.pendingCount}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Nouveaux clients</p><p className="text-lg font-bold text-[#1E5A8A] mt-1">{stats.newClientsCount}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-[#6B7280]">Dossiers actifs</p><p className="text-lg font-bold mt-1">{stats.activeCases}</p></CardContent></Card>
+        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-jl-secondary">CA total</p><p className="text-base sm:text-lg font-bold text-jl-blue mt-1 truncate" title={fmtMoney(stats.totalRevenue)}>{fmtMoney(stats.totalRevenue, 'XAF', true)}</p></CardContent></Card>
+        <Card><CardContent className="p-4 overflow-hidden"><p className="text-xs text-jl-secondary">CA ce mois</p><p className="text-base sm:text-lg font-bold text-[var(--success)] mt-1 truncate" title={fmtMoney(stats.monthRevenue)}>{fmtMoney(stats.monthRevenue, 'XAF', true)}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-jl-secondary">Factures payées</p><p className="text-lg font-bold text-[var(--success)] mt-1">{stats.paidCount}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-jl-secondary">Factures en attente</p><p className="text-lg font-bold text-[var(--accent)] mt-1">{stats.pendingCount}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-jl-secondary">Nouveaux clients</p><p className="text-lg font-bold text-jl-blue mt-1">{stats.newClientsCount}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-jl-secondary">Dossiers actifs</p><p className="text-lg font-bold mt-1">{stats.activeCases}</p></CardContent></Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Tendance revenus mensuels</CardTitle></CardHeader><CardContent>
-          {monthlyData.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune donnée</p> : (
+          {monthlyData.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune donnée</p> : (
             <div className="flex items-end gap-1.5 h-48 pt-2">
               {monthlyData.map(d => (
                 <div key={d.month} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[9px] text-[#6B7280] font-medium">{d.revenue > 0 ? fmtMoney(d.revenue) : ''}</span>
-                  <div className="w-full bg-[#F3F4F6] rounded-t relative" style={{ height: '100%' }}>
+                  <span className="text-[9px] text-jl-secondary font-medium">{d.revenue > 0 ? fmtMoney(d.revenue) : ''}</span>
+                  <div className="w-full bg-jl-page rounded-t relative" style={{ height: '100%' }}>
                     <div className="absolute bottom-0 w-full rounded-t transition-all duration-500" style={{ height: `${Math.max(2, (d.revenue / maxMonthlyRevenue) * 100)}%`, backgroundColor: CHART_COLORS[0] }} />
                   </div>
-                  <span className="text-[9px] text-[#9CA3AF]">{d.label}</span>
+                  <span className="text-[9px] text-jl-muted">{d.label}</span>
                 </div>
               ))}
             </div>
@@ -165,12 +165,12 @@ export function ReportsView() {
         </CardContent></Card>
 
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Répartition par type de dossier</CardTitle></CardHeader><CardContent>
-          {caseTypeData.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune donnée</p> : (
+          {caseTypeData.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune donnée</p> : (
             <div className="space-y-3 pt-2">
               {caseTypeData.map(d => (
                 <div key={d.type} className="flex items-center gap-3">
-                  <span className="text-xs text-[#6B7280] w-24 text-right truncate">{d.type}</span>
-                  <div className="flex-1 h-5 bg-[#F3F4F6] rounded-full overflow-hidden">
+                  <span className="text-xs text-jl-secondary w-24 text-right truncate">{d.type}</span>
+                  <div className="flex-1 h-5 bg-jl-page rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (d.amount / maxCaseTypeAmount) * 100)}%`, backgroundColor: d.color }} />
                   </div>
                   <span className="text-xs font-semibold w-28 text-right">{fmtMoney(d.amount)}</span>
@@ -182,7 +182,7 @@ export function ReportsView() {
       </div>
 
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Top clients par revenus</CardTitle></CardHeader><CardContent>
-        {topClients.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune donnée</p> : (
+        {topClients.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune donnée</p> : (
           <div className="overflow-x-auto"><Table><TableHeader><TableRow>
             <TableHead className="w-12">#</TableHead><TableHead>Client</TableHead><TableHead className="text-right">Revenu total</TableHead><TableHead className="hidden md:table-cell text-right">Factures</TableHead><TableHead className="hidden lg:table-cell">Dernière facture</TableHead>
           </TableRow></TableHeader><TableBody>
@@ -192,7 +192,7 @@ export function ReportsView() {
                 <TableCell className="text-sm font-medium">{c.name}</TableCell>
                 <TableCell className="text-sm font-semibold text-right">{fmtMoney(c.total)}</TableCell>
                 <TableCell className="hidden md:table-cell text-sm text-right">{c.count}</TableCell>
-                <TableCell className="hidden lg:table-cell text-xs text-[#9CA3AF]">{fmtDate(c.lastDate)}</TableCell>
+                <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{fmtDate(c.lastDate)}</TableCell>
               </TableRow>
             ))}
           </TableBody></Table></div>

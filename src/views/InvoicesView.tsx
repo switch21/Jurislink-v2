@@ -86,7 +86,7 @@ export function InvoicesView() {
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-lg font-semibold">Factures</h2>
-        <Button onClick={() => { resetCreateForm(); setCreateOpen(true) }} size="sm" className="bg-[#1E5A8A] hover:bg-[#164070]"><Plus className="size-4 mr-1" />Nouvelle facture</Button>
+        <Button onClick={() => { resetCreateForm(); setCreateOpen(true) }} size="sm" className="bg-jl-blue hover:bg-jl-blue"><Plus className="size-4 mr-1" />Nouvelle facture</Button>
       </div>
       <div className="flex flex-wrap gap-2">
         <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Type" /></SelectTrigger><SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="devis">Devis</SelectItem><SelectItem value="facture">Facture</SelectItem><SelectItem value="avoir">Avoir</SelectItem><SelectItem value="recu">Reçu</SelectItem></SelectContent></Select>
@@ -103,14 +103,14 @@ export function InvoicesView() {
               const invTotal = inv.amount || 0
               const invPercent = invTotal > 0 ? Math.min(100, (invPaid / invTotal) * 100) : 0
               return (
-                <TableRow key={inv.id} className={cn(i % 2 === 1 && 'bg-[#F9FAFB]', 'cursor-pointer')} onClick={() => openDetail(inv)}>
+                <TableRow key={inv.id} className={cn(i % 2 === 1 && 'bg-jl-page', 'cursor-pointer')} onClick={() => openDetail(inv)}>
                   <TableCell className="font-medium text-sm">{inv.invoiceNumber || '—'}</TableCell>
-                  <TableCell className="hidden sm:table-cell"><Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[inv.type] || 'bg-[#6B7280] text-white')}>{INVOICE_TYPE_LABELS[inv.type] || inv.type}</Badge></TableCell>
-                  <TableCell className="text-sm text-[#6B7280]">{inv.client?.fullName || '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell"><Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[inv.type] || 'bg-jl-page text-white')}>{INVOICE_TYPE_LABELS[inv.type] || inv.type}</Badge></TableCell>
+                  <TableCell className="text-sm text-jl-secondary">{inv.client?.fullName || '—'}</TableCell>
                   <TableCell className="text-sm font-medium text-right">{fmtMoney(invTotal, inv.currency?.code || 'XAF')}</TableCell>
-                  <TableCell className="hidden md:table-cell"><div className="text-right"><p className="text-xs font-medium">{fmtMoney(invPaid, inv.currency?.code || 'XAF')}</p>{inv.status === 'partiel' && <div className="w-16 h-1.5 bg-[#F3F4F6] rounded-full mt-1 ml-auto"><div className="h-full rounded-full bg-[#C8A45D]" style={{ width: invPercent + '%' }} /></div>}</div></TableCell>
+                  <TableCell className="hidden md:table-cell"><div className="text-right"><p className="text-xs font-medium">{fmtMoney(invPaid, inv.currency?.code || 'XAF')}</p>{inv.status === 'partiel' && <div className="w-16 h-1.5 bg-jl-page rounded-full mt-1 ml-auto"><div className="h-full rounded-full bg-jl-gold" style={{ width: invPercent + '%' }} /></div>}</div></TableCell>
                   <TableCell><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[inv.status])}>{STATUS_LABELS[inv.status] || inv.status}</Badge></TableCell>
-                  <TableCell className="hidden lg:table-cell text-sm text-[#6B7280]">{fmtDate(inv.dueDate)}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm text-jl-secondary">{fmtDate(inv.dueDate)}</TableCell>
                   <TableCell><Button variant="ghost" size="icon" className="size-7" onClick={e => { e.stopPropagation(); openDetail(inv) }}><Eye className="size-3.5" /></Button></TableCell>
                 </TableRow>
               )
@@ -142,12 +142,12 @@ export function InvoicesView() {
                     <div className="col-span-5"><Label className="text-[10px]">Description</Label><Input value={li.description} onChange={e => updateLine(i, 'description', e.target.value)} placeholder="Description" className="h-9 text-xs" /></div>
                     <div className="col-span-2"><Label className="text-[10px]">Qté</Label><Input type="number" min={1} value={li.quantity} onChange={e => updateLine(i, 'quantity', parseInt(e.target.value) || 1)} className="h-9 text-xs" /></div>
                     <div className="col-span-2"><Label className="text-[10px]">Prix unit.</Label><Input type="number" min={0} value={li.unitPrice} onChange={e => updateLine(i, 'unitPrice', parseFloat(e.target.value) || 0)} className="h-9 text-xs" /></div>
-                    <div className="col-span-2"><Label className="text-[10px]">Total</Label><div className="h-9 flex items-center text-xs font-medium px-2 border rounded-md bg-[#F9FAFB]">{fmtMoney(li.quantity * li.unitPrice)}</div></div>
-                    <div className="col-span-1 flex justify-end"><Button type="button" variant="ghost" size="icon" className="size-9 text-[#EF4444] hover:text-[#DC2626]" onClick={() => removeLine(i)} disabled={lineItems.length <= 1}><Trash2 className="size-3.5" /></Button></div>
+                    <div className="col-span-2"><Label className="text-[10px]">Total</Label><div className="h-9 flex items-center text-xs font-medium px-2 border rounded-md bg-jl-page">{fmtMoney(li.quantity * li.unitPrice)}</div></div>
+                    <div className="col-span-1 flex justify-end"><Button type="button" variant="ghost" size="icon" className="size-9 text-[var(--danger)] hover:text-[var(--danger)]" onClick={() => removeLine(i)} disabled={lineItems.length <= 1}><Trash2 className="size-3.5" /></Button></div>
                   </div>
                 ))}
               </div>
-              <div className="flex justify-end p-3 bg-[#F9FAFB] rounded-lg"><span className="text-sm text-[#6B7280]">Sous-total :</span><span className="text-sm font-bold ml-2">{fmtMoney(subtotal)}</span></div>
+              <div className="flex justify-end p-3 bg-jl-page rounded-lg"><span className="text-sm text-jl-secondary">Sous-total :</span><span className="text-sm font-bold ml-2">{fmtMoney(subtotal)}</span></div>
             </div>
             <div><Label>Notes</Label><Textarea value={createForm.notes} onChange={e => setCreateForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
           </div>
@@ -161,19 +161,19 @@ export function InvoicesView() {
           <DialogHeader>
             <div className="flex items-center gap-3 flex-wrap">
               <DialogTitle className="text-base">{invoiceDetail?.invoiceNumber || '—'}</DialogTitle>
-              <Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[invoiceDetail?.type || ''] || 'bg-[#6B7280] text-white')}>{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || invoiceDetail?.type}</Badge>
+              <Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[invoiceDetail?.type || ''] || 'bg-jl-page text-white')}>{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || invoiceDetail?.type}</Badge>
               <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[invoiceDetail?.status || ''])}>{STATUS_LABELS[invoiceDetail?.status || ''] || invoiceDetail?.status}</Badge>
             </div>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-[#6B7280]">Client :</span> <span className="font-medium">{invoiceDetail?.client?.fullName || '—'}</span></div>
-            {invoiceDetail?.client?.company && <div><span className="text-[#6B7280]">Société :</span> <span className="font-medium">{invoiceDetail.client.company}</span></div>}
-            {invoiceDetail?.case && <div className="col-span-2"><span className="text-[#6B7280]">Dossier :</span> <span className="font-medium">{invoiceDetail.case.reference} — {invoiceDetail.case.title}</span></div>}
+            <div><span className="text-jl-secondary">Client :</span> <span className="font-medium">{invoiceDetail?.client?.fullName || '—'}</span></div>
+            {invoiceDetail?.client?.company && <div><span className="text-jl-secondary">Société :</span> <span className="font-medium">{invoiceDetail.client.company}</span></div>}
+            {invoiceDetail?.case && <div className="col-span-2"><span className="text-jl-secondary">Dossier :</span> <span className="font-medium">{invoiceDetail.case.reference} — {invoiceDetail.case.title}</span></div>}
           </div>
           <Separator />
           {(invoiceDetail?.lineItems || []).length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-2">Lignes de facturation</p>
+              <p className="text-xs font-semibold text-jl-secondary uppercase tracking-wider mb-2">Lignes de facturation</p>
               <Table><TableHeader><TableRow><TableHead className="text-xs">Description</TableHead><TableHead className="text-xs text-right">Qté</TableHead><TableHead className="text-xs text-right">Prix unit.</TableHead><TableHead className="text-xs text-right">Total</TableHead></TableRow></TableHeader><TableBody>
                 {(invoiceDetail?.lineItems || []).map((li: InvoiceLineItem) => (
                   <TableRow key={li.id}><TableCell className="text-sm">{li.description}</TableCell><TableCell className="text-sm text-right">{li.quantity}</TableCell><TableCell className="text-sm text-right">{fmtMoney(li.unitPrice, curCode)}</TableCell><TableCell className="text-sm text-right font-medium">{fmtMoney(li.total, curCode)}</TableCell></TableRow>
@@ -181,15 +181,15 @@ export function InvoicesView() {
               </TableBody></Table>
             </div>
           )}
-          <div className="flex justify-end p-4 bg-[#F9FAFB] rounded-lg">
-            <div className="text-right"><p className="text-xs text-[#6B7280]">Montant total</p><p className="text-xl font-bold text-[#111827]">{fmtMoney(total, curCode)}</p></div>
+          <div className="flex justify-end p-4 bg-jl-page rounded-lg">
+            <div className="text-right"><p className="text-xs text-jl-secondary">Montant total</p><p className="text-xl font-bold text-jl-primary">{fmtMoney(total, curCode)}</p></div>
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm"><span className="text-[#6B7280]">Payé : {fmtMoney(paid, curCode)} / {fmtMoney(total, curCode)}</span><span className="font-semibold">{Math.round(payPercent)}%</span></div>
+            <div className="flex items-center justify-between text-sm"><span className="text-jl-secondary">Payé : {fmtMoney(paid, curCode)} / {fmtMoney(total, curCode)}</span><span className="font-semibold">{Math.round(payPercent)}%</span></div>
             <Progress value={payPercent} className="h-2" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#6B7280]">Changer le statut :</span>
+            <span className="text-xs text-jl-secondary">Changer le statut :</span>
             <Select value={invoiceDetail?.status || ''} onValueChange={v => { if (selectedInvoice) updateStatusMut.mutate({ id: selectedInvoice.id, status: v }) }}>
               <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent><SelectItem value="non_paye">Non payé</SelectItem><SelectItem value="partiel">Partiel</SelectItem><SelectItem value="paye">Payé</SelectItem><SelectItem value="annule">Annulé</SelectItem></SelectContent>
@@ -205,7 +205,7 @@ export function InvoicesView() {
               </div>
             </div>
             {showPayForm && (
-              <div className="border rounded-lg p-4 bg-[#F9FAFB] space-y-3">
+              <div className="border rounded-lg p-4 bg-jl-page space-y-3">
                 <p className="text-xs font-semibold">Enregistrer un paiement</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Montant *</Label><Input type="number" min={0} step={0.01} value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} placeholder="0" /></div>
@@ -214,25 +214,25 @@ export function InvoicesView() {
                   <div><Label>Date</Label><Input type="date" value={payForm.paidAt} onChange={e => setPayForm(f => ({ ...f, paidAt: e.target.value }))} /></div>
                 </div>
                 <div><Label>Notes</Label><Input value={payForm.notes} onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notes optionnelles" /></div>
-                <div className="flex gap-2"><Button size="sm" className="bg-[#059669] hover:bg-[#047857] text-white" onClick={handlePay} disabled={!payForm.amount || parseFloat(payForm.amount) <= 0 || payMut.isPending}>{payMut.isPending ? <RefreshCw className="size-3.5 mr-1 animate-spin" /> : <Banknote className="size-3.5 mr-1" />}Enregistrer</Button><Button size="sm" variant="outline" onClick={() => setShowPayForm(false)}>Annuler</Button></div>
+                <div className="flex gap-2"><Button size="sm" className="bg-[var(--success)] hover:bg-[var(--success)] text-white" onClick={handlePay} disabled={!payForm.amount || parseFloat(payForm.amount) <= 0 || payMut.isPending}>{payMut.isPending ? <RefreshCw className="size-3.5 mr-1 animate-spin" /> : <Banknote className="size-3.5 mr-1" />}Enregistrer</Button><Button size="sm" variant="outline" onClick={() => setShowPayForm(false)}>Annuler</Button></div>
               </div>
             )}
-            {(invoiceDetail?.payments || []).length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-4">Aucun paiement enregistré</p> : (
+            {(invoiceDetail?.payments || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-4">Aucun paiement enregistré</p> : (
               <div className="space-y-2">
                 {(invoiceDetail?.payments || []).map((p: Payment) => (
-                  <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border border-[#E5E7EB]">
-                    <div className={cn('size-8 rounded-lg flex items-center justify-center shrink-0', PAYMENT_METHOD_COLORS[p.method] || 'bg-[#6B7280]')}><span className="text-white text-xs font-bold">{(PAYMENT_METHOD_LABELS[p.method] || '?')[0]}</span></div>
+                  <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
+                    <div className={cn('size-8 rounded-lg flex items-center justify-center shrink-0', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')}><span className="text-white text-xs font-bold">{(PAYMENT_METHOD_LABELS[p.method] || '?')[0]}</span></div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{fmtMoney(p.amount, curCode)}</p>
-                      <p className="text-[10px] text-[#9CA3AF]">{PAYMENT_METHOD_LABELS[p.method] || p.method}{p.reference ? ` • ${p.reference}` : ''} • {p.recorder?.fullName || '—'}</p>
+                      <p className="text-[10px] text-jl-muted">{PAYMENT_METHOD_LABELS[p.method] || p.method}{p.reference ? ` • ${p.reference}` : ''} • {p.recorder?.fullName || '—'}</p>
                     </div>
-                    <span className="text-xs text-[#9CA3AF] shrink-0">{fmtDate(p.paidAt)}</span>
+                    <span className="text-xs text-jl-muted shrink-0">{fmtDate(p.paidAt)}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          {invoiceDetail?.notes && <><Separator /><div><p className="text-xs font-semibold text-[#6B7280] mb-1">Notes</p><p className="text-sm text-[#374151] whitespace-pre-wrap">{invoiceDetail.notes}</p></div></>}
+          {invoiceDetail?.notes && <><Separator /><div><p className="text-xs font-semibold text-jl-secondary mb-1">Notes</p><p className="text-sm text-jl-secondary whitespace-pre-wrap">{invoiceDetail.notes}</p></div></>}
         </DialogContent>
       </Dialog>
     </div>

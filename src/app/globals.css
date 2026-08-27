@@ -477,3 +477,124 @@ textarea:focus-visible {
 .skip-link:focus {
   top: 0;
 }
+
+/* ═════════════════════════════════════════════════════
+   Phase 7: Micro-interactions (global CSS)
+   ═══════════════════════════════════════════════════════ */
+
+/* Card hover lift effect */
+main [class*="rounded-"] {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+}
+
+/* Subtle hover lift on clickable cards/rows */
+main button[class*="rounded-"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.dark main button[class*="rounded-"]:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Button press feedback */
+main button:active:not(:disabled) {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Badge pulse for counts */
+main .animate-pulse-glow {
+ animation: pulseGlow 2s infinite;
+}
+
+/* Smooth transitions on all interactive elements */
+main button,
+main a,
+main [role="button"] {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dropdown menu items smooth animation */
+[data-radix-popper-content-wrapper] [role="menuitem"] {
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+/* Progress bar smooth animation */
+[role="progressbar"] > div {
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Skeleton shimmer for all loading states */
+.animate-pulse {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Staggered entrance for list items */
+main [class*="space-y"] > * {
+  animation: listItemIn 0.3s ease-out both;
+}
+@keyframes listItemIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Tab indicator animation */
+button[data-state="active"] {
+  transition: all 0.2s ease;
+}
+
+/* Smooth dialog entrance */
+[data-radix-dialog-content] {
+  animation: dialogIn 0.2s ease-out;
+}
+@keyframes dialogIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Smooth sheet slide */
+[data-radix-sheet-content][data-side="left"] {
+  animation: sheetSlideLeft 0.25s ease-out;
+}
+[data-radix-sheet-content][data-side="right"] {
+  animation: sheetSlideRight 0.25s ease-out;
+}
+@keyframes sheetSlideLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes sheetSlideRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Tooltip smooth fade */
+[data-radix-tooltip-content] {
+  animation: tooltipIn 0.15s ease-out;
+}
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateY(2px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Notification badge bounce */
+main [class*="rounded-full"][class*="size-"] {
+  transition: transform 0.2s ease;
+}
+main [class*="rounded-full"][class*="size-"]:hover {
+  transform: scale(1.1);
+}
+
+/* Selection color for dark mode readability */
+::selection {
+  background-color: var(--primary);
+  color: white;
+}
+.dark ::selection {
+  background-color: var(--accent);
+  color: var(--bg-page);
+}

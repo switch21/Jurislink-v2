@@ -183,27 +183,27 @@ export function FinancesView() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#E8F0F8] flex items-center justify-center shrink-0"><TrendingUp className="size-5 text-[#1E5A8A]" /></div><div className="min-w-0"><p className="text-xs text-[#6B7280]">Encaissé (filtré)</p><p className="text-base sm:text-lg font-bold text-[#1E5A8A] truncate" title={fmtMoney(filteredTotal)}>{fmtMoney(filteredTotal, 'XAF', true)}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#ECFDF5] flex items-center justify-center"><Banknote className="size-5 text-[#059669]" /></div><div><p className="text-xs text-[#6B7280]">Nb paiements</p><p className="text-lg font-bold text-[#059669]">{filteredPayments.length}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#FEF3C7] flex items-center justify-center shrink-0"><Clock className="size-5 text-[#D97706]" /></div><div className="min-w-0"><p className="text-xs text-[#6B7280]">À recouvrer</p><p className="text-base sm:text-lg font-bold text-[#D97706] truncate" title={fmtMoney(fin?.toRecover || 0)}>{fmtMoney(fin?.toRecover || 0, 'XAF', true)}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[#FEF2F2] flex items-center justify-center"><AlertCircle className="size-5 text-[#DC2626]" /></div><div><p className="text-xs text-[#6B7280]">Impayés</p><p className="text-lg font-bold text-[#DC2626]">{fin?.overdueInvoicesCount || 0} facture{(fin?.overdueInvoicesCount || 0) !== 1 ? 's' : ''}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-blue-light flex items-center justify-center shrink-0"><TrendingUp className="size-5 text-jl-blue" /></div><div className="min-w-0"><p className="text-xs text-jl-secondary">Encaissé (filtré)</p><p className="text-base sm:text-lg font-bold text-jl-blue truncate" title={fmtMoney(filteredTotal)}>{fmtMoney(filteredTotal, 'XAF', true)}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--success)]/10 flex items-center justify-center"><Banknote className="size-5 text-[var(--success)]" /></div><div><p className="text-xs text-jl-secondary">Nb paiements</p><p className="text-lg font-bold text-[var(--success)]">{filteredPayments.length}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--accent-light)] flex items-center justify-center shrink-0"><Clock className="size-5 text-[var(--accent)]" /></div><div className="min-w-0"><p className="text-xs text-jl-secondary">À recouvrer</p><p className="text-base sm:text-lg font-bold text-[var(--accent)] truncate" title={fmtMoney(fin?.toRecover || 0)}>{fmtMoney(fin?.toRecover || 0, 'XAF', true)}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--danger)]/10 flex items-center justify-center"><AlertCircle className="size-5 text-[var(--danger)]" /></div><div><p className="text-xs text-jl-secondary">Impayés</p><p className="text-lg font-bold text-[var(--danger)]">{fin?.overdueInvoicesCount || 0} facture{(fin?.overdueInvoicesCount || 0) !== 1 ? 's' : ''}</p></div></div></CardContent></Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><CreditCard className="size-4 text-[#1E5A8A]" />Paiements récents</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><CreditCard className="size-4 text-jl-blue" />Paiements récents</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0">
-            {filteredPayments.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucun paiement</p> : (
+            {filteredPayments.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucun paiement</p> : (
               <div className="max-h-96 overflow-y-auto">
                 <Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Client</TableHead><TableHead className="hidden sm:table-cell">Facture</TableHead><TableHead className="text-right">Montant</TableHead><TableHead className="hidden md:table-cell">Méthode</TableHead><TableHead className="hidden lg:table-cell">Enregistré par</TableHead></TableRow></TableHeader><TableBody>
                   {filteredPayments.slice(0, 20).map((p: Payment) => (
                     <TableRow key={p.id}>
-                      <TableCell className="text-sm text-[#6B7280]">{fmtDate(p.paidAt)}</TableCell>
+                      <TableCell className="text-sm text-jl-secondary">{fmtDate(p.paidAt)}</TableCell>
                       <TableCell className="text-sm font-medium">{p.invoice?.client?.fullName || '—'}</TableCell>
-                      <TableCell className="hidden sm:table-cell text-xs text-[#9CA3AF]">{p.invoice?.invoiceNumber || p.id.slice(0, 8)}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs text-jl-muted">{p.invoice?.invoiceNumber || p.id.slice(0, 8)}</TableCell>
                       <TableCell className="text-sm font-medium text-right">{fmtMoney(p.amount)}</TableCell>
-                      <TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', PAYMENT_METHOD_COLORS[p.method] || 'bg-[#6B7280]')} /><span className="text-xs text-[#6B7280]">{PAYMENT_METHOD_LABELS[p.method] || p.method}</span></div></TableCell>
-                      <TableCell className="hidden lg:table-cell text-xs text-[#9CA3AF]">{p.recorder?.fullName || '—'}</TableCell>
+                      <TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')} /><span className="text-xs text-jl-secondary">{PAYMENT_METHOD_LABELS[p.method] || p.method}</span></div></TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{p.recorder?.fullName || '—'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody></Table>
@@ -213,16 +213,16 @@ export function FinancesView() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Wallet className="size-4 text-[#C8A45D]" />Répartition par méthode</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Wallet className="size-4 text-jl-gold" />Répartition par méthode</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0">
-            {methodBreakdown.length === 0 ? <p className="text-sm text-[#9CA3AF] text-center py-8">Aucune donnée</p> : (
+            {methodBreakdown.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune donnée</p> : (
               <div className="space-y-3">
                 {methodBreakdown.map(([method, amount]) => {
                   const pct = filteredTotal > 0 ? (amount / filteredTotal) * 100 : 0
                   return (
                     <div key={method} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm"><div className="flex items-center gap-2"><span className={cn('size-3 rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-[#6B7280]')} /><span className="text-xs font-medium">{PAYMENT_METHOD_LABELS[method] || method}</span></div><span className="text-xs font-semibold">{fmtMoney(amount)}</span></div>
-                      <div className="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden"><div className={cn('h-full rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-[#6B7280]')} style={{ width: pct + '%' }} /></div>
+                      <div className="flex items-center justify-between text-sm"><div className="flex items-center gap-2"><span className={cn('size-3 rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-jl-page')} /><span className="text-xs font-medium">{PAYMENT_METHOD_LABELS[method] || method}</span></div><span className="text-xs font-semibold">{fmtMoney(amount)}</span></div>
+                      <div className="h-1.5 bg-jl-page rounded-full overflow-hidden"><div className={cn('h-full rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-jl-page')} style={{ width: pct + '%' }} /></div>
                     </div>
                   )
                 })}
@@ -234,18 +234,18 @@ export function FinancesView() {
 
       {overdueList.length > 0 && (
         <Card className="border-l-4 border-l-[#DC2626]">
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2 text-[#DC2626]"><AlertTriangle className="size-4" />Factures en retard ({overdueList.length})</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2 text-[var(--danger)]"><AlertTriangle className="size-4" />Factures en retard ({overdueList.length})</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="max-h-64 overflow-y-auto space-y-2">
               {overdueList.map(inv => (
-                <div key={inv.id} className="flex items-center gap-3 p-2 rounded-lg bg-[#FEF2F2] hover:bg-[#FEE2E2]">
+                <div key={inv.id} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--danger)]/10 hover:bg-[#FEE2E2]">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{inv.client?.fullName || '—'}</p>
-                    <p className="text-[10px] text-[#6B7280]">{inv.invoiceNumber || '—'} • {fmtDate(inv.dueDate)}</p>
+                    <p className="text-[10px] text-jl-secondary">{inv.invoiceNumber || '—'} • {fmtDate(inv.dueDate)}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-semibold">{fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</p>
-                    <p className="text-[10px] font-semibold text-[#DC2626]">{inv.daysOverdue}j de retard</p>
+                    <p className="text-[10px] font-semibold text-[var(--danger)]">{inv.daysOverdue}j de retard</p>
                   </div>
                 </div>
               ))}

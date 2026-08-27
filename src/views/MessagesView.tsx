@@ -50,11 +50,11 @@ export function MessagesView() {
       <h2 className="text-lg font-semibold">Messages</h2>
       <Card className="overflow-hidden"><div className="flex h-[500px]">
         <div className="w-64 border-r flex-shrink-0 overflow-y-auto hidden sm:block">
-          {contactList.length === 0 ? <p className="text-xs text-[#9CA3AF] p-4 text-center">Aucun contact</p> :
+          {contactList.length === 0 ? <p className="text-xs text-jl-muted p-4 text-center">Aucun contact</p> :
             contactList.map((c: UserItem) => (
-              <button key={c.id} className={cn('w-full flex items-center gap-2 p-3 hover:bg-[#F9FAFB] text-left transition-colors', selectedContact === c.id && 'bg-[#E8F0F8]')} onClick={() => setSelectedContact(c.id)}>
-                <Avatar className="size-8"><AvatarFallback className="text-[10px] bg-[#F3F4F6]">{initials(c.fullName)}</AvatarFallback></Avatar>
-                <div className="min-w-0"><p className="text-sm font-medium truncate">{c.fullName}</p><p className="text-[10px] text-[#9CA3AF]">{ROLE_LABELS[c.role] || c.role}</p></div>
+              <button key={c.id} className={cn('w-full flex items-center gap-2 p-3 hover:bg-jl-page text-left transition-colors', selectedContact === c.id && 'bg-jl-blue-light')} onClick={() => setSelectedContact(c.id)}>
+                <Avatar className="size-8"><AvatarFallback className="text-[10px] bg-jl-page">{initials(c.fullName)}</AvatarFallback></Avatar>
+                <div className="min-w-0"><p className="text-sm font-medium truncate">{c.fullName}</p><p className="text-[10px] text-jl-muted">{ROLE_LABELS[c.role] || c.role}</p></div>
               </button>
             ))}
         </div>
@@ -63,14 +63,14 @@ export function MessagesView() {
             <>
               <div className="p-3 border-b"><p className="text-sm font-semibold">{(contacts || []).find((c: UserItem) => c.id === selectedContact)?.fullName || ''}</p></div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {chatMessages.length === 0 && <p className="text-xs text-[#9CA3AF] text-center py-8">Aucun message</p>}
+                {chatMessages.length === 0 && <p className="text-xs text-jl-muted text-center py-8">Aucun message</p>}
                 {chatMessages.map((m: Message) => {
                   const isMine = m.senderId === user?.id
                   return (
                     <div key={m.id} className={cn('flex', isMine ? 'justify-end' : 'justify-start')}>
-                      <div className={cn('max-w-[75%] rounded-xl px-3 py-2', isMine ? 'bg-[#1E5A8A] text-white' : 'bg-[#F3F4F6] text-[#111827]')}>
+                      <div className={cn('max-w-[75%] rounded-xl px-3 py-2', isMine ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-primary')}>
                         <p className="text-sm">{m.content}</p>
-                        <p className={cn('text-[10px] mt-1', isMine ? 'text-[#E8F0F8]' : 'text-[#9CA3AF]')}>{fmtDateTime(m.createdAt)}</p>
+                        <p className={cn('text-[10px] mt-1', isMine ? 'text-[#E8F0F8]' : 'text-jl-muted')}>{fmtDateTime(m.createdAt)}</p>
                       </div>
                     </div>
                   )
