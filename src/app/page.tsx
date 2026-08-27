@@ -1,16 +1,16 @@
 'use client'
 
-// ═══════════════════════════════════════════════════════════════════
-// JurisLink v3.8.66 — Orchestrator (split from monolithic page.tsx)
-// Phase 5: Stabilisation & Performance
+// ════════════════════════════════════════════════════════════════════════════
+// JurisLink v3.8.67 — Orchestrator (split from monolithic page.tsx)
+// Phase 6: Bundle Optimization — Lazy Loading Views
 // View modules in src/views/
-// ═══════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect } from 'react'
-import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, CardTitle, CardDescription, CardFooter, Button, Building2, cn, initAuthFetch } from '@/views/shared-ui'
+import { useState, useEffect, lazy, Suspense } from 'react'
+import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, CardTitle, CardDescription, CardFooter, Button, Building2, Skeleton, cn, initAuthFetch } from '@/views/shared-ui'
 import { queryClient } from '@/views/constants'
 
-// View components
+// ──── Eagerly loaded (small, always-needed components) ────
 import { LoginPage } from '@/views/LoginPage'
 import { Sidebar } from '@/views/Sidebar'
 import { AdminSidebar } from '@/views/AdminSidebar'
@@ -18,35 +18,62 @@ import { AdminHeader } from '@/views/AdminHeader'
 import { Header } from '@/views/Header'
 import { DashboardView } from '@/views/DashboardView'
 import { TasksView } from '@/views/TasksView'
-import { CasesView } from '@/views/CasesView'
-import { ClientsView } from '@/views/ClientsView'
-import { DocumentsView } from '@/views/DocumentsView'
-import { CalendarView } from '@/views/CalendarView'
-import { InvoicesView } from '@/views/InvoicesView'
 import { MessagesView } from '@/views/MessagesView'
-import { ReportsView } from '@/views/ReportsView'
 import { AuditLogsView } from '@/views/AuditLogsView'
-import { SettingsView } from '@/views/SettingsView'
-import { FinancesView } from '@/views/FinancesView'
 import { NotificationsView } from '@/views/NotificationsView'
 import { ArchivesView } from '@/views/ArchivesView'
-import { ImpayesView } from '@/views/ImpayesView'
-import { TimeTrackingView } from '@/views/TimeTrackingView'
-import { TemplatesView } from '@/views/TemplatesView'
 import { CommunicationsView } from '@/views/CommunicationsView'
-import { AdminDashboardView, AdminCabinsView, AdminUsersView, AdminPlansView } from '@/views/AdminViews'
-import { PortalSidebar, PortalHeader, PortalRouter } from '@/views/PortalViews'
+
+// ──── Lazy-loaded views (heavy / rarely shown) ────
+const LazyCasesView = lazy(() => import('@/views/CasesView').then(m => ({ default: m.CasesView })))
+const LazyClientsView = lazy(() => import('@/views/ClientsView').then(m => ({ default: m.ClientsView })))
+const LazyDocumentsView = lazy(() => import('@/views/DocumentsView').then(m => ({ default: m.DocumentsView })))
+const LazyCalendarView = lazy(() => import('@/views/CalendarView').then(m => ({ default: m.CalendarView })))
+const LazyInvoicesView = lazy(() => import('@/views/InvoicesView').then(m => ({ default: m.InvoicesView })))
+const LazyReportsView = lazy(() => import('@/views/ReportsView').then(m => ({ default: m.ReportsView })))
+const LazySettingsView = lazy(() => import('@/views/SettingsView').then(m => ({ default: m.SettingsView })))
+const LazyFinancesView = lazy(() => import('@/views/FinancesView').then(m => ({ default: m.FinancesView })))
+const LazyImpayesView = lazy(() => import('@/views/ImpayesView').then(m => ({ default: m.ImpayesView })))
+const LazyTimeTrackingView = lazy(() => import('@/views/TimeTrackingView').then(m => ({ default: m.TimeTrackingView })))
+const LazyTemplatesView = lazy(() => import('@/views/TemplatesView').then(m => ({ default: m.TemplatesView })))
+const LazyAdminDashboardView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminDashboardView })))
+const LazyAdminCabinsView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminCabinsView })))
+const LazyAdminUsersView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminUsersView })))
+const LazyAdminPlansView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminPlansView })))
+const LazyPortalSidebar = lazy(() => import('@/views/PortalViews').then(m => ({ default: m.PortalSidebar })))
+const LazyPortalHeader = lazy(() => import('@/views/PortalViews').then(m => ({ default: m.PortalHeader })))
+const LazyPortalRouter = lazy(() => import('@/views/PortalViews').then(m => ({ default: m.PortalRouter })))
 
 // Patch fetch immediately at module load (before any React rendering)
 if (typeof window !== 'undefined') initAuthFetch()
 
+// ──── View Loading Fallback ────
+function ViewLoader() {
+  return (
+    <div className='flex-1 flex items-center justify-center p-8'>
+      <div className='flex flex-col items-center gap-4 w-full max-w-sm'>
+        <Skeleton className='h-4 w-3/4 rounded' />
+        <Skeleton className='h-4 w-1/2 rounded' />
+        <Skeleton className='h-32 w-full rounded-lg' />
+        <Skeleton className='h-4 w-2/3 rounded' />
+        <Skeleton className='h-4 w-1/3 rounded' />
+        <p className='text-xs text-[#9CA3AF] mt-2'>Chargement de la vue…</p>
+      </div>
+    </div>
+  )
+}
+
+// ──── Switch Helper (replaces verbose switch/case) ────
+function switchView(key: string, map: Record<string, React.ReactNode>, fallback: React.ReactNode): React.ReactNode {
+  return map[key] ?? fallback
+}
 
 // ==================== FOOTER ====================
 function Footer() {
   return (
     <footer className="mt-auto border-t border-[#E5E7EB] py-4 px-6 flex items-center justify-between text-xs text-[#9CA3AF]">
       <span className="flex items-center gap-1.5"><img src="/icon.png" alt="" className="size-3.5 rounded-sm" />JurisLink</span>
-      <span>v3.8.66</span>
+      <span>v3.8.67</span>
     </footer>
   )
 }
@@ -54,40 +81,46 @@ function Footer() {
 // ==================== ADMIN ROUTER ====================
 function AdminRouter() {
   const { currentView } = useAppStore()
-  switch (currentView) {
-    case 'admin-dashboard': return <AdminDashboardView />
-    case 'admin-cabinets': return <AdminCabinsView />
-    case 'admin-users': return <AdminUsersView />
-    case 'admin-plans': return <AdminPlansView />
-    case 'settings': return <SettingsView />
-    default: return <AdminDashboardView />
-  }
+  return (
+    <Suspense fallback={<ViewLoader />}>
+      {switchView(currentView, {
+        'admin-dashboard': <LazyAdminDashboardView />,
+        'admin-cabinets': <LazyAdminCabinsView />,
+        'admin-users': <LazyAdminUsersView />,
+        'admin-plans': <LazyAdminPlansView />,
+        'settings': <LazySettingsView />,
+      }, <LazyAdminDashboardView />)}
+    </Suspense>
+  )
 }
 
 // ==================== DASHBOARD ROUTER ====================
 function DashboardRouter() {
   const { currentView } = useAppStore()
-  switch (currentView) {
-    case 'dashboard': return <DashboardView />
-    case 'cases': return <CasesView />
-    case 'clients': return <ClientsView />
-    case 'tasks': return <TasksView />
-    case 'documents': return <DocumentsView />
-    case 'calendar': return <CalendarView />
-    case 'invoices': return <InvoicesView />
-    case 'finances': return <FinancesView />
-    case 'impayes': return <ImpayesView />
-    case 'time-tracking': return <TimeTrackingView />
-    case 'templates': return <TemplatesView />
-    case 'communications': return <CommunicationsView />
-    case 'messages': return <MessagesView />
-    case 'reports': return <ReportsView />
-    case 'audit-logs': return <AuditLogsView />
-    case 'settings': return <SettingsView />
-    case 'archives': return <ArchivesView />
-    case 'notifications': return <NotificationsView />
-    default: return <DashboardView />
-  }
+  return (
+    <Suspense fallback={<ViewLoader />}>
+      {switchView(currentView, {
+        'dashboard': <DashboardView />,
+        'cases': <LazyCasesView />,
+        'clients': <LazyClientsView />,
+        'tasks': <TasksView />,
+        'documents': <LazyDocumentsView />,
+        'calendar': <LazyCalendarView />,
+        'invoices': <LazyInvoicesView />,
+        'finances': <LazyFinancesView />,
+        'impayes': <LazyImpayesView />,
+        'time-tracking': <LazyTimeTrackingView />,
+        'templates': <LazyTemplatesView />,
+        'communications': <CommunicationsView />,
+        'messages': <MessagesView />,
+        'reports': <LazyReportsView />,
+        'audit-logs': <AuditLogsView />,
+        'settings': <LazySettingsView />,
+        'archives': <ArchivesView />,
+        'notifications': <NotificationsView />,
+      }, <DashboardView />)}
+    </Suspense>
+  )
 }
 
 // ==================== MAIN APP ====================
@@ -96,14 +129,14 @@ function AppInner() {
   const isRootAdmin = user?.role === 'root_admin'
   const needsTenant = isAuthenticated && !user?.tenantId && !isRootAdmin
   if (isPortalAuthenticated) return (
-    <>
-      <PortalSidebar />
+    <Suspense fallback={<ViewLoader />}>
+      <LazyPortalSidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
-        <PortalHeader />
-        <main className='flex-1'><PortalRouter /></main>
+        <LazyPortalHeader />
+        <main className='flex-1'><LazyPortalRouter /></main>
         <Footer />
       </div>
-    </>
+    </Suspense>
   )
   if (!isAuthenticated) return <LoginPage />
   if (needsTenant) return (
