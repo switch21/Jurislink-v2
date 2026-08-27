@@ -76,3 +76,56 @@ export function fmtDuration(seconds: number): string {
   if (m === 0) return `${h}h`
   return `${h}h ${m}min`
 }
+
+/** Read auth headers from localStorage — same source as auth-fetch.ts override */
+export function getAuthHeaders(isPortal = false): Record<string, string> {
+  const headers: Record<string, string> = {}
+  try {
+    const key = isPortal ? 'jurislink_portal_user' : 'jurislink_user'
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      const data = JSON.parse(stored)
+      if (isPortal) {
+        if (data.id) headers['X-Portal-User-Id'] = data.id
+      } else {
+        if (data.id) headers['X-User-Id'] = data.id
+        if (data.tenantId) headers['X-Tenant-Id'] = data.tenantId
+      }
+    }
+  } catch { /* ignore */ }
+  return headers
+}
+
+/** Upload a file via XHR with progress tracking and proper auth headers from localStorage */
+export function uploadWithProgress(
+  url: string,
+  formData: FormData,
+  onProgress: (percent: number) => void,
+  isPortal = false,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve()
+      } else {
+        let detail = `Erreur ${xhr.status}`
+        try {
+          const body = JSON.parse(xhr.responseText)
+          if (body.error) detail = body.error
+        } catch { /* ignore parse error */ }
+        reject(new Error(detail))
+      }
+    }
+    xhr.onerror = () => reject(new Error('Erreur réseau'))
+    const headers = getAuthHeaders(isPortal)
+    xhr.open('POST', url)
+    if (headers['X-User-Id']) xhr.setRequestHeader('X-User-Id', headers['X-User-Id'])
+    if (headers['X-Tenant-Id']) xhr.setRequestHeader('X-Tenant-Id', headers['X-Tenant-Id'])
+    if (headers['X-Portal-User-Id']) xhr.setRequestHeader('X-Portal-User-Id', headers['X-Portal-User-Id'])
+    xhr.send(formData)
+  })
+}

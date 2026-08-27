@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP } from './constants'
-import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== DOCUMENTS VIEW ====================
 export function DocumentsView() {
@@ -76,20 +76,11 @@ export function DocumentsView() {
       fd.append('tags', uploadForm.tags)
       fd.append('documentType', uploadForm.documentType)
       if (uploadForm.description) fd.append('description', uploadForm.description)
-      const xhr = new XMLHttpRequest()
-      xhr.upload.onprogress = e => { if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100)) }
-      await new Promise<void>((resolve, reject) => {
-        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { resolve() } else { reject(new Error(`Upload failed: ${xhr.status}`)) } }
-        xhr.onerror = () => reject(new Error('Upload failed'))
-        xhr.open('POST', '/api/documents')
-        if (user?.id) xhr.setRequestHeader('X-User-Id', user.id)
-        if (user?.tenantId) xhr.setRequestHeader('X-Tenant-Id', user.tenantId)
-        xhr.send(fd)
-      })
+      await uploadWithProgress('/api/documents', fd, setUploadProgress)
       toast.success('Document ajouté')
       qc.invalidateQueries({ queryKey: ['documents'] })
       setUploadOpen(false); setSelectedFile(null); setUploadForm({ caseId: '', folder: 'Général', tags: '', documentType: 'autre', description: '' })
-    } catch { toast.error('Erreur lors du téléchargement') } finally { setUploading(false); setUploadProgress(0) }
+    } catch (err: any) { toast.error(err?.message || 'Erreur lors du téléchargement') } finally { setUploading(false); setUploadProgress(0) }
   }
 
   const handleUploadVersion = async () => {
@@ -99,21 +90,12 @@ export function DocumentsView() {
       const fd = new FormData()
       fd.append('file', versionFile)
       if (versionNote) fd.append('changeNote', versionNote)
-      const xhr = new XMLHttpRequest()
-      xhr.upload.onprogress = e => { if (e.lengthComputable) setVersionProgress(Math.round((e.loaded / e.total) * 100)) }
-      await new Promise<void>((resolve, reject) => {
-        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { resolve() } else { reject(new Error(`Version upload failed: ${xhr.status}`)) } }
-        xhr.onerror = () => reject(new Error('Version upload failed'))
-        xhr.open('POST', `/api/documents/${versionsDoc.id}/versions`)
-        if (user?.id) xhr.setRequestHeader('X-User-Id', user.id)
-        if (user?.tenantId) xhr.setRequestHeader('X-Tenant-Id', user.tenantId)
-        xhr.send(fd)
-      })
+      await uploadWithProgress(`/api/documents/${versionsDoc.id}/versions`, fd, setVersionProgress)
       toast.success(`Version ${versionsDoc.version + 1} créée`)
       qc.invalidateQueries({ queryKey: ['documents'] })
       qc.invalidateQueries({ queryKey: ['doc-versions'] })
       setVersionUploadOpen(false); setVersionFile(null); setVersionNote('')
-    } catch { toast.error('Erreur lors du téléchargement') } finally { setVersionUploading(false); setVersionProgress(0) }
+    } catch (err: any) { toast.error(err?.message || 'Erreur lors du téléchargement') } finally { setVersionUploading(false); setVersionProgress(0) }
   }
 
   const folders = ['Général', 'Procédure', 'Contrats', 'Pièces client', 'Correspondances', 'Décisions', 'Factures', 'Archives']

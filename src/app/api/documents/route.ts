@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'documents', 'read')
+  const auth = await authenticate(request, 'document', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'documents', 'create')
+  const auth = await authenticate(request, 'document', 'create')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -136,7 +136,8 @@ export async function POST(request: Request) {
     return NextResponse.json(document, { status: 201 })
   } catch (error) {
     console.error('Create document error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
   finally {
     await db.$disconnect().catch(() => {})

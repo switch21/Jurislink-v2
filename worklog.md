@@ -152,3 +152,28 @@ Stage Summary:
 - Gold color fix: tailwind.config.ts (removed hsl() wrappers from all color definitions)
 - Subscription error handling: src/views/AdminViews.tsx line 91 (better error extraction), line 93 (detailed error message)
 - All changes pass lint (only pre-existing script require() errors remain)
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix persistent "Erreur lors du téléchargement" — RBAC mismatch + XHR auth
+
+Work Log:
+- Previous fix added X-User-Id/X-Tenant-Id headers from Zustand store, but error persisted
+- Created centralized uploadWithProgress() utility in helpers.tsx that reads auth from localStorage (same source as auth-fetch.ts), ensuring consistency
+- Replaced all 3 inline XHR upload implementations (DocumentsView handleUpload, DocumentsView handleUploadVersion, CasesView handleCaseDocUpload) with uploadWithProgress()
+- **Critical RBAC mismatch found**: API routes used 'documents' (plural) but RBAC seed defines resource as 'document' (singular) — causing 403 for all non-root_admin users
+- **Critical RBAC action mismatch**: Routes used 'read'/'update' but RBAC seed defines 'view'/'edit' — also causing 403
+- Fixed all document API routes:
+  - /api/documents/route.ts: 'documents'→'document', 'read'→'view'
+  - /api/documents/[id]/route.ts: 'read'→'view', 'update'→'edit'
+  - /api/documents/[id]/versions/route.ts: 'read'→'view', 'update'→'edit'
+  - /api/documents/[id]/download/route.ts: 'read'→'view'
+  - /api/documents/[id]/versions/[versionId]/download/route.ts: 'read'→'view'
+- Added proper error message propagation: catch blocks now show server error detail instead of generic message
+- Backend error messages now include actual error text instead of generic 'Internal server error'
+
+Stage Summary:
+- Root cause: RBAC resource/action name mismatch between API routes and seed data
+- Files changed: helpers.tsx, DocumentsView.tsx, CasesView.tsx, 5 document API route files
+- uploadWithProgress() utility ensures auth headers always come from localStorage
+- Error messages now show actual server response for easier debugging

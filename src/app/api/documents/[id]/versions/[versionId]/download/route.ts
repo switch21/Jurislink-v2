@@ -8,7 +8,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string; versionId: string }> }
 ) {
-  const auth = await authenticate(request, 'document', 'read')
+  const auth = await authenticate(request, 'document', 'view')
   if (auth instanceof NextResponse) return auth
 
   const db = getDb()
