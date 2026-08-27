@@ -655,3 +655,28 @@ Stage Summary:
 - SCP NDOKI (Premium): 363 days left — OK
 - No expirations or alert thresholds triggered
 - Script is ready for reuse: `node scripts/check-expiry-direct.js`
+
+---
+Task ID: TBD
+Agent: Sub-agent (general-purpose)
+Task: Phase 4 — Seed ClientPortal accounts for all existing active clients
+
+Work Log:
+- Reviewed Prisma schema: Client model (isActive, email, tenantId) and ClientPortal model (email, passwordHash, isActive, clientId, tenantId)
+- Created `/scripts/seed-portal-accounts.js` using require syntax with direct DATABASE_URL
+- Script finds all active clients (isActive=true), checks for existing portal accounts by clientId
+- For clients with email: appends `.portal` before `@` (e.g. `georges@domain.com` → `georges.portal@domain.com`)
+- For clients without email: generates `client-{id.slice(0,6)}@portal.jurislink.com`
+- Password hash: bcryptjs hash of `JurisLink2025` with salt rounds 10
+- Ran the script successfully against production database
+
+Stage Summary:
+- 29 active clients found, 0 already had portal accounts, 29 created
+- Breakdown by tenant:
+  - SCP NDOKI: 16 portal accounts
+  - Mengue & Associés: 7 portal accounts
+  - Fotso Law Firm: 5 portal accounts (was 6 in plan, 1 client missing — likely inactive)
+- All portal accounts are active (isActive: true) with default password `JurisLink2025`
+- Script is idempotent (skips clients that already have a portal account)
+- Portal API routes already exist at `/api/portal/*` (login, invoices, cases, dashboard, profile, etc.)
+- Next step: build the portal frontend UI (login page, client dashboard, case/invoice views)

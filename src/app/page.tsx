@@ -323,6 +323,8 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = { especes: 'Espèces', vir
 const PAYMENT_METHOD_COLORS: Record<string, string> = { especes: 'bg-[#059669]', virement: 'bg-[#1E5A8A]', mobile_money: 'bg-[#C8A45D]', carte: 'bg-[#7C3AED]', cheque: 'bg-[#6B7280]' }
 const CHART_COLORS = ['#1E5A8A', '#C8A45D', '#059669', '#DC2626', '#6B7280', '#F59E0B']
 const CHART_COLORS_DARK = ['#4A8FCA', '#E0C87A', '#34D399', '#FB7185', '#9CA3AF', '#FBBF24']
+const CASE_STATUS_LABELS: Record<string, string> = { nouveau: 'Nouveau', ouvert: 'Ouvert', en_cours: 'En cours', en_attente: 'En attente', clos: 'Clos', archive: 'Archivé' }
+const INVOICE_STATUS_LABELS: Record<string, string> = { non_paye: 'Non payé', partiel: 'Partiel', paye: 'Payé', annule: 'Annulé' }
 
 const NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType; adminOnly?: boolean; permission?: { resource: string; action: string } }[] = [
   { view: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -4904,6 +4906,641 @@ function AdminPlansView() {
   </div>)
 }
 
+// ==================== PORTAL NAV ITEMS ====================
+const PORTAL_NAV_ITEMS: { view: PortalViewName; label: string; icon: React.ElementType }[] = [
+  { view: 'portal-dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { view: 'portal-cases', label: 'Mes dossiers', icon: Briefcase },
+  { view: 'portal-invoices', label: 'Mes factures', icon: Receipt },
+  { view: 'portal-documents', label: 'Documents', icon: FileText },
+  { view: 'portal-messages', label: 'Messagerie', icon: MessageSquare },
+  { view: 'portal-profile', label: 'Mon profil', icon: User },
+]
+
+// ==================== PORTAL SIDEBAR ====================
+function PortalSidebar() {
+  const { portalUser, portalCurrentView, setPortalView, sidebarOpen, setSidebarOpen } = useAppStore()
+  const tenantName = portalUser?.tenant?.name || 'JurisLink'
+  const clientName = portalUser?.client?.fullName || ''
+  const navContent = (
+    <nav className='space-y-1 mx-3'>
+      {PORTAL_NAV_ITEMS.map(item => {
+        const Icon = item.icon
+        const active = portalCurrentView === item.view
+        return (
+          <button key={item.view} onClick={() => { setPortalView(item.view); setSidebarOpen(false) }}
+            className={cn('w-full flex items-center h-11 px-3 rounded-lg text-sm font-medium transition-all duration-200',
+              active ? 'bg-[#E8F0F8] text-[#1E5A8A] border-l-[3px] border-[#C8A45D]' : 'text-[#374151] hover:bg-[#F9FAFB] border-l-[3px] border-transparent')}>
+            <Icon className='size-5 shrink-0 mr-3' /><span className='whitespace-nowrap'>{item.label}</span>
+          </button>
+        )
+      })}
+    </nav>
+  )
+  return (<>
+    <aside className='hidden lg:flex fixed top-0 left-0 z-40 h-full bg-white flex-col w-[260px] border-r border-[#E5E7EB] overflow-hidden'>
+      <div className='flex items-center gap-3 px-4 h-16 border-b border-[#E5E7EB] shrink-0'>
+        {portalUser?.tenant?.logoUrl ? <img src={portalUser.tenant.logoUrl} alt={tenantName} className='size-8 rounded-lg shrink-0 object-cover' /> : <div className='size-8 rounded-lg bg-[#1E5A8A] flex items-center justify-center shrink-0'><Scale className='size-4 text-white' /></div>}
+        <div className='min-w-0'><p className='text-sm font-bold truncate text-[#111827]'>{tenantName}</p><p className='text-[10px] text-[#C8A45D] font-medium'>Espace client</p></div>
+      </div>
+      <ScrollArea className='flex-1 min-h-0 py-4 custom-scrollbar'>{navContent}</ScrollArea>
+      <div className='p-4 border-t border-[#E5E7EB] shrink-0'>
+        <div className='flex items-center gap-3'>
+          <Avatar className='size-8 shrink-0'><AvatarFallback className='bg-[#C8A45D] text-white text-xs'>{initials(clientName) || 'C'}</AvatarFallback></Avatar>
+          <div className='min-w-0'><p className='text-sm font-medium truncate text-[#111827]'>{clientName}</p><p className='text-xs text-[#9CA3AF] truncate'>Client</p></div>
+        </div>
+      </div>
+    </aside>
+    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}><SheetContent side='left' className='w-[280px] p-0 bg-white border-[#E5E7EB]'>
+      <div className='flex items-center gap-3 px-4 h-16 border-b border-[#E5E7EB] shrink-0'>
+        <div className='size-8 rounded-lg bg-[#1E5A8A] flex items-center justify-center shrink-0'><Scale className='size-4 text-white' /></div>
+        <span className='text-sm font-bold text-[#111827]'>{tenantName}</span>
+        <Button variant='ghost' size='icon' className='ml-auto text-[#6B7280]' onClick={() => setSidebarOpen(false)}><X className='size-5' /></Button>
+      </div>
+      <ScrollArea className='flex-1 min-h-0 py-4 custom-scrollbar'>{navContent}</ScrollArea>
+    </SheetContent></Sheet>
+  </>)
+}
+
+// ==================== PORTAL HEADER ====================
+function PortalHeader() {
+  const { portalUser, portalLogout, setSidebarOpen } = useAppStore()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const clientName = portalUser?.client?.fullName || ''
+  return (
+    <header className='sticky top-0 z-30 bg-white border-b border-[#E5E7EB] h-16 flex items-center px-4 lg:px-6 shrink-0'>
+      <Button variant='ghost' size='icon' className='lg:hidden mr-3 text-[#374151]' onClick={() => setSidebarOpen(true)}><Menu className='size-5' /></Button>
+      <div className='flex-1 min-w-0'>
+        <h1 className='text-lg font-bold text-[#111827] truncate'>Espace Client</h1>
+        <p className='text-xs text-[#9CA3AF] truncate -mt-0.5'>{portalUser?.tenant?.name}</p>
+      </div>
+      <div className='flex items-center gap-2'>
+        <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant='ghost' size='icon' className='relative text-[#6B7280] hover:text-[#111827]'><Bell className='size-5' /></Button></TooltipTrigger><TooltipContent>Notifications</TooltipContent></Tooltip></TooltipProvider>
+        <div className='relative'>
+          <Button variant='ghost' className='flex items-center gap-2 h-9 px-2' onClick={() => setDropdownOpen(!dropdownOpen)}>
+            <Avatar className='size-7'><AvatarFallback className='bg-[#C8A45D] text-white text-[10px]'>{initials(clientName) || 'C'}</AvatarFallback></Avatar>
+            <ChevronDown className={cn('size-3.5 text-[#9CA3AF] transition-transform', dropdownOpen && 'rotate-180')} />
+          </Button>
+          {dropdownOpen && (<>
+            <div className='fixed inset-0 z-40' onClick={() => setDropdownOpen(false)} />
+            <div className='absolute right-0 top-full mt-1 z-50 w-48 bg-white rounded-lg shadow-lg border border-[#E5E7EB] py-1'>
+              <button onClick={() => { setDropdownOpen(false); useAppStore.getState().setPortalView('portal-profile') }} className='w-full flex items-center gap-2 px-3 py-2 text-sm text-[#374151] hover:bg-[#F9FAFB]'><User className='size-4' />Mon profil</button>
+              <div className='border-t border-[#E5E7EB] my-1' />
+              <button onClick={() => { setDropdownOpen(false); portalLogout() }} className='w-full flex items-center gap-2 px-3 py-2 text-sm text-[#DC2626] hover:bg-[#FEF2F2]'><LogOut className='size-4' />Se déconnecter</button>
+            </div>
+          </>)}
+        </div>
+      </div>
+    </header>
+  )
+}
+
+// ==================== PORTAL DASHBOARD VIEW ====================
+function PortalDashboardView() {
+  const { portalUser } = useAppStore()
+  const { data: dash, isLoading } = useQuery({
+    queryKey: ['portal-dashboard'],
+    queryFn: () => fetch('/api/portal/dashboard').then(r => r.json()),
+  })
+  const clientName = portalUser?.client?.fullName || ''
+  const currencyCode = portalUser?.tenant?.currencyCode || 'XAF'
+  if (isLoading) return <div className='p-6 space-y-4'>{[1,2,3,4].map(i=><Skeleton key={i} className='h-28 rounded-xl' />)}</div>
+  if (!dash) return <EmptyState icon={LayoutDashboard} title='Erreur de chargement' />
+  const kpis = [
+    { label: 'Dossiers actifs', value: dash.activeCasesCount ?? 0, icon: Briefcase, color: 'text-[#1E5A8A]', bg: 'bg-[#E8F0F8]' },
+    { label: 'Factures en attente', value: dash.overdueInvoicesCount ?? 0, icon: AlertTriangle, color: dash.overdueInvoicesCount > 0 ? 'text-[#DC2626]' : 'text-[#065F46]', bg: dash.overdueInvoicesCount > 0 ? 'bg-[#FEE2E2]' : 'bg-[#D1FAE5]' },
+    { label: 'Montant total', value: fmtMoney(dash.totalInvoicesAmount ?? 0, currencyCode, true), icon: DollarSign, color: 'text-[#1E5A8A]', bg: 'bg-[#E8F0F8]' },
+    { label: 'Reste à payer', value: fmtMoney(dash.totalRemaining ?? 0, currencyCode, true), icon: Wallet, color: dash.totalRemaining > 0 ? 'text-[#92400E]' : 'text-[#065F46]', bg: dash.totalRemaining > 0 ? 'bg-[#FEF3C7]' : 'bg-[#D1FAE5]' },
+  ]
+  return (
+    <div className='p-4 lg:p-6 space-y-6'>
+      <div>
+        <h2 className='text-xl font-bold text-[#111827]'>Bonjour, {clientName.split(' ')[0]} 👋</h2>
+        <p className='text-sm text-[#6B7280] mt-0.5'>Voici un aperçu de votre espace</p>
+      </div>
+      <div className='grid grid-cols-2 lg:grid-cols-4 gap-3'>
+        {kpis.map((kpi, i) => <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+          <Card className='rounded-xl border border-[#E5E7EB] hover:shadow-sm transition-shadow'>
+            <CardContent className='p-4'><div className='flex items-center gap-3'><div className={cn('size-10 rounded-lg flex items-center justify-center shrink-0', kpi.bg)}><kpi.icon className={cn('size-5', kpi.color)} /></div><div className='min-w-0'><p className='text-xs text-[#9CA3AF] font-medium'>{kpi.label}</p><p className='text-lg font-bold text-[#111827] truncate'>{typeof kpi.value === 'number' ? kpi.value : kpi.value}</p></div></div></CardContent>
+          </Card>
+        </motion.div>)}
+      </div>
+      <div className='grid lg:grid-cols-2 gap-6'>
+        <Card className='rounded-xl border border-[#E5E7EB]'>
+          <CardHeader className='pb-3'><CardTitle className='text-sm font-semibold text-[#111827]'>Dossiers récents</CardTitle></CardHeader>
+          <CardContent className='space-y-3'>
+            {dash.recentCases?.length === 0 && <p className='text-sm text-[#9CA3AF]'>Aucun dossier</p>}
+            {dash.recentCases?.map(c => (
+              <button key={c.id} onClick={() => { useAppStore.getState().setPortalSelectedCaseId(c.id); useAppStore.getState().setPortalView('portal-case-detail') }} className='w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[#F9FAFB] transition-colors text-left'>
+                <div className='size-9 rounded-lg bg-[#E8F0F8] flex items-center justify-center shrink-0'><Briefcase className='size-4 text-[#1E5A8A]' /></div>
+                <div className='flex-1 min-w-0'><p className='text-sm font-medium text-[#111827] truncate'>{c.title}</p>{c.reference && <p className='text-xs text-[#9CA3AF]'>{c.reference}</p>}</div>
+                <Badge className={cn('text-[10px] px-2 py-0.5 rounded-full border-0', STATUS_COLORS[c.status] || 'bg-gray-100 text-gray-600')}>{c.status}</Badge>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+        <Card className='rounded-xl border border-[#E5E7EB]'>
+          <CardHeader className='pb-3'><CardTitle className='text-sm font-semibold text-[#111827]'>Factures récentes</CardTitle></CardHeader>
+          <CardContent className='space-y-3'>
+            {dash.recentInvoices?.length === 0 && <p className='text-sm text-[#9CA3AF]'>Aucune facture</p>}
+            {dash.recentInvoices?.map(inv => (
+              <div key={inv.id} className='flex items-center gap-3 p-3 rounded-lg bg-[#F9FAFB]'>
+                <div className='size-9 rounded-lg bg-[#F5F0E3] flex items-center justify-center shrink-0'><Receipt className='size-4 text-[#926B2D]' /></div>
+                <div className='flex-1 min-w-0'><p className='text-sm font-medium text-[#111827] truncate'>{inv.invoiceNumber || '—'}</p><p className='text-xs text-[#9CA3AF]'>{inv.case?.reference || '—'}</p></div>
+                <div className='text-right shrink-0'><p className='text-sm font-bold text-[#111827]'>{fmtMoney(inv.amount, inv.currency?.code || 'XAF', true)}</p><Badge className={cn('text-[10px] px-2 py-0.5 rounded-full border-0', STATUS_COLORS[inv.status] || 'bg-gray-100 text-gray-600')}>{inv.status}</Badge></div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+      {dash.recentCommunications?.length > 0 && (
+        <Card className='rounded-xl border border-[#E5E7EB]'>
+          <CardHeader className='pb-3'><CardTitle className='text-sm font-semibold text-[#111827]'>Dernières communications</CardTitle></CardHeader>
+          <CardContent className='space-y-2'>
+            {dash.recentCommunications.map(comm => (
+              <div key={comm.id} className='flex items-start gap-3 p-3 rounded-lg hover:bg-[#F9FAFB] transition-colors'>
+                <div className='size-8 rounded-full bg-[#E8F0F8] flex items-center justify-center shrink-0 mt-0.5'><MessageSquare className='size-3.5 text-[#1E5A8A]' /></div>
+                <div className='flex-1 min-w-0'>
+                  <p className='text-sm text-[#111827]'><span className='font-medium'>{comm.sentBy?.fullName || 'Vous'}</span>{comm.case && <span className='text-[#9CA3AF]'> · {comm.case.reference}</span>}</p>
+                  <p className='text-xs text-[#6B7280] mt-0.5 line-clamp-2'>{comm.subject || comm.content.slice(0, 120)}</p>
+                  <p className='text-[10px] text-[#9CA3AF] mt-1'>{fmtDateTime(comm.createdAt)}</p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// ==================== PORTAL CASES VIEW ====================
+function PortalCasesView() {
+  const { setPortalView, setPortalSelectedCaseId } = useAppStore()
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const { data: cases, isLoading } = useQuery({
+    queryKey: ['portal-cases'],
+    queryFn: () => fetch('/api/portal/cases').then(r => r.json()),
+  })
+  if (isLoading) return <div className='p-6 space-y-3'>{[1,2,3].map(i=><Skeleton key={i} className='h-32 rounded-xl' />)}</div>
+  const filtered = (cases || []).filter((c: PortalCaseItem) => {
+    if (statusFilter !== 'all' && c.status !== statusFilter) return false
+    if (search && !c.title.toLowerCase().includes(search.toLowerCase()) && !(c.reference || '').toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
+  const statusPills = ['all', 'nouveau', 'ouvert', 'en_cours', 'en_attente', 'clos']
+  return (
+    <div className='p-4 lg:p-6 space-y-4'>
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+        <div><h2 className='text-xl font-bold text-[#111827]'>Mes dossiers</h2><p className='text-sm text-[#6B7280]'>{filtered.length} dossier{filtered.length > 1 ? 's' : ''}</p></div>
+        <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#9CA3AF]' /><Input placeholder='Rechercher...' value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-[#E5E7EB]' /></div>
+      </div>
+      <div className='flex gap-2 overflow-x-auto pb-1'>
+        {statusPills.map(s => (
+          <button key={s} onClick={() => setStatusFilter(s)} className={cn('px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+            statusFilter === s ? 'bg-[#1E5A8A] text-white' : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]')}>
+            {s === 'all' ? 'Tous' : CASE_STATUS_LABELS[s] || s}
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0 ? <EmptyState icon={Briefcase} title='Aucun dossier' description={search ? 'Aucun résultat pour cette recherche' : 'Vous n\'avez pas encore de dossiers'} /> : (
+        <div className='grid sm:grid-cols-2 xl:grid-cols-3 gap-3'>
+          {filtered.map((c: PortalCaseItem, i: number) => (
+            <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+              <Card className='rounded-xl border border-[#E5E7EB] hover:shadow-sm hover:border-[#C8A45D]/30 transition-all cursor-pointer h-full' onClick={() => { setPortalSelectedCaseId(c.id); setPortalView('portal-case-detail') }}>
+                <CardContent className='p-4'>
+                  <div className='flex items-start justify-between gap-2 mb-2'>
+                    {c.reference && <Badge className='text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280] border-0'>{c.reference}</Badge>}
+                    <Badge className={cn('text-[10px] px-2 py-0.5 rounded-full border-0 shrink-0', STATUS_COLORS[c.status] || 'bg-gray-100 text-gray-600')}>{c.status}</Badge>
+                  </div>
+                  <h3 className='text-sm font-semibold text-[#111827] line-clamp-2 mb-2'>{c.title}</h3>
+                  <div className='flex items-center gap-3 text-[10px] text-[#9CA3AF]'>
+                    {c.caseType && <span className='px-1.5 py-0.5 bg-[#F3F4F6] rounded'>{c.caseType}</span>}
+                    <span className='flex items-center gap-1'><FileText className='size-3' />{c._count?.documents || 0}</span>
+                    <span className='flex items-center gap-1'><Calendar className='size-3' />{c._count?.events || 0}</span>
+                  </div>
+                  <p className='text-[10px] text-[#9CA3AF] mt-2'>{fmtDate(c.updatedAt)}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================== PORTAL CASE DETAIL VIEW ====================
+function PortalCaseDetailView() {
+  const { portalSelectedCaseId, setPortalView } = useAppStore()
+  const [tab, setTab] = useState('resume')
+  const { data: caseDetail, isLoading } = useQuery({
+    queryKey: ['portal-case-detail', portalSelectedCaseId],
+    queryFn: () => fetch(`/api/portal/cases/${portalSelectedCaseId}`).then(r => { if (!r.ok) throw new Error('Not found'); return r.json() }),
+    enabled: !!portalSelectedCaseId,
+  })
+  const { data: timeline } = useQuery({
+    queryKey: ['portal-case-timeline', portalSelectedCaseId],
+    queryFn: () => fetch(`/api/portal/cases/${portalSelectedCaseId}/timeline`).then(r => r.json()),
+    enabled: !!portalSelectedCaseId && tab === 'timeline',
+  })
+  if (isLoading) return <div className='p-6 space-y-4'><Skeleton className='h-40 rounded-xl' /><Skeleton className='h-60 rounded-xl' /></div>
+  if (!caseDetail) return <EmptyState icon={Briefcase} title='Dossier non trouvé' />
+  const timelineColors: Record<string, string> = { event: 'border-l-[#1E5A8A]', note: 'border-l-[#059669]', document: 'border-l-[#C8A45D]', task: 'border-l-[#8B5CF6]', invoice: 'border-l-[#DC2626]' }
+  const timelineIcons: Record<string, React.ElementType> = { event: Calendar, note: FileText, document: FileDown, task: ClipboardList, invoice: Receipt }
+  const fmtDuration = (s: number) => { const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); return h > 0 ? `${h}h ${m > 0 ? m + 'min' : ''}` : `${m}min` }
+  const tabs = [
+    { id: 'resume', label: 'Résumé' }, { id: 'timeline', label: 'Chronologie' }, { id: 'documents', label: 'Documents' }, { id: 'invoices', label: 'Factures' }, { id: 'time', label: 'Temps' },
+  ]
+  return (
+    <div className='p-4 lg:p-6 space-y-4'>
+      <button onClick={() => setPortalView('portal-cases')} className='flex items-center gap-1.5 text-sm text-[#6B7280] hover:text-[#1E5A8A] transition-colors'><ArrowLeft className='size-4' />Retour aux dossiers</button>
+      <Card className='rounded-xl border border-[#E5E7EB]'>
+        <CardContent className='p-5'>
+          <div className='flex flex-wrap items-start gap-3 mb-3'>
+            {caseDetail.reference && <Badge className='text-xs px-2.5 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] border-0'>{caseDetail.reference}</Badge>}
+            <Badge className={cn('text-xs px-2.5 py-1 rounded-full border-0', STATUS_COLORS[caseDetail.status] || 'bg-gray-100 text-gray-600')}>{caseDetail.status}</Badge>
+            {caseDetail.caseType && <Badge variant='outline' className='text-xs'>{caseDetail.caseType}</Badge>}
+            {caseDetail.priority && caseDetail.priority !== 'normal' && <Badge className={cn('text-xs px-2.5 py-1 rounded-full border-0', caseDetail.priority === 'urgent' ? 'bg-[#FEE2E2] text-[#991B1B]' : caseDetail.priority === 'haute' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#F3F4F6] text-[#6B7280]')}>{caseDetail.priority}</Badge>}
+          </div>
+          <h2 className='text-lg font-bold text-[#111827]'>{caseDetail.title}</h2>
+          {caseDetail.description && <p className='text-sm text-[#6B7280] mt-1 whitespace-pre-wrap'>{caseDetail.description}</p>}
+          <div className='flex flex-wrap gap-x-6 gap-y-1 mt-4 text-xs text-[#6B7280]'>
+            {caseDetail.jurisdiction && <span className='flex items-center gap-1'><MapPin className='size-3' />{caseDetail.jurisdiction}</span>}
+            {caseDetail.adversary && <span className='flex items-center gap-1'><Users className='size-3' />{caseDetail.adversary}</span>}
+            {caseDetail.amountInDispute != null && caseDetail.amountInDispute > 0 && <span className='flex items-center gap-1'><DollarSign className='size-3' />{fmtMoney(caseDetail.amountInDispute, 'XAF', true)}</span>}
+          </div>
+          {caseDetail.assignments && caseDetail.assignments.length > 0 && (
+            <div className='flex items-center gap-2 mt-4 pt-4 border-t border-[#E5E7EB]'>
+              <span className='text-xs text-[#9CA3AF]'>Avocat(s) :</span>
+              {caseDetail.assignments.map(a => (
+                <div key={a.id} className='flex items-center gap-1.5'>
+                  <Avatar className='size-6'><AvatarFallback className='bg-[#1E5A8A] text-white text-[9px]'>{initials(a.user?.fullName || '?')}</AvatarFallback></Avatar>
+                  <span className='text-xs font-medium text-[#111827]'>{a.user?.fullName}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <div className='flex gap-1 overflow-x-auto border-b border-[#E5E7EB]'>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} className={cn('px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+            tab === t.id ? 'border-[#1E5A8A] text-[#1E5A8A]' : 'border-transparent text-[#9CA3AF] hover:text-[#6B7280]')}>{t.label}</button>
+        ))}
+      </div>
+      {tab === 'resume' && (
+        <div className='space-y-4'>
+          {caseDetail.notes && caseDetail.notes.length > 0 && (
+            <Card className='rounded-xl border border-[#E5E7EB]'><CardHeader className='pb-2'><CardTitle className='text-sm font-semibold'>Notes</CardTitle></CardHeader><CardContent className='space-y-3'>
+              {caseDetail.notes.map(n => (<div key={n.id} className='p-3 rounded-lg bg-[#F9FAFB]'><p className='text-sm text-[#111827] whitespace-pre-wrap'>{n.content}</p><p className='text-[10px] text-[#9CA3AF] mt-1'>{n.author?.fullName || ''} · {fmtDateTime(n.createdAt)}</p></div>))}
+            </CardContent></Card>
+          )}
+          {caseDetail.tasks && caseDetail.tasks.length > 0 && (
+            <Card className='rounded-xl border border-[#E5E7EB]'><CardHeader className='pb-2'><CardTitle className='text-sm font-semibold'>Tâches</CardTitle></CardHeader><CardContent className='space-y-2'>
+              {caseDetail.tasks.map(t => (<div key={t.id} className='flex items-center gap-3 p-2 rounded-lg hover:bg-[#F9FAFB]'><Badge className={cn('text-[10px] px-2 py-0.5 rounded-full border-0', STATUS_COLORS[t.status === 'en_cours' ? 'en_cours' : t.status === 'terminee' ? 'clos' : t.status === 'a_faire' ? 'nouveau' : 'en_attente'] || 'bg-gray-100 text-gray-600')}>{t.status}</Badge><span className='text-sm text-[#111827]'>{t.title}</span>{t.dueDate && <span className='text-[10px] text-[#9CA3AF] ml-auto'>{fmtDate(t.dueDate)}</span>}</div>))}
+            </CardContent></Card>
+          )}
+          {!caseDetail.notes?.length && !caseDetail.tasks?.length && <EmptyState icon={BookOpen} title='Aucune note ni tâche' description={"Votre avocat n'a pas encore ajouté de notes à ce dossier"} />}
+        </div>
+      )}
+      {tab === 'timeline' && (
+        <div className='space-y-2'>
+          {(!timeline || timeline.length === 0) && <EmptyState icon={History} title='Aucune activité' />}
+          {timeline?.map((entry: PortalTimelineEntry) => {
+            const Icon = timelineIcons[entry.type] || Circle
+            return (
+              <div key={entry.id + entry.type} className={cn('pl-4 py-3 border-l-4 rounded-r-lg', timelineColors[entry.type] || 'border-l-gray-300')}>
+                <div className='flex items-start gap-3'>
+                  <Icon className='size-4 mt-0.5 text-[#6B7280] shrink-0' />
+                  <div className='flex-1 min-w-0'><p className='text-sm font-medium text-[#111827]'>{entry.title}</p>{entry.description && <p className='text-xs text-[#6B7280] mt-0.5'>{entry.description}</p>}<p className='text-[10px] text-[#9CA3AF] mt-1'>{entry.author || ''} · {fmtDateTime(entry.date)}</p></div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {tab === 'documents' && (
+        <div className='space-y-2'>
+          {(!caseDetail.documents || caseDetail.documents.length === 0) && <EmptyState icon={FileText} title='Aucun document' />}
+          {caseDetail.documents?.map(doc => (
+            <div key={doc.id} className='flex items-center gap-3 p-3 rounded-lg bg-white border border-[#E5E7EB] hover:shadow-sm transition-shadow'>
+              <div className={cn('size-9 rounded-lg flex items-center justify-center shrink-0', doc.mimeType?.includes('pdf') ? 'bg-[#FEE2E2]' : doc.mimeType?.includes('image') ? 'bg-[#D1FAE5]' : 'bg-[#E8F0F8]')}>
+                {doc.mimeType?.includes('pdf') ? <FileText className='size-4 text-[#DC2626]' /> : doc.mimeType?.includes('image') ? <FileImage className='size-4 text-[#059669]' /> : <FileText className='size-4 text-[#1E5A8A]' />}
+              </div>
+              <div className='flex-1 min-w-0'><p className='text-sm font-medium text-[#111827] truncate'>{doc.fileName}</p><p className='text-[10px] text-[#9CA3AF]'>{fmtFileSize(doc.fileSize)} · v{doc.version} · {fmtDate(doc.createdAt)}{doc.uploadedBy && ` · ${doc.uploadedBy.fullName}`}</p></div>
+              <a href={`/api/portal/documents/${doc.id}/download`} target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg hover:bg-[#E8F0F8] text-[#6B7280] hover:text-[#1E5A8A] transition-colors'><Download className='size-4' /></a>
+            </div>
+          ))}
+        </div>
+      )}
+      {tab === 'invoices' && (
+        <div className='space-y-2'>
+          {(!caseDetail.invoices || caseDetail.invoices.length === 0) && <EmptyState icon={Receipt} title='Aucune facture' />}
+          {caseDetail.invoices?.map(inv => (
+            <div key={inv.id} className='flex items-center gap-3 p-3 rounded-lg bg-white border border-[#E5E7EB]'>
+              <div className='size-9 rounded-lg bg-[#F5F0E3] flex items-center justify-center shrink-0'><Receipt className='size-4 text-[#926B2D]' /></div>
+              <div className='flex-1 min-w-0'><p className='text-sm font-medium text-[#111827]'>{inv.invoiceNumber || '—'}</p><p className='text-[10px] text-[#9CA3AF]'>{fmtDate(inv.issuedAt)} · Échéance: {fmtDate(inv.dueDate)}</p></div>
+              <div className='text-right shrink-0'><p className='text-sm font-bold text-[#111827]'>{fmtMoney(inv.amount, 'XAF', true)}</p><Badge className={cn('text-[10px] px-2 py-0.5 rounded-full border-0', STATUS_COLORS[inv.status] || 'bg-gray-100 text-gray-600')}>{inv.status}</Badge></div>
+            </div>
+          ))}
+        </div>
+      )}
+      {tab === 'time' && (
+        <div className='space-y-2'>
+          {(!caseDetail.timeEntries || caseDetail.timeEntries.length === 0) && <EmptyState icon={Timer} title='Aucun temps enregistré' />}
+          {caseDetail.timeEntries?.map(te => (
+            <div key={te.id} className='flex items-center gap-3 p-3 rounded-lg bg-white border border-[#E5E7EB]'>
+              <div className='size-9 rounded-lg bg-[#E8F0F8] flex items-center justify-center shrink-0'><Clock className='size-4 text-[#1E5A8A]' /></div>
+              <div className='flex-1 min-w-0'><p className='text-sm text-[#111827]'>{te.description || 'Temps travaillé'}</p><p className='text-[10px] text-[#9CA3AF]'>{te.user?.fullName || ''} · {fmtDate(te.startTime)}</p></div>
+              <div className='text-right shrink-0'><p className='text-sm font-semibold text-[#111827]'>{fmtDuration(te.duration)}</p>{te.totalAmount != null && te.totalAmount > 0 && <p className='text-[10px] text-[#9CA3AF]'>{fmtMoney(te.totalAmount, 'XAF', true)}</p>}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================== PORTAL INVOICES VIEW ====================
+function PortalInvoicesView() {
+  const { portalUser } = useAppStore()
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedInvoice, setSelectedInvoice] = useState<PortalInvoiceItem | null>(null)
+  const currencyCode = portalUser?.tenant?.currencyCode || 'XAF'
+  const { data: invoices, isLoading } = useQuery({
+    queryKey: ['portal-invoices', statusFilter],
+    queryFn: () => fetch(`/api/portal/invoices${statusFilter !== 'all' ? `?status=${statusFilter}` : ''}`).then(r => r.json()),
+  })
+  const { data: invoiceDetail } = useQuery({
+    queryKey: ['portal-invoice-detail', selectedInvoice?.id],
+    queryFn: () => fetch(`/api/portal/invoices/${selectedInvoice!.id}`).then(r => r.json()),
+    enabled: !!selectedInvoice,
+  })
+  if (isLoading) return <div className='p-6 space-y-3'>{[1,2,3].map(i=><Skeleton key={i} className='h-24 rounded-xl' />)}</div>
+  const filtered = invoices || []
+  const totalAmount = filtered.reduce((s: number, inv: PortalInvoiceItem) => s + inv.amount, 0)
+  const statusPills = ['all', 'non_paye', 'partiel', 'paye']
+  return (
+    <div className='p-4 lg:p-6 space-y-4'>
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+        <div><h2 className='text-xl font-bold text-[#111827]'>Mes factures</h2><p className='text-sm text-[#6B7280]'>{filtered.length} facture{filtered.length > 1 ? 's' : ''} · Total: {fmtMoney(totalAmount, currencyCode, true)}</p></div>
+      </div>
+      <div className='flex gap-2 overflow-x-auto pb-1'>
+        {statusPills.map(s => (
+          <button key={s} onClick={() => setStatusFilter(s)} className={cn('px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+            statusFilter === s ? 'bg-[#1E5A8A] text-white' : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]')}>
+            {s === 'all' ? 'Toutes' : INVOICE_STATUS_LABELS[s] || s}
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0 ? <EmptyState icon={Receipt} title='Aucune facture' /> : (
+        <div className='space-y-2'>
+          {(filtered as PortalInvoiceItem[]).map(inv => {
+            const remaining = inv.amount - inv.paidAmount
+            const progress = inv.amount > 0 ? Math.min(100, (inv.paidAmount / inv.amount) * 100) : 0
+            return (
+              <motion.div key={inv.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Card className='rounded-xl border border-[#E5E7EB] hover:shadow-sm cursor-pointer transition-all' onClick={() => setSelectedInvoice(inv)}>
+                  <CardContent className='p-4'>
+                    <div className='flex items-center gap-4'>
+                      <div className='size-10 rounded-lg bg-[#F5F0E3] flex items-center justify-center shrink-0'><Receipt className='size-5 text-[#926B2D]' /></div>
+                      <div className='flex-1 min-w-0'>
+                        <div className='flex items-center gap-2 mb-1'><p className='text-sm font-semibold text-[#111827]'>{inv.invoiceNumber || '—'}</p><Badge className={cn('text-[10px] px-2 py-0.5 rounded-full border-0', STATUS_COLORS[inv.status] || 'bg-gray-100 text-gray-600')}>{inv.status}</Badge></div>
+                        <p className='text-xs text-[#9CA3AF]'>{inv.case?.reference ? `Dossier ${inv.case.reference}` : '—'} · Échéance: {fmtDate(inv.dueDate)}</p>
+                        <div className='mt-2 h-1.5 bg-[#E5E7EB] rounded-full overflow-hidden'><div className='h-full bg-[#059669] rounded-full transition-all' style={{ width: `${progress}%` }} /></div>
+                      </div>
+                      <div className='text-right shrink-0'>
+                        <p className='text-sm font-bold text-[#111827]'>{fmtMoney(inv.amount, inv.currency?.code || currencyCode)}</p>
+                        <p className='text-[10px] text-[#9CA3AF]'>Payé: {fmtMoney(inv.paidAmount, inv.currency?.code || currencyCode, true)}</p>
+                        {remaining > 0 && <p className='text-[10px] text-[#DC2626] font-medium'>Reste: {fmtMoney(remaining, inv.currency?.code || currencyCode, true)}</p>}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )
+          })}
+        </div>
+      )}
+      <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
+        <DialogContent className='max-w-2xl max-h-[85vh] overflow-y-auto'>
+          <DialogHeader><DialogTitle className='text-base'>Facture {invoiceDetail?.invoiceNumber || selectedInvoice?.invoiceNumber || ''}</DialogTitle><DialogDescription>Détails de la facture</DialogDescription></DialogHeader>
+          {invoiceDetail && (<div className='space-y-4'>
+            <div className='grid grid-cols-2 gap-4 text-sm'>
+              <div><span className='text-[#9CA3AF]'>Statut</span><Badge className={cn('ml-2 text-[10px] px-2 py-0.5 rounded-full border-0', STATUS_COLORS[invoiceDetail.status] || 'bg-gray-100 text-gray-600')}>{invoiceDetail.status}</Badge></div>
+              <div><span className='text-[#9CA3AF]'>Date :</span> <span className='text-[#111827] ml-1'>{fmtDate(invoiceDetail.issuedAt)}</span></div>
+              <div><span className='text-[#9CA3AF]'>Échéance :</span> <span className='text-[#111827] ml-1'>{fmtDate(invoiceDetail.dueDate)}</span></div>
+              <div><span className='text-[#9CA3AF]'>Montant :</span> <span className='font-bold text-[#111827] ml-1'>{fmtMoney(invoiceDetail.amount, invoiceDetail.currency?.code || currencyCode)}</span></div>
+            </div>
+            {invoiceDetail.lineItems && invoiceDetail.lineItems.length > 0 && (
+              <Table><TableHeader><TableRow><TableHead>Description</TableHead><TableHead className='text-right'>Qté</TableHead><TableHead className='text-right'>P.U. HT</TableHead><TableHead className='text-right'>Total</TableHead></TableRow></TableHeader><TableBody>
+                {invoiceDetail.lineItems.map(li => <TableRow key={li.id}><TableCell className='text-sm'>{li.description}</TableCell><TableCell className='text-right text-sm'>{li.quantity}</TableCell><TableCell className='text-right text-sm'>{fmtMoney(li.unitPrice, invoiceDetail.currency?.code || currencyCode)}</TableCell><TableCell className='text-right text-sm font-medium'>{fmtMoney(li.total, invoiceDetail.currency?.code || currencyCode)}</TableCell></TableRow>)}
+              </TableBody></Table>
+            )}
+            {invoiceDetail.payments && invoiceDetail.payments.length > 0 && (
+              <div><h4 className='text-sm font-semibold mb-2'>Paiements</h4><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Mode</TableHead><TableHead className='text-right'>Montant</TableHead><TableHead>Enregistré par</TableHead></TableRow></TableHeader><TableBody>
+                {invoiceDetail.payments.map(p => <TableRow key={p.id}><TableCell className='text-sm'>{fmtDate(p.paidAt)}</TableCell><TableCell className='text-sm'>{p.method}</TableCell><TableCell className='text-right text-sm font-medium'>{fmtMoney(p.amount, currencyCode)}</TableCell><TableCell className='text-sm'>{p.recorder?.fullName || '—'}</TableCell></TableRow>)}
+              </TableBody></Table></div>
+            )}
+            <div className='flex gap-2 pt-2'><a href={`/api/invoices/${invoiceDetail.id}/pdf`} target='_blank' rel='noopener noreferrer'><Button size='sm' className='bg-[#1E5A8A] hover:bg-[#164070]'><Printer className='size-4 mr-1.5' />Télécharger PDF</Button></a></div>
+          </div>)}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// ==================== PORTAL DOCUMENTS VIEW ====================
+function PortalDocumentsView() {
+  const [search, setSearch] = useState('')
+  const { data: docs, isLoading } = useQuery({
+    queryKey: ['portal-documents', search],
+    queryFn: () => fetch(`/api/portal/documents${search ? `?search=${encodeURIComponent(search)}` : ''}`).then(r => r.json()),
+  })
+  if (isLoading) return <div className='p-6 space-y-3'>{[1,2,3].map(i=><Skeleton key={i} className='h-16 rounded-xl' />)}</div>
+  return (
+    <div className='p-4 lg:p-6 space-y-4'>
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+        <div><h2 className='text-xl font-bold text-[#111827]'>Documents</h2><p className='text-sm text-[#6B7280]'>{(docs || []).length} document{(docs || []).length > 1 ? 's' : ''}</p></div>
+        <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#9CA3AF]' /><Input placeholder='Rechercher un document...' value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-[#E5E7EB]' /></div>
+      </div>
+      {(docs || []).length === 0 ? <EmptyState icon={FileText} title='Aucun document' description={search ? 'Aucun résultat' : 'Aucun document disponible'} /> : (
+        <div className='space-y-2'>
+          {(docs as PortalDocItem[]).map(doc => (
+            <div key={doc.id} className='flex items-center gap-3 p-3 rounded-lg bg-white border border-[#E5E7EB] hover:shadow-sm transition-shadow'>
+              <div className={cn('size-10 rounded-lg flex items-center justify-center shrink-0', doc.mimeType?.includes('pdf') ? 'bg-[#FEE2E2]' : doc.mimeType?.includes('image') ? 'bg-[#D1FAE5]' : doc.mimeType?.includes('word') || doc.mimeType?.includes('document') ? 'bg-[#DBEAFE]' : 'bg-[#E8F0F8]')}>
+                {doc.mimeType?.includes('pdf') ? <FileText className='size-5 text-[#DC2626]' /> : doc.mimeType?.includes('image') ? <FileImage className='size-5 text-[#059669]' /> : <FileText className='size-5 text-[#1E5A8A]' />}
+              </div>
+              <div className='flex-1 min-w-0'>
+                <p className='text-sm font-medium text-[#111827] truncate'>{doc.fileName}</p>
+                <p className='text-[10px] text-[#9CA3AF]'>{fmtFileSize(doc.fileSize)} · v{doc.version}{doc.case && <span> · {doc.case.reference} — {doc.case.title}</span>}{doc.uploadedBy && <span> · {doc.uploadedBy.fullName}</span>}</p>
+              </div>
+              <span className='text-[10px] text-[#9CA3AF] shrink-0 hidden sm:block'>{fmtDate(doc.createdAt)}</span>
+              <a href={`/api/portal/documents/${doc.id}/download`} target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg hover:bg-[#E8F0F8] text-[#6B7280] hover:text-[#1E5A8A] transition-colors shrink-0'><Download className='size-4' /></a>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================== PORTAL MESSAGES VIEW ====================
+function PortalMessagesView() {
+  const queryClient = useQueryClient()
+  const [message, setMessage] = useState('')
+  const [subject, setSubject] = useState('')
+  const [selectedCaseId, setSelectedCaseId] = useState('')
+  const [sending, setSending] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { data: communications, isLoading } = useQuery({
+    queryKey: ['portal-communications'],
+    queryFn: () => fetch('/api/portal/communications').then(r => r.json()),
+  })
+  const { data: cases } = useQuery({
+    queryKey: ['portal-cases-mini'],
+    queryFn: () => fetch('/api/portal/cases').then(r => r.json()).then(d => (d || []).map((c: PortalCaseItem) => ({ id: c.id, reference: c.reference, title: c.title }))),
+  })
+  const sendMessage = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/portal/communications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject: subject || null, content: message, caseId: selectedCaseId || null }) })
+      if (!res.ok) throw new Error('Erreur')
+      return res.json()
+    },
+    onSuccess: () => { setMessage(''); setSubject(''); setSelectedCaseId(''); queryClient.invalidateQueries({ queryKey: ['portal-communications'] }) },
+  })
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [communications])
+  if (isLoading) return <div className='p-6'><Skeleton className='h-96 rounded-xl' /></div>
+  const comms = (communications || []).reverse() as PortalCommunication[]
+  return (
+    <div className='flex flex-col h-[calc(100vh-8rem)]'>
+      <div className='px-4 lg:px-6 pb-3'><h2 className='text-xl font-bold text-[#111827]'>Messagerie</h2><p className='text-sm text-[#6B7280]'>Échangez avec votre cabinet</p></div>
+      <div className='flex-1 overflow-y-auto px-4 lg:px-6 space-y-3 custom-scrollbar'>
+        {comms.length === 0 && <EmptyState icon={MessageSquare} title='Aucun message' description='Envoyez votre premier message à votre cabinet' />}
+        {comms.map(comm => {
+          const isMe = !comm.sentBy
+          return (
+            <div key={comm.id} className={cn('flex', isMe ? 'justify-end' : 'justify-start')}>
+              <div className={cn('max-w-[75%] rounded-2xl px-4 py-2.5', isMe ? 'bg-[#1E5A8A] text-white rounded-br-md' : 'bg-[#F3F4F6] text-[#111827] rounded-bl-md')}>
+                {!isMe && comm.sentBy && <p className='text-xs font-semibold text-[#C8A45D] mb-0.5'>{comm.sentBy.fullName}</p>}
+                {comm.subject && <p className='text-xs font-semibold mb-1 opacity-80'>{comm.subject}</p>}
+                <p className='text-sm whitespace-pre-wrap'>{comm.content}</p>
+                <div className='flex items-center gap-2 mt-1'><p className='text-[10px] opacity-60'>{fmtDateTime(comm.createdAt)}</p>{comm.case && <span className='text-[10px] opacity-60'>· {comm.case.reference}</span>}{comm.type === 'portal_message' && <span className='text-[10px] px-1.5 py-0.5 rounded-full bg-white/20'>vous</span>}</div>
+              </div>
+            </div>
+          )
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className='border-t border-[#E5E7EB] p-3 space-y-2 bg-white'>
+        <div className='flex gap-2'><Input placeholder='Sujet (optionnel)' value={subject} onChange={e => setSubject(e.target.value)} className='h-8 text-sm rounded-lg border-[#E5E7EB]' />
+          {cases && cases.length > 0 && <Select value={selectedCaseId} onValueChange={setSelectedCaseId}><SelectTrigger className='w-40 h-8 text-sm rounded-lg'><SelectValue placeholder='Dossier...' /></SelectTrigger><SelectContent>{cases.map((c: { id: string; reference: string | null; title: string }) => <SelectItem key={c.id} value={c.id}>{c.reference || c.title}</SelectItem>)}</SelectContent></Select>}
+        </div>
+        <div className='flex gap-2'>
+          <Textarea placeholder='Votre message...' value={message} onChange={e => setMessage(e.target.value)} className='min-h-[60px] text-sm rounded-lg border-[#E5E7EB] resize-none' onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (message.trim()) { sendMessage.mutate(); } } }} />
+          <Button onClick={() => message.trim() && sendMessage.mutate()} disabled={!message.trim() || sending} className='self-end bg-[#1E5A8A] hover:bg-[#164070] text-white h-10 w-10 p-0 rounded-lg shrink-0'>{sending ? <Loader2 className='size-4 animate-spin' /> : <Send className='size-4' />}</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ==================== PORTAL PROFILE VIEW ====================
+function PortalProfileView() {
+  const { portalUser } = useAppStore()
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({ phone: '', address: '', city: '', country: '' })
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['portal-profile'],
+    queryFn: () => fetch('/api/portal/profile').then(r => r.json()),
+  })
+  const updateProfile = useMutation({
+    mutationFn: async (data: typeof form) => {
+      const res = await fetch('/api/portal/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      if (!res.ok) throw new Error('Erreur')
+      return res.json()
+    },
+    onSuccess: () => { setEditing(false); toast.success('Profil mis à jour') },
+    onError: () => toast.error('Erreur lors de la mise à jour'),
+  })
+  const editForm = editing ? form : (profile ? { phone: profile.phone || '', address: profile.address || '', city: profile.city || '', country: profile.country || '' } : form)
+  const handleEdit = () => { if (profile) setForm({ phone: profile.phone || '', address: profile.address || '', city: profile.city || '', country: profile.country || '' }); setEditing(true) }
+  if (isLoading) return <div className='p-6'><Skeleton className='h-64 rounded-xl' /></div>
+  if (!profile) return <EmptyState icon={User} title='Erreur de chargement' />
+  return (
+    <div className='p-4 lg:p-6 space-y-4'>
+      <h2 className='text-xl font-bold text-[#111827]'>Mon profil</h2>
+      <div className='grid md:grid-cols-2 gap-4'>
+        <Card className='rounded-xl border border-[#E5E7EB]'>
+          <CardHeader className='pb-3'><CardTitle className='text-sm font-semibold flex items-center gap-2'><User className='size-4 text-[#1E5A8A]' />Mes informations</CardTitle></CardHeader>
+          <CardContent className='space-y-3'>
+            {editing ? (
+              <div className='space-y-3'>
+                <div><Label className='text-xs'>Téléphone</Label><Input value={editForm.phone} onChange={e => setForm({ ...editForm, phone: e.target.value })} className='h-9 mt-1 rounded-lg' /></div>
+                <div><Label className='text-xs'>Adresse</Label><Input value={editForm.address} onChange={e => setForm({ ...editForm, address: e.target.value })} className='h-9 mt-1 rounded-lg' /></div>
+                <div className='grid grid-cols-2 gap-2'><div><Label className='text-xs'>Ville</Label><Input value={editForm.city} onChange={e => setForm({ ...editForm, city: e.target.value })} className='h-9 mt-1 rounded-lg' /></div><div><Label className='text-xs'>Pays</Label><Input value={editForm.country} onChange={e => setForm({ ...editForm, country: e.target.value })} className='h-9 mt-1 rounded-lg' /></div></div>
+                <div className='flex gap-2 pt-1'><Button size='sm' onClick={() => updateProfile.mutate(editForm)} disabled={updateProfile.isPending} className='bg-[#1E5A8A] hover:bg-[#164070]'>{updateProfile.isPending ? <Loader2 className='size-4 animate-spin' /> : 'Enregistrer'}</Button><Button size='sm' variant='outline' onClick={() => setEditing(false)}>Annuler</Button></div>
+              </div>
+            ) : (
+              <>
+                <InfoRow label='Nom complet' value={profile.fullName} />
+                <InfoRow label='Société' value={profile.company} />
+                <InfoRow label='Email' value={profile.email} />
+                <InfoRow label='Téléphone' value={profile.phone} />
+                <InfoRow label='NIU' value={profile.niu} />
+                <InfoRow label='Adresse' value={[profile.address, profile.city, profile.country].filter(Boolean).join(', ')} />
+                <Button size='sm' variant='outline' onClick={handleEdit} className='mt-2'><Edit className='size-3.5 mr-1.5' />Modifier</Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        <div className='space-y-4'>
+          <Card className='rounded-xl border border-[#E5E7EB]'>
+            <CardHeader className='pb-3'><CardTitle className='text-sm font-semibold flex items-center gap-2'><Building2 className='size-4 text-[#C8A45D]' />Mon cabinet</CardTitle></CardHeader>
+            <CardContent className='space-y-2'>
+              <InfoRow label='Nom' value={profile.tenant?.name} />
+              <InfoRow label='Email' value={profile.tenant?.email} />
+              <InfoRow label='Téléphone' value={profile.tenant?.phone} />
+              <InfoRow label='Adresse' value={[profile.tenant?.address, profile.tenant?.city, profile.tenant?.country].filter(Boolean).join(', ')} />
+              <InfoRow label='NIU' value={profile.tenant?.niu} />
+            </CardContent>
+          </Card>
+          {profile.responsibleLawyer && (
+            <Card className='rounded-xl border border-[#E5E7EB]'>
+              <CardHeader className='pb-3'><CardTitle className='text-sm font-semibold flex items-center gap-2'><ShieldUser className='size-4 text-[#059669]' />Mon avocat</CardTitle></CardHeader>
+              <CardContent className='space-y-2'>
+                <InfoRow label='Nom' value={profile.responsibleLawyer.fullName} />
+                <InfoRow label='Email' value={profile.responsibleLawyer.email} />
+                <InfoRow label='Téléphone' value={profile.responsibleLawyer.phone} />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null
+  return <div className='flex items-start gap-2'><span className='text-xs text-[#9CA3AF] w-20 shrink-0 pt-0.5'>{label}</span><span className='text-sm text-[#111827]'>{value}</span></div>
+}
+
+// ==================== PORTAL ROUTER ====================
+function PortalRouter() {
+  const { portalCurrentView } = useAppStore()
+  switch (portalCurrentView) {
+    case 'portal-dashboard': return <PortalDashboardView />
+    case 'portal-cases': return <PortalCasesView />
+    case 'portal-case-detail': return <PortalCaseDetailView />
+    case 'portal-invoices': return <PortalInvoicesView />
+    case 'portal-documents': return <PortalDocumentsView />
+    case 'portal-messages': return <PortalMessagesView />
+    case 'portal-profile': return <PortalProfileView />
+    default: return <PortalDashboardView />
+  }
+}
+
 // ==================== FOOTER ====================
 function Footer() {
   return (
@@ -4955,9 +5592,19 @@ function DashboardRouter() {
 
 // ==================== MAIN APP ====================
 function AppInner() {
-  const { isAuthenticated, user } = useAppStore()
+  const { isAuthenticated, isPortalAuthenticated, user } = useAppStore()
   const isRootAdmin = user?.role === 'root_admin'
   const needsTenant = isAuthenticated && !user?.tenantId && !isRootAdmin
+  if (isPortalAuthenticated) return (
+    <>
+      <PortalSidebar />
+      <div className='lg:pl-[260px] flex-1 flex flex-col'>
+        <PortalHeader />
+        <main className='flex-1'><PortalRouter /></main>
+        <Footer />
+      </div>
+    </>
+  )
   if (!isAuthenticated) return <LoginPage />
   if (needsTenant) return (
     <div className='flex-1 flex items-center justify-center p-4'>
