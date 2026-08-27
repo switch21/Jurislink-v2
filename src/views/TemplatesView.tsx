@@ -4,6 +4,18 @@ import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutatio
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
+
+const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
+  contrat: { label: 'Contrat', color: 'bg-jl-blue text-white' },
+  conclusion: { label: 'Conclusion', color: 'bg-jl-gold text-white' },
+  correspondance: { label: 'Correspondance', color: 'bg-[var(--success)] text-white' },
+  assignation: { label: 'Assignation', color: 'bg-[var(--danger)] text-white' },
+  autre: { label: 'Autre', color: 'bg-jl-secondary text-white' },
+  general: { label: 'Général', color: 'bg-jl-page text-white' },
+}
+
+const AUTO_VARS = ['case_reference', 'case_title', 'client_name', 'client_company', 'client_email', 'client_phone', 'adversary', 'jurisdiction', 'amount', 'date', 'tenant_name'] as const
+
 // ==================== TEMPLATES VIEW ====================
 export function TemplatesView() {
   const { user } = useAppStore()
@@ -12,12 +24,14 @@ export function TemplatesView() {
   const [editId, setEditId] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState<string | null>(null)
   const [showGenerate, setShowGenerate] = useState<string | null>(null)
+  const [showFullPreview, setShowFullPreview] = useState(false)
   const [catFilter, setCatFilter] = useState('all')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [form, setForm] = useState({ name: '', category: 'general', description: '', content: '', variables: '', isActive: true })
   const [genVars, setGenVars] = useState<Record<string, string>>({})
   const [genCaseId, setGenCaseId] = useState('')
   const [genClientId, setGenClientId] = useState('')
+  const [generating, setGenerating] = useState(false)
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ['doc-templates', user?.tenantId, catFilter],
@@ -39,6 +53,13 @@ export function TemplatesView() {
     queryKey: ['clients-tpl', user?.tenantId],
     queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
     enabled: showGenerate !== null,
+  })
+
+  // Fetch selected case detail for auto-populated variables
+  const { data: selectedCase } = useQuery({
+    queryKey: ['case-detail-tpl', genCaseId],
+    queryFn: () => fetch(`/api/cases/${genCaseId}`).then(r => r.json()),
+    enabled: !!genCaseId && showGenerate !== null,
   })
 
   const createMut = useMutation({
@@ -72,6 +93,7 @@ export function TemplatesView() {
     setShowGenerate(t.id)
     setGenCaseId('')
     setGenClientId('')
+    setShowFullPreview(false)
     const vars: Record<string, string> = {}
     try { (t.variables ? JSON.parse(t.variables) : []).forEach((v: string) => { vars[v] = '' }) } catch {}
     setGenVars(vars)
@@ -84,17 +106,45 @@ export function TemplatesView() {
     else createMut.mutate(body)
   }
 
+  // Compute auto-populated values from case data
+  const autoPopulated = useMemo(() => {
+    if (!selectedCase) return {} as Record<string, string>
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`
+    const amountStr = selectedCase.amountInDispute
+      ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: selectedCase.currency?.code || 'XAF', maximumFractionDigits: 0 }).format(selectedCase.amountInDispute)
+      : ''
+    return {
+      case_reference: selectedCase.reference || '',
+      case_title: selectedCase.title || '',
+      client_name: selectedCase.client?.fullName || '',
+      client_company: selectedCase.client?.company || '',
+      client_email: selectedCase.client?.email || '',
+      client_phone: selectedCase.client?.phone || '',
+      adversary: selectedCase.adversary || '',
+      jurisdiction: selectedCase.jurisdiction || '',
+      amount: amountStr,
+      date: dateStr,
+      tenant_name: selectedCase.tenant?.name || '',
+    }
+  }, [selectedCase])
+
+  const isAutoVar = (varName: string) => (AUTO_VARS as readonly string[]).includes(varName)
+
   const previewTemplate = templates?.find((t: DocTemplate) => t.id === showPreview)
   const generateTemplate = templates?.find((t: DocTemplate) => t.id === showGenerate)
 
+  // Build final preview with auto-populated + manual variables (manual overrides auto)
   const generatePreview = useMemo(() => {
     if (!generateTemplate) return ''
+    const merged = { ...autoPopulated, ...genVars }
     let result = generateTemplate.content
-    for (const [key, val] of Object.entries(genVars)) {
+    for (const [key, val] of Object.entries(merged)) {
       result = result.replaceAll(`{{${key}}}`, val || `{{${key}}}`)
     }
     return result
-  }, [generateTemplate, genVars])
+  }, [generateTemplate, genVars, autoPopulated])
 
   const getVarCount = (t: DocTemplate) => {
     try { return t.variables ? JSON.parse(t.variables).length : 0 } catch { return 0 }
@@ -105,18 +155,68 @@ export function TemplatesView() {
     return parts.map((p, i) => /{{[^}]+}}/.test(p) ? <span key={i} className="bg-jl-gold/20 text-jl-gold font-semibold px-0.5 rounded">{p}</span> : p)
   }
 
+  // Format preview text: **bold** → <strong>
+  const formatPreviewText = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g)
+    return parts.map((p, i) => /^\*\*[^*]+\*\*$/.test(p) ? <strong key={i} className="font-semibold">{p.replace(/^\*\*/, '').replace(/\*\*$/, '')}</strong> : p)
+  }
+
+  // Generate PDF
+  const handleGeneratePdf = async () => {
+    if (!generateTemplate || !genCaseId) {
+      toast.error('Veuillez sélectionner un dossier')
+      return
+    }
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/document-templates/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId: generateTemplate.id,
+          caseId: genCaseId,
+          variables: genVars,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erreur lors de la génération' }))
+        toast.error(err.error || 'Erreur lors de la génération')
+        return
+      }
+      // Trigger download
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('Content-Disposition')
+      const match = disposition?.match(/filename="?([^";]+)"?/)
+      a.download = match?.[1] || `${generateTemplate.name}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Document généré avec succès')
+      setShowGenerate(null)
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de la génération')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-lg font-semibold">Modèles de Documents</h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}><BookOpen className="size-4" /></Button>
+          <Button variant="outline" size="sm" onClick={() => { fetch('/api/document-templates/seed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tenantId: user?.tenantId }) }).then(r => r.json()).then(d => { if (d.created > 0) { toast.success(`${d.created} modèle(s) juridique(s) ajouté(s)`); qc.invalidateQueries({ queryKey: ['doc-templates'] }) } else { toast.info('Tous les modèles juridiques sont déjà présents') } }).catch(() => toast.error('Erreur lors de l\'ajout')) }}><Sparkles className="size-4 mr-1" />Modèles juridiques</Button>
           <Button size="sm" onClick={() => { resetForm(); setShowCreate(true) }}><Plus className="size-4 mr-1" />Nouveau modèle</Button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {['all', 'contrat', 'conclusion', 'correspondance', 'assignation', 'general'].map(cat => (
+        {['all', 'contrat', 'conclusion', 'correspondance', 'assignation', 'autre', 'general'].map(cat => (
           <Button key={cat} variant={catFilter === cat ? 'default' : 'outline'} size="sm" className="h-8 text-xs" onClick={() => setCatFilter(cat)}>
             {cat === 'all' ? 'Tous' : TEMPLATE_CATEGORIES[cat]?.label || cat}
           </Button>
@@ -211,26 +311,74 @@ export function TemplatesView() {
       </Dialog>
 
       {/* Generate Dialog */}
-      <Dialog open={!!showGenerate} onOpenChange={() => setShowGenerate(null)}>
+      <Dialog open={!!showGenerate} onOpenChange={() => { if (!generating) setShowGenerate(null); setShowFullPreview(false) }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Générer depuis : {generateTemplate?.name}</DialogTitle><DialogDescription>Remplissez les variables pour générer le document</DialogDescription></DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2"><Label className="text-xs">Dossier</Label><Select value={genCaseId} onValueChange={setGenCaseId}><SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sélectionner un dossier" /></SelectTrigger><SelectContent>{(cases || []).map((c: CaseItem) => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-2"><Label className="text-xs">Client</Label><Select value={genClientId} onValueChange={setGenClientId}><SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sélectionner un client" /></SelectTrigger><SelectContent>{(clients || []).map((c: Client) => <SelectItem key={c.id} value={c.id}>{c.fullName}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2">
+              <Label className="text-xs">Dossier <span className="text-jl-muted">(requiert pour auto-remplir les variables)</span></Label>
+              <Select value={genCaseId} onValueChange={v => { setGenCaseId(v); setShowFullPreview(false) }}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sélectionner un dossier" /></SelectTrigger>
+                <SelectContent>{(cases || []).map((c: CaseItem) => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
-            {Object.keys(genVars).length > 0 && <div className="space-y-3">{Object.entries(genVars).map(([key, val]) => (
-              <div key={key} className="space-y-1"><Label className="text-xs font-medium">{'{{'}{key}{'}}'}</Label><Input value={val} onChange={e => setGenVars(g => ({ ...g, [key]: e.target.value }))} placeholder={`Valeur pour ${key}`} className="h-9 text-sm" /></div>
-            ))}</div>}
-            <div className="space-y-2"><Label className="text-xs font-semibold">Aperçu généré</Label><div className="bg-jl-card rounded-lg border border-jl p-4 text-sm leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">{highlightVars(generatePreview)}</div></div>
+            {Object.keys(genVars).length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Label className="text-xs font-semibold">Variables</Label>
+                  {genCaseId && (
+                    <div className="flex items-center gap-3 ml-auto">
+                      <span className="flex items-center gap-1 text-[10px] text-jl-muted"><span className="size-2 rounded-full bg-jl-blue" />Auto-remplie</span>
+                      <span className="flex items-center gap-1 text-[10px] text-jl-muted"><span className="size-2 rounded-full bg-jl-gold" />Manuelle</span>
+                    </div>
+                  )}
+                </div>
+                {Object.entries(genVars).map(([key, val]) => {
+                  const isAuto = isAutoVar(key) && !!genCaseId
+                  const autoVal = isAuto ? (autoPopulated[key] || '') : ''
+                  const displayVal = val || autoVal
+                  return (
+                    <div key={key} className={cn('space-y-1 rounded-lg border p-2.5', isAuto && autoVal ? 'border-jl-blue/20 bg-jl-blue/[0.03]' : 'border-jl')}>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs font-medium">{'{{'}{key}{'}}'}</Label>
+                        {isAuto && autoVal && <Badge variant="outline" className="text-[9px] text-jl-blue border-jl-blue/30 ml-auto"><Sparkles className="size-2 mr-0.5" />Auto</Badge>}
+                      </div>
+                      {isAuto && autoVal ? (
+                        <p className="text-sm text-jl-secondary pl-0.5">{autoVal || <span className="text-jl-muted italic">Non disponible</span>}</p>
+                      ) : (
+                        <Input value={val} onChange={e => setGenVars(g => ({ ...g, [key]: e.target.value }))} placeholder={`Valeur pour ${key}`} className="h-8 text-sm" />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">Aperçu</Label>
+                <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => setShowFullPreview(v => !v)}>
+                  <Eye className="size-3" />{showFullPreview ? 'Masquer' : 'Prévisualiser'}
+                </Button>
+              </div>
+              {showFullPreview ? (
+                <div className="bg-jl-card rounded-lg border border-jl p-4 text-sm leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
+                  {formatPreviewText(generatePreview)}
+                </div>
+              ) : (
+                <div className="bg-jl-card rounded-lg border border-jl p-4 text-sm leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
+                  {highlightVars(generatePreview)}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowGenerate(null)}>Fermer</Button>
-            <Button onClick={() => { navigator.clipboard.writeText(generatePreview); toast.success('Copié dans le presse-papiers') }}><Copy className="size-4 mr-1" />Copier</Button>
+            <Button variant="outline" onClick={() => { navigator.clipboard.writeText(generatePreview); toast.success('Copié dans le presse-papiers') }}><Copy className="size-4 mr-1" />Copier</Button>
+            <Button onClick={handleGeneratePdf} disabled={!genCaseId || generating}>
+              {generating ? <><Loader2 className="size-4 mr-1 animate-spin" />Génération…</> : <><FileDown className="size-4 mr-1" />Générer</>}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   )
 }
-

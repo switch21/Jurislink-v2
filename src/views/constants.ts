@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { QueryClient } from '@tanstack/react-query'
-import { LayoutDashboard, Briefcase, Users, ClipboardList, FileText, Calendar, Receipt, TrendingUp, AlertOctagon, Timer, SendHorizontal, FileCode2, MessageSquare, BarChart3, Bell, Shield, Settings, BuildingIcon, CreditCardIcon, UsersRound } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Users, ClipboardList, FileText, Calendar, Receipt, TrendingUp, AlertOctagon, Timer, SendHorizontal, FileCode2, MessageSquare, BarChart3, Bell, Shield, Settings, Search, BuildingIcon, CreditCardIcon, UsersRound } from 'lucide-react'
 import type { ViewName } from '@/store/appStore'
 
 // ==================== Query Client ====================
@@ -82,6 +82,7 @@ export const NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType
   { view: 'messages', label: 'Messages', icon: MessageSquare, permission: { resource: 'message', action: 'view' } },
   { view: 'reports', label: 'Rapports', icon: BarChart3, permission: { resource: 'report', action: 'view' } },
   { view: 'notifications', label: 'Notifications', icon: Bell, permission: { resource: 'notification', action: 'view' } },
+  { view: 'search', label: 'Recherche', icon: Search },
   { view: 'audit-logs', label: "Journal d'audit", icon: Shield, adminOnly: true, permission: { resource: 'audit', action: 'view' } },
   { view: 'settings', label: 'Paramètres', icon: Settings },
 ]

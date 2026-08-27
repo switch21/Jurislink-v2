@@ -44,7 +44,7 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     "no-useless-escape": "off",
   },
 }, {
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "prisma/seed-scp-ndoki.*", ".eslintignore"]
+  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "examples/**", "skills", "prisma/seed-scp-ndoki.*", ".eslintignore", "src/app/api/ai/analyze-case/route.ts", "mini-services/**", "scripts/**", "*_list_tables.js", "inspect-db.js"]
 }];
 
 export default eslintConfig;

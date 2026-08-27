@@ -2,7 +2,7 @@ import type React from 'react'
 import {
   LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3,
   Shield, Settings, ClipboardList, AlertOctagon, Timer, SendHorizontal, FileCode2, Bell, TrendingUp,
-  Building as BuildingIcon, CreditCard as CreditCardIcon, UsersRound,
+  Search, Building as BuildingIcon, CreditCard as CreditCardIcon, UsersRound,
 } from 'lucide-react'
 import type { ViewName } from '@/store/appStore'
 
@@ -97,6 +97,7 @@ export const NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType
   { view: 'messages', label: 'Messages', icon: MessageSquare, permission: { resource: 'message', action: 'view' } },
   { view: 'reports', label: 'Rapports', icon: BarChart3, permission: { resource: 'report', action: 'view' } },
   { view: 'notifications', label: 'Notifications', icon: Bell, permission: { resource: 'notification', action: 'view' } },
+  { view: 'search', label: 'Recherche', icon: Search },
   { view: 'audit-logs', label: "Journal d'audit", icon: Shield, adminOnly: true, permission: { resource: 'audit', action: 'view' } },
   { view: 'settings', label: 'Paramètres', icon: Settings },
 ]

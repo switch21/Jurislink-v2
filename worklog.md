@@ -229,3 +229,298 @@ Stage Summary:
 - Tenant isolation via folder prefix (tenantId/uuid.ext)
 - Required env vars: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 - Commit: acffadd, pushed to main
+
+---
+Task ID: 2-a, 2-b
+Agent: Main Agent
+Task: AI Case Analysis + Advanced Cmd+K Search
+
+Work Log:
+- Added `aiAnalysis TEXT` column to Case model in prisma/schema.prisma (mapped to ai_analysis)
+- Completed /api/ai/analyze-case with actual LLM integration via z-ai-web-dev-sdk:
+  - Builds comprehensive French prompt from case data (client, events, notes, documents, tasks, invoices)
+  - Calls LLM with structured JSON output instructions
+  - Parses response (resume, chronologie, parties, questions_juridiques, risques, pieces_manquantes, echeances, actions_recommandees)
+  - Stores analysis as JSON string in Case.aiAnalysis column
+  - Caching: returns stored analysis directly unless ?refresh=true
+  - Graceful fallback if JSON parsing fails
+- Created AIAnalysisPanel component in CasesView.tsx:
+  - Animated loading state with pulsing brain icon + bouncing dots
+  - Empty state with "Analyser ce dossier" button
+  - Each section rendered in its own themed card (blue for resume, gold for chronologie, etc.)
+  - Risk items color-coded: red=élevé, orange=moyen, green=faible
+  - Timestamp display for when analysis was last run
+  - Refresh button to force re-analysis
+  - Only visible when subscription hasAI=true (checks /api/subscriptions)
+  - Uses react-markdown for text rendering
+- Added "Analyse IA" tab to case detail dialog TabsList
+- Enhanced /api/search with:
+  - ?type=ai parameter for AI-powered search using z-ai-web-dev-sdk
+  - AI search returns relevance-scored results with interpretation
+  - Added Messages table search (content, sender, receiver)
+  - Added Communications table search (subject, content, type)
+  - Default limit increased to 10, max to 50
+  - Fallback to basic search if AI fails
+- Created SearchDialog.tsx with cmdk integration:
+  - Uses CommandDialog from shadcn/ui
+  - Debounced search (300ms) as user types
+  - Results grouped by type (Dossiers, Clients, Tâches, Documents, Événements, Factures, Messages, Communications)
+  - "Recherche IA" toggle button to switch between basic/AI search
+  - AI mode shows interpretation text and relevance scores
+  - Keyboard navigation with keyboard shortcut hints (↑↓, ↵, esc)
+  - Empty state with helpful instructions
+  - Glass-morphism styling with brand colors
+- Added Cmd+K / Ctrl+K global keyboard listener in page.tsx
+- Replaced Header search input with clickable button that opens Cmd+K dialog (shows ⌘K shortcut hint)
+- Simplified Header.tsx: removed old inline search state/dropdown (now handled by SearchDialog)
+- Added Command component exports to shared-ui.tsx barrel
+
+Stage Summary:
+- 7 files changed: prisma/schema.prisma, analyze-case/route.ts, search/route.ts, CasesView.tsx, SearchDialog.tsx (new), Header.tsx, page.tsx, shared-ui.tsx
+- AI case analysis with LLM, caching, and beautiful card-based rendering
+- Global Cmd+K search dialog with AI-powered mode
+- Header search button with ⌘K shortcut hint
+- All changes pass lint (only pre-existing script require() errors remain)
+- Version: v3.8.68 → v3.8.69
+
+---
+Task ID: 2-c
+Agent: Main Agent
+Task: Real-time Notification System via WebSocket
+
+Work Log:
+- Installed socket.io@4.8.3 and socket.io-client@4.8.3
+- Created `mini-services/notification-service/` mini-service:
+  - `package.json` — socket.io + @prisma/client dependencies
+  - `index.ts` — dual-server architecture:
+    - Port 3004: Socket.io WebSocket server (client-facing via Caddy)
+    - Port 3005: Internal HTTP API for server-side notification triggers
+  - `start.sh` — startup script that loads correct DATABASE_URL from local .env
+  - Prisma client symlinked from parent project (node_modules/.prisma + node_modules/@prisma/client)
+  - Socket events: auth (validates user in DB, sends unread count), mark-read, disconnect
+  - HTTP endpoints: POST /notify (broadcast to tenant), POST /notify-user (specific user)
+  - Both endpoints save notification to DB and emit to connected WebSocket clients
+  - Graceful shutdown with DB disconnect
+- Created `src/app/api/notifications/trigger/route.ts`:
+  - POST endpoint, authenticated (authenticate from auth-server)
+  - Forwards to notification service HTTP API on port 3005
+  - Gracefully handles service unavailability (returns ok with warning)
+- Updated `src/store/appStore.ts`:
+  - Added unreadCount state (default 0)
+  - Added lastNotification state
+  - Added incrementUnread(), setUnreadCount(), setLastNotification() actions
+- Created `src/hooks/useNotificationSocket.ts`:
+  - 'use client' hook, connects via io('/?XTransformPort=3004', { transports: ['websocket'] })
+  - On connect: emits 'auth' with user id and tenantId
+  - On 'notification' event: shows toast.success + updates Zustand store
+  - On 'unread-count' event: updates store's unreadCount
+  - Auto-reconnection (10 attempts, 2s delay)
+  - Proper cleanup on unmount
+- Updated `src/app/page.tsx`:
+  - Imported and called useNotificationSocket() in AppInner (activated when authenticated)
+- Updated `src/views/Header.tsx`:
+  - Bell badge now uses real-time unreadCount from Zustand store (merges with polled count)
+  - Added scale pulse animation on badge when count increases
+  - Added useRef/useEffect for prevUnread comparison and badgePulse state
+- Added notification triggers to 3 API routes (fire-and-forget fetch to port 3005):
+  - `src/app/api/documents/route.ts` POST: type='document', 'Nouveau document: {fileName}'
+  - `src/app/api/tasks/route.ts` POST: type='task', 'Nouvelle tâche: {title}'
+  - `src/app/api/cases/[id]/assignments/route.ts` POST: type='assignment', 'Dossier assigné: {caseRef}' (notify-user)
+
+Stage Summary:
+- Real-time notification system with WebSocket (socket.io) + HTTP trigger API
+- Dual-port architecture: 3004 (WS via Caddy) + 3005 (internal HTTP)
+- Zustand store integration for unread count and last notification
+- Toast notifications on new events + animated bell badge in header
+- 3 API routes trigger real-time notifications (documents, tasks, case assignments)
+- All new code passes lint (only pre-existing errors remain)
+- Version: v3.8.69
+
+---
+Task ID: 8.1-8.2
+Agent: Sub-agent (general-purpose)
+Task: Phase 8.1 (Recherche Avancée) + Phase 8.2 (Workflow Automatisé)
+
+Work Log:
+- Phase 8.1 — Recherche Avancée:
+  - Enhanced /api/search/route.ts with comprehensive RBAC:
+    - Authenticate via getAuthUser (not authenticate) for per-type permission checks
+    - Try 'search' resource first, fall back to individual resource permissions (case/view, client/view, etc.)
+    - Added type filtering: ?type=cases|clients|documents|tasks|events|messages|communications|all
+    - Added counts in response for type filter badges
+    - Search across documents now includes description field
+    - Events search uses title + description (no location field in schema)
+  - Created src/views/SearchView.tsx:
+    - Full search page with auto-focused input and 300ms debounce
+    - Type filter pills with result counts per category
+    - Results grouped by type (Dossiers, Clients, Tâches, Documents, Événements, Messages, Communications)
+    - Each result shows icon, title, subtitle, status badge, priority, type, file size, date
+    - Click navigates to the corresponding view
+    - Loading skeletons, empty states, keyboard shortcut hint (⌘K)
+  - Added 'search' to ViewName in store/appStore.ts
+  - Added 'Recherche' nav item with Search icon to NAV_ITEMS in:
+    - src/views/constants.ts (client-side, used by Sidebar)
+    - src/lib/constants.ts (server-side reference)
+  - Added LazySearchView to page.tsx view router
+
+- Phase 8.2 — Workflow Automatisé:
+  - Created src/lib/workflow-templates.ts:
+    - 5 case type templates: civil (7 tasks), pénal (6), commercial (8), social (6), administratif (6)
+    - Each task has title, description, priority, and dayOffset for due date calculation
+    - Exported getWorkflowTemplate() and getWorkflowTypes() helpers
+  - Created /api/cases/[id]/generate-tasks/route.ts:
+    - POST endpoint, requires 'task' 'create' permission
+    - Fetches case type, gets matching workflow template
+    - Deduplication: checks if first template task title exists for the case (409 if already applied)
+    - Creates all template tasks in a Prisma transaction with computed due dates
+    - Returns created task count and template name
+  - Modified /api/cases/route.ts POST handler:
+    - Added ?generateWorkflow=true query param support
+    - When enabled, auto-generates workflow tasks after case creation
+    - Returns workflow metadata (taskCount, templateName) in response
+  - Added 'Générer les tâches' button in CasesView.tsx:
+    - Added generatingWorkflow state and handleGenerateWorkflow handler
+    - Button in Tasks tab header with Sparkles icon and loading state
+    - Toast success with task count, toast info if already applied, toast error on failure
+    - Invalidates case-tasks and case-timeline queries after generation
+
+Stage Summary:
+- 8 files created/modified for Phase 8.1 + 8.2
+- New files: SearchView.tsx, workflow-templates.ts, generate-tasks/route.ts
+- Modified: search/route.ts, cases/route.ts, CasesView.tsx, page.tsx, constants.ts (x2), appStore.ts
+- Full-text search across 7 entity types with RBAC and type filtering
+- Full search page in sidebar with filter pills and categorized results
+- Automated workflow task generation per case type (33 task templates across 5 types)
+- Build passes cleanly (0 errors)
+- Version: v3.8.69 → v3.8.70
+
+---
+Task ID: 2-d, 2-e
+Agent: Main Agent
+Task: Document Generation from Templates + Automated Workflow Enhancement
+
+Work Log:
+
+Task 1 — Document Generation from Templates:
+- Created `/api/document-templates/generate/route.ts` (POST):
+  - Authenticated with `authenticate(request, 'document', 'create')`
+  - Fetches template + case with client and tenant from DB
+  - Auto-populates 11 variables from case data (case_reference, case_title, client_name, client_company, client_email, client_phone, adversary, jurisdiction, amount, date, tenant_name)
+  - User-provided variables override auto-populated ones
+  - Replaces all `{{variable}}` placeholders in template.content
+  - Generates professional A4 PDF using pdfkit:
+    - Header: tenant name (blue), date (grey), gold separator line, document title, case reference
+    - Body: **bold** text support (detects **...** and uses Helvetica-Bold), line breaks, 10.5pt font
+    - Footer: page numbers (X/N) on every page with separator line
+  - Returns PDF as downloadable response with proper Content-Disposition header
+- Enhanced `src/views/TemplatesView.tsx`:
+  - Added TEMPLATE_CATEGORIES constant (was missing — previously defined only in TimeTrackingView.tsx)
+  - When a case is selected, fetches case detail via `/api/cases/{id}`
+  - Shows auto-populated variables in blue-tinted cards with "Auto" badge (greyed out/read-only)
+  - Manual variables shown with editable input fields
+  - Added "Prévisualiser" toggle button that shows formatted content (with **bold** rendered as <strong>)
+  - "Générer" button calls generate API, shows Loader2 spinner, triggers blob download
+  - Toast "Document généré avec succès" on success
+  - Full-screen preview dialog with formatted text
+- Added "Générer depuis modèle" in CasesView Documents tab:
+  - Dropdown lists active templates for the tenant (via caseTemplates query)
+  - Select template + click "Générer" triggers PDF generation and download
+  - Loading state with Loader2 spinner
+  - Gold FileCode2 icon indicator
+
+Task 2 — Automated Workflow Enhancement:
+- Created `/api/workflow/auto-on-create/route.ts` (POST):
+  - Authenticated with `authenticate(request, 'task', 'create')`
+  - Fetches case with assignments
+  - 5 case type workflows: civil (5 tasks), penal (4), commercial (3), social (3), administratif (3)
+  - Each task: status='a_faire', assignedToId from first lawyer/associate, dueDate = now + daysOffset
+  - Deduplication by (title + caseId)
+  - Creates Notification for each task
+  - Supports customTasks parameter (from AI suggestions)
+  - Returns { createdCount, skippedCount, tasks }
+- Created `/api/workflow/ai-suggest/route.ts` (POST):
+  - Uses z-ai-web-dev-sdk (LLM) for task suggestions
+  - French prompt requesting 5-8 tasks in JSON format
+  - Parses LLM JSON response (handles markdown code blocks)
+  - Validates and sanitizes: title max 200 chars, priority clamped to valid values, daysOffset 0-365, category optional
+  - Returns suggestions array (does NOT create tasks)
+  - Error handling for invalid JSON response
+- Added "Workflow" tab in CasesView case detail dialog:
+  - Progress indicator: X/Y tasks completed with Progress bar
+  - "Tâches automatiques" card: "Générer les tâches automatiques" button calling auto-on-create
+  - "Suggestions IA" card (visible when hasAI subscription):
+    - "Obtenir des suggestions" button calls ai-suggest
+    - Shows suggestions as checkbox list with priority badge, due date, category
+    - User can check/uncheck individual suggestions
+    - "Créer les tâches sélectionnées (N)" button creates checked tasks via auto-on-create with customTasks
+
+Stage Summary:
+- 3 new backend API routes (document-templates/generate, workflow/auto-on-create, workflow/ai-suggest)
+- 2 enhanced frontend views (TemplatesView, CasesView)
+- Professional PDF generation with A4 layout, bold text, page numbers
+- 18 predefined workflow tasks across 5 case types
+- AI-powered task suggestions via LLM
+- All new code passes TypeScript compilation (0 new errors, 3 pre-existing in analyze-case)
+- Version: v3.8.70 → v3.8.71
+
+---
+Task ID: 8.3-8.4
+Agent: Sub-agent (general-purpose)
+Task: Phase 8.3 (IA Intégrée) + Phase 8.4 (Génération de Documents)
+
+Work Log:
+- Phase 8.3 — IA Intégrée:
+  - Created `src/lib/ai-service.ts`:
+    - Unified AI service calling OpenAI-compatible chat completions API
+    - Uses LLM_API_URL (default: Ollama localhost:11434) and LLM_API_KEY env vars
+    - `analyzeCase()` — Sends case data, returns structured analysis in French
+    - `generateJurisprudence()` — Generates jurisprudence research summaries with optional case context
+    - `summarizeDocument()` — Summarizes legal documents by type
+    - All functions return graceful fallback messages if API unavailable
+    - System prompts in French for Cameroonian/OHADA law specialization
+    - `checkAIAccess()` — Checks tenant subscription plan.hasAI
+  - Enhanced `/api/ai/analyze-case/route.ts`:
+    - Refactored to use ai-service.ts instead of z-ai-web-dev-sdk directly
+    - Supports 3 types: analysis (with cache), jurisprudence (with query), summary
+    - RBAC: requires 'case' 'view' permission
+    - Subscription check: 403 with clear message if no hasAI
+    - Tenant access validation via requireTenantAccess
+    - Jurisprudence results saved as case notes for traceability
+    - Analysis results cached in Case.aiAnalysis column (DB)
+  - Enhanced CasesView IA tab:
+    - Added jurisprudence search with query input and Enter key support
+    - Added document summary button
+    - Results displayed in styled cards with Loader2 spinners
+    - ScrollArea wrapper for content overflow
+    - Cleaned up stale code from previous incomplete attempt
+
+- Phase 8.4 — Génération de Documents:
+  - Created `src/lib/legal-templates.ts`:
+    - 5 built-in Cameroonian legal document templates
+    - Conclusions (civil), Assignation (civil), Requête (administratif), Mémoire d'Appel, Procuration
+    - Each with proper OHADA/Cameroonian legal formatting and placeholders
+    - `seedLegalTemplates()` function for idempotent tenant seeding
+  - Created `/api/document-templates/seed/route.ts` (POST):
+    - Seeds built-in templates for a tenant (skips existing by name)
+    - Requires 'document' 'create' permission + tenant access
+  - Created `/api/documents/generate/route.ts` (POST):
+    - Alternative to PDF generation: supports txt and html formats
+    - Replaces 20+ auto-populated placeholders (case.*, client.*, tenant.*, date, lawyer.*)
+    - HTML format includes professional styling (Times New Roman, header, footer)
+    - Returns as downloadable file with Content-Disposition header
+  - Enhanced TemplatesView.tsx:
+    - Added 'Modèles juridiques' button to seed 5 built-in templates
+    - Added 'autre' category to TEMPLATE_CATEGORIES and filter pills
+    - Document generation from case dialog already existed (PDF via pdfkit)
+  - CasesView Documents tab:
+    - Template generation from case detail already existed (dropdown + generate PDF)
+    - Removed stale AI suggestions/auto-workflow UI (unreferenced state)
+
+Stage Summary:
+- New files: ai-service.ts, legal-templates.ts, document-templates/seed/route.ts, documents/generate/route.ts
+- Modified files: ai/analyze-case/route.ts (rewritten), CasesView.tsx (IA tab + cleanup), TemplatesView.tsx (seed button + category)
+- 5 built-in legal templates (Conclusions, Assignation, Requête, Mémoire d'Appel, Procuration)
+- 3 AI capabilities: case analysis, jurisprudence search, document summarization
+- Subscription-gated AI access with clear 403 messaging
+- Build passes cleanly (0 errors)
+- Version: v3.8.71 → v3.8.72

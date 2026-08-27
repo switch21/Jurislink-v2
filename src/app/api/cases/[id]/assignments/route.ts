@@ -47,6 +47,26 @@ export async function POST(
       update: {},
       create: { userId: body.userId, caseId: id, tenantId: caseData.tenantId },
     })
+
+    // Fetch case reference for notification message
+    const caseRef = await db.case.findUnique({ where: { id }, select: { reference: true, title: true } })
+    const caseLabel = caseRef?.reference || caseRef?.title || id
+
+    // Trigger real-time notification to the assigned user (fire-and-forget)
+    fetch('http://localhost:3005/notify-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenantId: caseData.tenantId,
+        userId: body.userId,
+        type: 'assignment',
+        title: 'Dossier assigné',
+        message: `Dossier assigné : ${caseLabel}`,
+        resourceType: 'case',
+        resourceId: id,
+      }),
+    }).catch(() => {})
+
     return NextResponse.json(assignment)
   } catch (error) {
     console.error('Add assignment error:', error)

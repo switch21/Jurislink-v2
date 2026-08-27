@@ -229,6 +229,7 @@ model Case {
   jurisdiction    String?
   amountInDispute Float?   @map("amount_in_dispute")
   billingType     String?  @map("billing_type")
+  aiAnalysis      String?  @map("ai_analysis")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

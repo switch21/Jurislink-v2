@@ -54,6 +54,7 @@ export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 export { Skeleton } from '@/components/ui/skeleton'
 export { Progress } from '@/components/ui/progress'
 export { Switch } from '@/components/ui/switch'
+export { Command, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandShortcut, CommandSeparator } from '@/components/ui/command'
 
 // ═══ Lucide Icons ═══
 export {

@@ -73,6 +73,7 @@ export type ViewName =
   | 'time-tracking'
   | 'templates'
   | 'communications'
+  | 'search'
   | 'admin-dashboard'
   | 'admin-cabinets'
   | 'admin-users'
@@ -99,6 +100,9 @@ interface AppState {
   isAuthenticated: boolean
   currentView: ViewName
   sidebarOpen: boolean
+  // Notification state (real-time via WebSocket)
+  unreadCount: number
+  lastNotification: { title: string; message: string; resourceType?: string | null; resourceId?: string | null } | null
   // Portal client state
   portalUser: PortalUserInfo | null
   isPortalAuthenticated: boolean
@@ -111,6 +115,10 @@ interface AppState {
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   hasPermission: (resource: string, action: string) => boolean
+  // Notification actions
+  incrementUnread: () => void
+  setUnreadCount: (n: number) => void
+  setLastNotification: (n: { title: string; message: string; resourceType?: string | null; resourceId?: string | null } | null) => void
   // Portal actions
   portalLogin: (user: PortalUserInfo) => void
   portalLogout: () => void
@@ -145,6 +153,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAuthenticated: !!loadUser(),
   currentView: loadUser()?.role === 'root_admin' ? 'admin-dashboard' : (loadUser() ? 'dashboard' : 'login'),
   sidebarOpen: false,
+  unreadCount: 0,
+  lastNotification: null,
   portalUser: loadPortalUser(),
   isPortalAuthenticated: !!loadPortalUser(),
   portalCurrentView: 'portal-dashboard',
@@ -173,6 +183,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     )
     return perm?.allowed ?? false
   },
+  incrementUnread: () => set((s) => ({ unreadCount: s.unreadCount + 1 })),
+  setUnreadCount: (n) => set({ unreadCount: n }),
+  setLastNotification: (n) => set({ lastNotification: n }),
   portalLogin: (portalUser) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jurislink_portal_user', JSON.stringify(portalUser))

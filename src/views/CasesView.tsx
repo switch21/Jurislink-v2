@@ -4,6 +4,199 @@ import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutatio
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS, BILLING_LABELS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
+import ReactMarkdown from 'react-markdown'
+
+// ==================== AI ANALYSIS PANEL ====================
+interface AIAnalysisPanelProps {
+  analysis: Record<string, unknown> | null
+  loading: boolean
+  cached: boolean
+  analyzedAt: string | null
+  onAnalyze: () => void
+  onRefresh: () => void
+}
+
+function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onRefresh }: AIAnalysisPanelProps) {
+  const riskColorMap: Record<string, string> = { 'élevé': 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400', 'moyen': 'bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400', 'faible': 'bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400' }
+  const riskDotMap: Record<string, string> = { 'élevé': 'bg-red-500', 'moyen': 'bg-orange-500', 'faible': 'bg-green-500' }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="relative">
+          <Brain className="size-12 text-jl-blue animate-pulse" />
+          <div className="absolute -inset-4 rounded-full bg-jl-blue/10 animate-ping" style={{ animationDuration: '2s' }} />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-medium text-jl-primary">Analyse en cours…</p>
+          <p className="text-xs text-jl-muted mt-1">L'IA examine le dossier et prépare l'analyse</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {[0, 1, 2].map(i => <div key={i} className="size-1.5 rounded-full bg-jl-blue animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
+        </div>
+      </div>
+    )
+  }
+
+  if (!analysis) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
+        <div className="size-16 rounded-2xl bg-jl-blue/10 flex items-center justify-center">
+          <Brain className="size-8 text-jl-blue" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-medium">Analyse IA disponible</p>
+          <p className="text-xs text-jl-muted mt-1">Obtenez une analyse intelligente de ce dossier</p>
+        </div>
+        <Button onClick={onAnalyze} className="gap-2"><Sparkles className="size-4" />Analyser ce dossier</Button>
+      </div>
+    )
+  }
+
+  const risques = (analysis.risques as Array<{ niveau?: string; description?: string; categorie?: string }>) || []
+  const questions = (analysis.questions_juridiques as string[]) || []
+  const pieces = (analysis.pieces_manquantes as string[]) || []
+  const echeances = (analysis.echeances as Array<{ date?: string; description?: string; urgence?: string }>) || []
+  const actions = (analysis.actions_recommandees as Array<{ priorite?: number; action?: string; raison?: string }>) || []
+
+  return (
+    <div className="space-y-4">
+      {/* Header with timestamp */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Brain className="size-4 text-jl-blue" />
+          <span className="text-xs font-medium">Analyse IA</span>
+          {cached && <Badge variant="outline" className="text-[9px] text-jl-muted border-jl">En cache</Badge>}
+        </div>
+        <div className="flex items-center gap-2">
+          {analyzedAt && <span className="text-[10px] text-jl-muted">{new Date(analyzedAt).toLocaleString('fr-FR')}</span>}
+          <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={onRefresh} disabled={loading}>
+            <RefreshCw className={cn('size-3', loading && 'animate-spin')} />Actualiser
+          </Button>
+        </div>
+      </div>
+
+      {/* Résumé */}
+      {analysis.resume && (
+        <Card className="border-jl-blue/20 bg-jl-blue/[0.03]">
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold text-jl-blue flex items-center gap-1.5"><FileText className="size-3.5" />Résumé</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-3"><p className="text-sm text-jl-secondary leading-relaxed">{String(analysis.resume)}</p></CardContent>
+        </Card>
+      )}
+
+      {/* Chronologie */}
+      {analysis.chronologie && (
+        <Card className="border-jl-gold/20 bg-jl-gold/[0.03]">
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold text-jl-gold flex items-center gap-1.5"><History className="size-3.5" />Chronologie</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-3"><ReactMarkdown>{String(analysis.chronologie)}</ReactMarkdown></CardContent>
+        </Card>
+      )}
+
+      {/* Parties */}
+      {analysis.parties && (
+        <Card className="border-jl">
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Scale className="size-3.5" />Parties</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-3"><ReactMarkdown>{String(analysis.parties)}</ReactMarkdown></CardContent>
+        </Card>
+      )}
+
+      {/* Questions juridiques */}
+      {questions.length > 0 && (
+        <Card className="border-jl">
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Gavel className="size-3.5" />Questions juridiques</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-3 space-y-1.5">
+            {questions.map((q, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                <span className="size-5 rounded-full bg-jl-blue/10 text-jl-blue text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                <span className="text-jl-secondary">{q}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Risques */}
+      {risques.length > 0 && (
+        <Card className="border-jl">
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><AlertTriangle className="size-3.5" />Risques identifiés</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-3 space-y-2">
+            {risques.map((r, i) => {
+              const niv = r.niveau?.toLowerCase() || 'moyen'
+              const colorClass = riskColorMap[niv] || riskColorMap['moyen']
+              const dotClass = riskDotMap[niv] || riskDotMap['moyen']
+              return (
+                <div key={i} className={cn('rounded-lg border p-2.5', colorClass)}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={cn('size-2 rounded-full', dotClass)} />
+                    <span className="text-xs font-semibold capitalize">{r.niveau || 'moyen'}</span>
+                    {r.categorie && <Badge variant="outline" className="text-[9px] ml-auto opacity-70">{r.categorie}</Badge>}
+                  </div>
+                  <p className="text-sm">{r.description}</p>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pièces manquantes */}
+      {pieces.length > 0 && (
+        <Card className="border-jl">
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><FileWarning className="size-3.5" />Pièces manquantes</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-3">
+            <div className="space-y-1">{pieces.map((p, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm text-jl-secondary">
+                <AlertCircle className="size-3.5 text-jl-gold shrink-0" /><span>{p}</span>
+              </div>
+            ))}</div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Échéances */}
+      {echeances.length > 0 && (
+        <Card className="border-jl">
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Clock className="size-3.5" />Échéances</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-3 space-y-2">
+            {echeances.map((e, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm border border-jl rounded-lg p-2">
+                <Calendar className="size-3.5 text-jl-blue shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{e.description}</p>
+                  {e.date && <p className="text-[10px] text-jl-muted">{e.date}</p>}
+                </div>
+                {e.urgence && (
+                  <Badge variant={e.urgence === 'haute' ? 'destructive' : 'outline'} className="text-[9px] shrink-0">
+                    {e.urgence === 'haute' ? 'Urgent' : e.urgence === 'moyenne' ? 'Moyen' : 'Bas'}
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions recommandées */}
+      {actions.length > 0 && (
+        <Card className="border-jl">
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Target className="size-3.5" />Actions recommandées</CardTitle></CardHeader>
+          <CardContent className="px-4 pb-3 space-y-2">
+            {actions.sort((a, b) => (a.priorite || 99) - (b.priorite || 99)).map((a, i) => (
+              <div key={i} className="flex items-start gap-3 border border-jl rounded-lg p-2.5">
+                <span className="size-6 rounded-full bg-jl-blue/10 text-jl-blue text-[10px] font-bold flex items-center justify-center shrink-0">{a.priorite || i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{a.action}</p>
+                  {a.raison && <p className="text-xs text-jl-muted mt-0.5">{a.raison}</p>}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
 // ==================== CASES VIEW ====================
 export function CasesView() {
   const { user } = useAppStore()
@@ -32,6 +225,53 @@ export function CasesView() {
   const [caseUploading, setCaseUploading] = useState(false)
   const [caseUploadProgress, setCaseUploadProgress] = useState(0)
   const caseFileRef = useRef<HTMLInputElement>(null)
+  const [aiAnalysis, setAiAnalysis] = useState<Record<string, unknown> | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiCached, setAiCached] = useState(false)
+  const [aiAnalyzedAt, setAiAnalyzedAt] = useState<string | null>(null)
+  const [generatingWorkflow, setGeneratingWorkflow] = useState(false)
+  const [aiJurisQuery, setAiJurisQuery] = useState('')
+  const [aiJurisLoading, setAiJurisLoading] = useState(false)
+  const [aiJurisResult, setAiJurisResult] = useState<string | null>(null)
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false)
+  const [aiSummaryResult, setAiSummaryResult] = useState<string | null>(null)
+  const [genTemplateDialog, setGenTemplateDialog] = useState(false)
+  const [genTemplateId, setGenTemplateId] = useState('')
+  const [genTemplateLoading, setGenTemplateLoading] = useState(false)
+  const [caseTplId, setCaseTplId] = useState('')
+  const [caseTplGenerating, setCaseTplGenerating] = useState(false)
+
+  // Check subscription for AI access
+  const hasAI = useQuery({
+    queryKey: ['subscription-ai', user?.tenantId],
+    queryFn: () => fetch(`/api/subscriptions?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => d.plan?.hasAI ?? false),
+    enabled: !!user?.tenantId,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const handleAnalyzeCase = async (refresh = false) => {
+    if (!selectedCase || !user?.tenantId) return
+    setAiLoading(true)
+    try {
+      const res = await fetch('/api/ai/analyze-case', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: user.tenantId, caseId: selectedCase.id, refresh }),
+      })
+      const data = await res.json()
+      if (data.analysis) {
+        setAiAnalysis(data.analysis)
+        setAiCached(!!data.cached)
+        setAiAnalyzedAt(data.analyzedAt)
+      } else {
+        toast.error(data.error || 'Erreur lors de l\'analyse IA')
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de l\'analyse IA')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const handleCaseDocUpload = async () => {
     if (!caseUploadFile || !selectedCase) return
@@ -50,6 +290,105 @@ export function CasesView() {
       qc.invalidateQueries({ queryKey: ['documents'] })
       setCaseUploadFile(null)
     } catch (err: any) { toast.error(err?.message || 'Erreur lors du téléchargement du document') } finally { setCaseUploading(false); setCaseUploadProgress(0) }
+  }
+
+  const handleGenerateWorkflow = async () => {
+    if (!selectedCase) return
+    setGeneratingWorkflow(true)
+    try {
+      const res = await fetch(`/api/cases/${selectedCase.id}/generate-tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await res.json()
+      if (data.created) {
+        toast.success(`${data.taskCount} tâches créées (${data.templateName})`)
+        qc.invalidateQueries({ queryKey: ['case-tasks', selectedCase.id] })
+        qc.invalidateQueries({ queryKey: ['case-timeline', selectedCase.id] })
+      } else if (data.alreadyApplied) {
+        toast.info('Le workflow a déjà été appliqué à ce dossier')
+      } else {
+        toast.error(data.error || 'Erreur lors de la génération')
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de la génération des tâches')
+    } finally {
+      setGeneratingWorkflow(false)
+    }
+  }
+
+  // Generate PDF from template in case detail
+  const handleCaseTplGenerate = async () => {
+    if (!selectedCase || !caseTplId) return
+    setCaseTplGenerating(true)
+    try {
+      const res = await fetch('/api/document-templates/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId: caseTplId, caseId: selectedCase.id, variables: {} }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erreur' }))
+        toast.error(err.error || 'Erreur lors de la génération')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('Content-Disposition')
+      const match = disposition?.match(/filename="?([^";]+)"?/)
+      a.download = match?.[1] || 'document.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Document généré avec succès')
+      setCaseTplId('')
+    } catch (err: any) {
+      toast.error(err?.message || 'Erreur lors de la génération')
+    } finally {
+      setCaseTplGenerating(false)
+    }
+  }
+
+  const handleJurisprudence = async () => {
+    if (!selectedCase || !aiJurisQuery.trim()) return
+    setAiJurisLoading(true)
+    setAiJurisResult(null)
+    try {
+      const res = await fetch('/api/ai/analyze-case', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caseId: selectedCase.id, type: 'jurisprudence', query: aiJurisQuery }),
+      })
+      const data = await res.json()
+      if (data.result) {
+        setAiJurisResult(data.result)
+        qc.invalidateQueries({ queryKey: ['case-timeline', selectedCase.id] })
+      } else {
+        toast.error(data.error || 'Erreur lors de la recherche')
+      }
+    } catch (err: any) { toast.error(err?.message || 'Erreur lors de la recherche') } finally { setAiJurisLoading(false) }
+  }
+
+  const handleSummary = async () => {
+    if (!selectedCase) return
+    setAiSummaryLoading(true)
+    setAiSummaryResult(null)
+    try {
+      const res = await fetch('/api/ai/analyze-case', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caseId: selectedCase.id, type: 'summary' }),
+      })
+      const data = await res.json()
+      if (data.result) {
+        setAiSummaryResult(data.result)
+      } else {
+        toast.error(data.error || 'Erreur lors du résumé')
+      }
+    } catch (err: any) { toast.error(err?.message || 'Erreur lors du résumé') } finally { setAiSummaryLoading(false) }
   }
 
   const { data: cases, isLoading } = useQuery({
@@ -84,6 +423,13 @@ export function CasesView() {
   const { data: caseTasks } = useQuery({
     queryKey: ['case-tasks', selectedCase?.id],
     queryFn: () => fetch(`/api/tasks?caseId=${selectedCase!.id}&tenantId=${user?.tenantId}`).then(r => r.json()).then(d => d.tasks || d || []),
+    enabled: !!selectedCase?.id && detailOpen,
+  })
+
+  // Templates for case detail document generation
+  const { data: caseTemplates } = useQuery({
+    queryKey: ['case-tpl-gen', user?.tenantId],
+    queryFn: () => fetch(`/api/document-templates?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
     enabled: !!selectedCase?.id && detailOpen,
   })
 
@@ -319,7 +665,7 @@ export function CasesView() {
             )}
           </DialogHeader>
           <Tabs defaultValue="resume" className="flex-1 overflow-hidden">
-            <TabsList className="w-full flex-wrap h-auto"><TabsTrigger value="resume">Résumé</TabsTrigger><TabsTrigger value="timeline">Chronologie</TabsTrigger><TabsTrigger value="taches">Tâches</TabsTrigger><TabsTrigger value="events">Événements</TabsTrigger><TabsTrigger value="equipe">Équipe</TabsTrigger><TabsTrigger value="factures">Factures</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger><TabsTrigger value="documents">Documents</TabsTrigger></TabsList>
+            <TabsList className="w-full flex-wrap h-auto"><TabsTrigger value="resume">Résumé</TabsTrigger><TabsTrigger value="timeline">Chronologie</TabsTrigger><TabsTrigger value="taches">Tâches</TabsTrigger><TabsTrigger value="events">Événements</TabsTrigger><TabsTrigger value="equipe">Équipe</TabsTrigger><TabsTrigger value="factures">Factures</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger><TabsTrigger value="documents">Documents</TabsTrigger><TabsTrigger value="workflow" className="gap-1"><ClipboardList className="size-3" />Workflow</TabsTrigger>{hasAI.data && <TabsTrigger value="ia" className="gap-1"><Brain className="size-3" />Analyse IA</TabsTrigger>}</TabsList>
             <TabsContent value="resume" className="mt-4 space-y-3 overflow-y-auto max-h-[50vh]">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-jl-secondary">Client :</span> <span className="font-medium">{caseDetail?.client ? caseDetail.client.fullName : '—'}</span></div>
@@ -562,6 +908,19 @@ export function CasesView() {
                   <Button size="sm" variant="outline" disabled={caseUploading} onClick={() => caseFileRef.current?.click()}><Upload className="size-3.5 mr-1" />Ajouter</Button>
                 </div>
               </div>
+              {/* Generate from template */}
+              {(caseTemplates || []).length > 0 && (
+                <div className="flex items-center gap-2 mb-3 p-2.5 rounded-lg border border-jl bg-jl-page">
+                  <FileCode2 className="size-4 text-jl-gold shrink-0" />
+                  <Select value={caseTplId} onValueChange={setCaseTplId}>
+                    <SelectTrigger className="h-8 text-xs flex-1 min-w-0"><SelectValue placeholder="Générer depuis modèle..." /></SelectTrigger>
+                    <SelectContent>{(caseTemplates || []).map((t: DocTemplate) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Button size="sm" disabled={!caseTplId || caseTplGenerating} onClick={handleCaseTplGenerate} className="shrink-0">
+                    {caseTplGenerating ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5 mr-1" />}Générer
+                  </Button>
+                </div>
+              )}
               {(() => {
                 const docs = caseDetail?.documents || []
                 if (docs.length === 0) return <p className="text-sm text-jl-muted text-center py-8">Aucun document</p>
@@ -590,7 +949,14 @@ export function CasesView() {
               })()}
             </TabsContent>
             <TabsContent value="taches" className="mt-4 overflow-y-auto max-h-[50vh]">
-              {(caseTasks || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune tâche</p> :
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-jl-secondary">{(caseTasks || []).length} tâche{(caseTasks || []).length > 1 ? 's' : ''}</span>
+                <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={handleGenerateWorkflow} disabled={generatingWorkflow}>
+                  {generatingWorkflow ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+                  Générer les tâches
+                </Button>
+              </div>
+              {(caseTasks || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune tâche — cliquez sur « Générer les tâches » pour créer les tâches recommandées</p> :
               <div className="space-y-2">{(caseTasks || []).map((t: TaskItem) => (
                 <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
                   <span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[var(--danger)]' : t.priority === 'haute' ? 'bg-[var(--accent)]' : 'bg-jl-gold')} />
@@ -617,6 +983,41 @@ export function CasesView() {
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium">{a.user?.fullName || '—'}</p><p className="text-[10px] text-jl-muted">{ROLE_LABELS[a.user?.role || ''] || a.user?.role || ''}</p></div>
                 </div>
               ))}</div>}
+            </TabsContent>
+            <TabsContent value="ia" className="mt-4 overflow-y-auto max-h-[50vh]">
+              <ScrollArea className="max-h-[50vh]">
+                <div className="space-y-4 pr-2">
+                  <AIAnalysisPanel analysis={aiAnalysis} loading={aiLoading} cached={aiCached} analyzedAt={aiAnalyzedAt} onAnalyze={() => handleAnalyzeCase(false)} onRefresh={() => handleAnalyzeCase(true)} />
+                  <Separator />
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2"><Gavel className="size-4 text-jl-gold" /><span className="text-xs font-semibold">Recherche de jurisprudence</span></div>
+                    <div className="flex gap-2">
+                      <Input placeholder="Ex: clause de non-concurrence OHADA..." value={aiJurisQuery} onChange={e => setAiJurisQuery(e.target.value)} className="h-8 text-xs flex-1" onKeyDown={e => e.key === 'Enter' && handleJurisprudence()} />
+                      <Button size="sm" className="h-8 text-xs gap-1" disabled={aiJurisLoading || !aiJurisQuery.trim()} onClick={handleJurisprudence}>{aiJurisLoading ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}Rechercher</Button>
+                    </div>
+                    {aiJurisLoading && <div className="flex items-center gap-2 text-xs text-jl-muted py-2"><Loader2 className="size-3 animate-spin" />Recherche en cours…</div>}
+                    {aiJurisResult && <Card className="border-jl"><CardContent className="p-3 text-sm text-jl-secondary whitespace-pre-wrap leading-relaxed">{aiJurisResult}</CardContent></Card>}
+                  </div>
+                  <Separator />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between"><div className="flex items-center gap-2"><FileText className="size-4 text-jl-blue" /><span className="text-xs font-semibold">Résumé des documents</span></div><Button size="sm" variant="outline" className="h-7 text-xs gap-1" disabled={aiSummaryLoading} onClick={handleSummary}>{aiSummaryLoading ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}Résumer</Button></div>
+                    {aiSummaryLoading && <div className="flex items-center gap-2 text-xs text-jl-muted py-2"><Loader2 className="size-3 animate-spin" />Analyse des documents en cours…</div>}
+                    {aiSummaryResult && <Card className="border-jl-blue/20 bg-jl-blue/[0.03]"><CardContent className="p-3 text-sm text-jl-secondary whitespace-pre-wrap leading-relaxed">{aiSummaryResult}</CardContent></Card>}
+                  </div>
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            <TabsContent value="workflow" className="mt-4 overflow-y-auto max-h-[50vh]">
+              {/* Progress indicator */}
+              {(caseTasks || []).length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-medium text-jl-secondary">Progression des tâches</span>
+                    <span className="text-xs font-semibold">{caseTasks.filter((t: TaskItem) => t.status === 'terminee').length}/{caseTasks.length}</span>
+                  </div>
+                  <Progress value={caseTasks.length > 0 ? (caseTasks.filter((t: TaskItem) => t.status === 'terminee').length / caseTasks.length) * 100 : 0} className="h-2" />
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="factures" className="mt-4 overflow-y-auto max-h-[50vh]">
               {(caseInvoices || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune facture</p> :

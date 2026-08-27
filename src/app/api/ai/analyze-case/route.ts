@@ -1,166 +1,137 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { authenticate, requireTenantAccess } from '@/lib/auth-server'
+import { analyzeCase as aiAnalyzeCase, generateJurisprudence, summarizeDocument, checkAIAccess } from '@/lib/ai-service'
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'ai', 'create')
+  const auth = await authenticate(request, 'case', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
+
   try {
     const body = await request.json()
-    const { tenantId, caseId } = body
+    const { caseId, type, query, refresh } = body
 
-    if (!tenantId || !caseId) {
+    if (!caseId) {
+      return NextResponse.json({ error: 'caseId est requis' }, { status: 400 })
+    }
+
+    const validTypes = ['analysis', 'jurisprudence', 'summary']
+    const reqType = type || 'analysis'
+    if (!validTypes.includes(reqType)) {
+      return NextResponse.json({ error: 'type invalide' }, { status: 400 })
+    }
+
+    const caseRecord = await db.case.findUnique({
+      where: { id: caseId },
+      select: { tenantId: true, id: true },
+    })
+    if (!caseRecord) {
+      return NextResponse.json({ error: 'Dossier introuvable' }, { status: 404 })
+    }
+    if (!requireTenantAccess(auth, caseRecord.tenantId)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    }
+
+    const hasAI = await checkAIAccess(caseRecord.tenantId)
+    if (!hasAI) {
       return NextResponse.json(
-        { error: 'tenantId and caseId are required' },
-        { status: 400 }
+        { error: "L'analyse IA n'est pas disponible avec votre abonnement." },
+        { status: 403 },
       )
     }
 
-    const caseData = await db.case.findUnique({
-      where: { id: caseId, tenantId },
-      include: {
-        client: {
-          select: {
-            id: true, fullName: true, company: true,
-            clientType: true, email: true, phone: true, address: true,
-            city: true, country: true, niu: true, riskLevel: true, notes: true,
-          },
-        },
-        assignments: {
-          include: {
-            user: { select: { id: true, fullName: true, email: true, role: true } },
-          },
-        },
-        events: {
-          orderBy: { startTime: 'asc' },
-          include: {
-            assignments: {
-              include: {
-                user: { select: { fullName: true } },
-              },
-            },
-          },
-        },
-        notes: {
-          orderBy: { createdAt: 'desc' },
-          include: {
-            author: { select: { fullName: true } },
-          },
-        },
-        documents: {
-          orderBy: { createdAt: 'desc' },
-        },
-        tasks: {
-          orderBy: { dueDate: { sort: 'asc', nulls: 'last' } },
-        },
-        invoices: {
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true, amount: true, status: true,
-            currency: { select: { code: true } },
-            dueDate: true, notes: true, createdAt: true,
-          },
-        },
-        tenant: {
-          select: { name: true, address: true, phone: true, email: true },
-        },
-      },
-    })
+    // === ANALYSIS ===
+    if (reqType === 'analysis') {
+      const forceRefresh = refresh === true
+      if (!forceRefresh) {
+        const cached = await db.case.findUnique({ where: { id: caseId }, select: { aiAnalysis: true, updatedAt: true } })
+        if (cached?.aiAnalysis) {
+          try {
+            return NextResponse.json({ success: true, analysis: JSON.parse(cached.aiAnalysis), cached: true, analyzedAt: cached.updatedAt })
+          } catch { /* re-analyze */ }
+        }
+      }
 
-    if (!caseData) {
-      return NextResponse.json({ error: 'Case not found' }, { status: 404 })
+      const cd = await db.case.findUnique({
+        where: { id: caseId, tenantId: caseRecord.tenantId },
+        include: {
+          client: { select: { fullName: true, company: true, clientType: true, city: true, country: true } },
+          assignments: { include: { user: { select: { fullName: true } } } },
+          events: { orderBy: { startTime: 'asc' } },
+          notes: { orderBy: { createdAt: 'desc' }, include: { author: { select: { fullName: true } } } },
+          documents: { orderBy: { createdAt: 'desc' } },
+          tasks: { orderBy: { dueDate: { sort: 'asc', nulls: 'last' } } },
+          invoices: { orderBy: { createdAt: 'desc' }, select: { id: true, amount: true, status: true, currency: { select: { code: true } }, dueDate: true, notes: true } },
+          tenant: { select: { name: true } },
+        },
+      })
+      if (!cd) return NextResponse.json({ error: 'Dossier introuvable' }, { status: 404 })
+
+      const caseInput = {
+        reference: cd.reference, title: cd.title, description: cd.description,
+        caseType: cd.caseType, status: cd.status, priority: cd.priority,
+        jurisdiction: cd.jurisdiction, amountInDispute: cd.amountInDispute,
+        adversary: cd.adversary, clientName: cd.client?.fullName, clientCompany: cd.client?.company,
+        chronologie: cd.events.map(e => `[${new Date(e.startTime).toLocaleDateString('fr-FR')}] ${e.eventType}: ${e.title}`).join('\n') || 'Aucun',
+        notes: cd.notes.map(n => `${n.author?.fullName || 'Systeme'}: ${n.content}`).join('\n') || 'Aucune note',
+        documents: cd.documents.map(d => `- ${d.fileName} (v${d.version})`).join('\n') || 'Aucun document',
+        tasks: cd.tasks.map(t => `- [${t.status}] ${t.title}`).join('\n') || 'Aucune tache',
+      }
+
+      const result = await aiAnalyzeCase(caseInput)
+      let jsonStr = result.trim()
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/)
+      if (jsonMatch) jsonStr = jsonMatch[0]
+
+      let analysis: Record<string, unknown>
+      try {
+        analysis = JSON.parse(jsonStr)
+      } catch {
+        analysis = { resume: result.slice(0, 500), chronologie: '', parties: '', questions_juridiques: [], risques: [], pieces_manquantes: [], echeances: [], actions_recommandees: [], _raw: result }
+      }
+
+      await db.case.update({ where: { id: caseId }, data: { aiAnalysis: JSON.stringify(analysis) } })
+      return NextResponse.json({ success: true, analysis, cached: false, analyzedAt: new Date().toISOString() })
     }
 
-    const clientInfo = caseData.client
-      ? `${caseData.client.fullName}${caseData.client.company ? ` (${caseData.client.company})` : ''} — ${caseData.client.clientType}, ${caseData.client.city || ''} ${caseData.client.country || ''}`
-      : 'Non renseigné'
-
-    const adversary = caseData.adversary || 'Non renseigné'
-    const assignedLawyers = caseData.assignments
-      .map((a) => a.user.fullName)
-      .join(', ') || 'Non assigné'
-
-    const chronologie = caseData.events
-      .map((e) => {
-        const dateStr = new Date(e.startTime).toLocaleDateString('fr-FR')
-        const attendees = e.assignments.map((a) => a.user.fullName).join(', ')
-        return `[${dateStr}] ${e.eventType.toUpperCase()}: ${e.title}${attendees ? ` (Participants: ${attendees})` : ''}`
+    // === JURISPRUDENCE ===
+    if (reqType === 'jurisprudence') {
+      const jurisQuery = query || ''
+      if (!jurisQuery.trim()) {
+        return NextResponse.json({ error: 'Une requete de recherche est requise' }, { status: 400 })
+      }
+      const ctx = await db.case.findUnique({
+        where: { id: caseId, tenantId: caseRecord.tenantId },
+        select: { title: true, description: true, caseType: true, adversary: true, client: { select: { fullName: true } } },
       })
-      .join('\n') || 'Aucun événement'
+      const context = ctx ? `Dossier: ${ctx.title} (${ctx.caseType}). Client: ${ctx.client?.fullName || 'N/A'}. Adversaire: ${ctx.adversary || 'N/A'}.` : undefined
+      const result = await generateJurisprudence(jurisQuery, context)
+      await db.caseNote.create({ data: { content: `[IA - Jurisprudence] Recherche: ${jurisQuery}\n\n${result}`, caseId, tenantId: caseRecord.tenantId, authorId: auth.id } })
+      return NextResponse.json({ success: true, result, query: jurisQuery })
+    }
 
-    const notesList = caseData.notes
-      .map((n) => `[${new Date(n.createdAt).toLocaleDateString('fr-FR')}] ${n.author?.fullName || 'Système'}: ${n.content}`)
-      .join('\n') || 'Aucune note'
+    // === SUMMARY ===
+    if (reqType === 'summary') {
+      const cd = await db.case.findUnique({
+        where: { id: caseId, tenantId: caseRecord.tenantId },
+        include: {
+          client: { select: { fullName: true, company: true } },
+          notes: { orderBy: { createdAt: 'desc' }, take: 10, include: { author: { select: { fullName: true } } } },
+          documents: { orderBy: { createdAt: 'desc' } },
+          tasks: { where: { status: { not: 'terminee' } }, orderBy: { dueDate: { sort: 'asc', nulls: 'last' } } },
+        },
+      })
+      if (!cd) return NextResponse.json({ error: 'Dossier introuvable' }, { status: 404 })
+      const content = 'Dossier: ' + (cd.title || '') + '\nClient: ' + (cd.client?.fullName || 'N/A') + (cd.client?.company ? ' (' + cd.client.company + ')' : '') + '\n\nNotes:\n' + (cd.notes.map(n => n.author?.fullName + ': ' + n.content).join('\n') || 'Aucune') + '\n\nDocuments: ' + cd.documents.length + '\n\nTaches: ' + cd.tasks.map(t => t.title).join(', ')
+      const result = await summarizeDocument(content, 'autre')
+      return NextResponse.json({ success: true, result })
+    }
 
-    const documentsList = caseData.documents
-      .map((d) => `- ${d.fileName} (${d.mimeType || 'inconnu'}, ${d.folder || 'Pas de dossier'}, v${d.version})`)
-      .join('\n') || 'Aucun document'
-
-    const tasksList = caseData.tasks
-      .map((t) => `- [${t.status}] ${t.priority.toUpperCase()}: ${t.title}${t.dueDate ? ` (échéance: ${new Date(t.dueDate).toLocaleDateString('fr-FR')})` : ''}`)
-      .join('\n') || 'Aucune tâche'
-
-    const invoicesList = caseData.invoices
-      .map((inv) => `- ${inv.amount.toLocaleString('fr-FR')} ${inv.currency?.code ?? 'XAF'} [${inv.status}]${inv.notes ? ` — ${inv.notes}` : ''}`)
-      .join('\n') || 'Aucune facture'
-
-    const prompt = `Tu es un assistant juridique expert. Analyse le dossier suivant et fournis une analyse structurée.
-
-## Dossier
-- Référence: ${caseData.reference}
-- Titre: ${caseData.title}
-- Description: ${caseData.description || 'Non renseignée'}
-- Type: ${caseData.caseType}
-- Statut: ${caseData.status}
-- Priorité: ${caseData.priority}
-- Juridiction: ${caseData.jurisdiction || 'Non renseignée'}
-- Montant en litige: ${caseData.amountInDispute ? caseData.amountInDispute.toLocaleString('fr-FR') + ' XAF' : 'Non renseigné'}
-- Mode de facturation: ${caseData.billingType || 'Non renseigné'}
-
-## Parties
-- Client: ${clientInfo}
-- Partie adverse: ${adversary}
-- Avocats assignés: ${assignedLawyers}
-- Cabinet: ${caseData.tenant.name}
-
-## Chronologie des événements
-${chronologie}
-
-## Notes du dossier
-${notesList}
-
-## Documents
-${documentsList}
-
-## Tâches en cours
-${tasksList}
-
-## Facturation
-${invoicesList}
-
----
-
-Fournis ton analyse sous la forme suivante:
-1. **Résumé** — Synthèse du dossier en 3-5 phrases
-2. **Chronologie** — Frise chronologique des faits marquants
-3. **Parties** — Analyse des parties et de leurs positions
-4. **Questions juridiques** — Liste des questions juridiques soulevées
-5. **Risques** — Identification des risques (juridiques, financiers, procéduraux)
-6. **Pièces manquantes** — Liste des pièces probablement manquantes
-7. **Échéances** — Prochaines échéances et délais à respecter
-8. **Actions recommandées** — Liste priorisée d'actions à entreprendre`
-
-    return NextResponse.json({
-      success: true,
-      caseData,
-      prompt,
-    })
+    return NextResponse.json({ error: 'Type non gere' }, { status: 400 })
   } catch (error) {
-    console.error('Analyze case error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-  finally {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Erreur interne du serveur' }, { status: 500 })
+  } finally {
     await db.$disconnect().catch(() => {})
   }
 }

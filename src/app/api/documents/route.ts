@@ -120,6 +120,20 @@ export async function POST(request: Request) {
         _count: { select: { versions: true } },
       },
     })
+    // Trigger real-time notification (fire-and-forget)
+    fetch('http://localhost:3005/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenantId,
+        type: 'document',
+        title: 'Nouveau document',
+        message: `Nouveau document : ${file.name}`,
+        resourceType: 'document',
+        resourceId: document.id,
+      }),
+    }).catch(() => {})
+
     return NextResponse.json(document, { status: 201 })
   } catch (error) {
     console.error('Create document error:', error)

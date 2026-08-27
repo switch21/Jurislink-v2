@@ -5,9 +5,11 @@
 // Phase 7: UI/UX Polish — Dark Mode, Animations, Responsive
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, CardTitle, CardDescription, CardFooter, Button, Building2, Skeleton, cn, initAuthFetch, motion, AnimatePresence } from '@/views/shared-ui'
 import { queryClient } from '@/views/constants'
+import { SearchDialog } from '@/views/SearchDialog'
+import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 
 // ──── Eagerly loaded (small, always-needed components) ────
 import { LoginPage } from '@/views/LoginPage'
@@ -35,6 +37,7 @@ const LazyFinancesView = lazy(() => import('@/views/FinancesView').then(m => ({ 
 const LazyImpayesView = lazy(() => import('@/views/ImpayesView').then(m => ({ default: m.ImpayesView })))
 const LazyTimeTrackingView = lazy(() => import('@/views/TimeTrackingView').then(m => ({ default: m.TimeTrackingView })))
 const LazyTemplatesView = lazy(() => import('@/views/TemplatesView').then(m => ({ default: m.TemplatesView })))
+const LazySearchView = lazy(() => import('@/views/SearchView').then(m => ({ default: m.SearchView })))
 const LazyAdminDashboardView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminDashboardView })))
 const LazyAdminCabinsView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminCabinsView })))
 const LazyAdminUsersView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminUsersView })))
@@ -140,6 +143,7 @@ function DashboardRouter() {
             'communications': <CommunicationsView />,
             'messages': <MessagesView />,
             'reports': <LazyReportsView />,
+            'search': <LazySearchView />,
             'audit-logs': <AuditLogsView />,
             'settings': <LazySettingsView />,
             'archives': <ArchivesView />,
@@ -151,11 +155,40 @@ function DashboardRouter() {
   )
 }
 
+// ==================== CMD+K SEARCH PROVIDER ====================
+const searchOpenState = { value: false, set: (v: boolean) => { searchOpenState.value = v } }
+
+// Expose search open function globally for Header button
+if (typeof window !== 'undefined') {
+  (window as any).__jlOpenSearch = () => { searchOpenState.set(true) }
+}
+
 // ==================== MAIN APP ====================
 function AppInner() {
   const { isAuthenticated, isPortalAuthenticated, user } = useAppStore()
   const isRootAdmin = user?.role === 'root_admin'
   const needsTenant = isAuthenticated && !user?.tenantId && !isRootAdmin
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // Real-time notification WebSocket (only when authenticated with a tenant)
+  useNotificationSocket()
+
+  // Sync global state
+  useEffect(() => {
+    searchOpenState.set = setSearchOpen
+  }, [])
+
+  // Cmd+K / Ctrl+K listener
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(prev => !prev)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
   if (isPortalAuthenticated) return (
     <Suspense fallback={<ViewLoader />}>
       <LazyPortalSidebar />
@@ -191,6 +224,7 @@ function AppInner() {
         <main id='main-content' className='flex-1' role='main'><AdminRouter /></main>
         <Footer />
       </div>
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   )
   return (
@@ -201,6 +235,7 @@ function AppInner() {
         <main id='main-content' className='flex-1' role='main'><DashboardRouter /></main>
         <Footer />
       </div>
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   )
 }

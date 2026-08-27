@@ -152,6 +152,20 @@ export async function POST(request: Request) {
       })
     }
 
+    // Trigger real-time notification (fire-and-forget)
+    fetch('http://localhost:3005/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenantId,
+        type: 'task',
+        title: 'Nouvelle tâche',
+        message: `Nouvelle tâche : ${title}`,
+        resourceType: 'task',
+        resourceId: task.id,
+      }),
+    }).catch(() => {})
+
     // Resolve assigned users for the response
     let assignedUsers: Array<{ userId: string; fullName: string }> = []
     if (caseId) {
