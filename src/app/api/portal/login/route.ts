@@ -14,7 +14,12 @@ export async function POST(request: Request) {
     }
 
     const portalAccount = await db.clientPortal.findFirst({
-      where: { email },
+      where: {
+        OR: [
+          { email },
+          { client: { email } },
+        ],
+      },
       include: {
         client: {
           include: { tenant: true },

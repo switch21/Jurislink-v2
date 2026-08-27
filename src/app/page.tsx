@@ -515,8 +515,12 @@ function LoginPage() {
                   <div className="space-y-2"><Label htmlFor="portal-password">Mot de passe</Label><div className="relative"><Input id="portal-password" type={portalShowPw ? 'text' : 'password'} placeholder="••••••••" value={portalPassword} onChange={e => setPortalPassword(e.target.value)} className="h-11 rounded-lg border-[#E5E7EB] bg-white pr-10" /><button type="button" onClick={() => setPortalShowPw(!portalShowPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors" tabIndex={-1}>{portalShowPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></div>
                   <Button type="submit" className="w-full h-11 bg-[#1E5A8A] hover:bg-[#164070] text-white rounded-lg font-medium" disabled={portalLoading}>{portalLoading ? <RefreshCw className="size-4 animate-spin" /> : 'Accéder à mon espace'}</Button>
                 </form>
-                <div className="mt-4 text-center">
+                <div className="mt-4 text-center space-y-2">
                   <button type="button" onClick={() => toast.info('Fonctionnalité bientôt disponible')} className="text-xs text-[#1E5A8A] hover:underline">Mot de passe oublié ?</button>
+                  <div className="text-[10px] text-[#9CA3AF] bg-[#F9FAFB] rounded-lg px-3 py-2">
+                    <p className="font-medium text-[#6B7280] mb-0.5">Compte démo :</p>
+                    <p>contact@camara.cm — JurisLink2025</p>
+                  </div>
                 </div>
               </CardContent>
               <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-[#9CA3AF]">Espace réservé aux clients</p></CardFooter>
