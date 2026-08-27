@@ -19,6 +19,40 @@ export interface UserInfo {
   permissions?: UserPermission[]
 }
 
+export interface PortalClientInfo {
+  id: string
+  fullName: string
+  company?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  city?: string | null
+  country?: string | null
+  niu?: string | null
+}
+
+export interface PortalTenantInfo {
+  id: string
+  name: string
+  slug: string
+  logoUrl?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  city?: string | null
+  country?: string | null
+  niu?: string | null
+  currencyCode: string
+}
+
+export interface PortalUserInfo {
+  id: string
+  email: string
+  clientId: string
+  client: PortalClientInfo
+  tenant: PortalTenantInfo
+}
+
 export type ViewName =
   | 'login'
   | 'dashboard'
@@ -43,18 +77,45 @@ export type ViewName =
   | 'admin-cabinets'
   | 'admin-users'
   | 'admin-plans'
+  | 'portal-dashboard'
+  | 'portal-cases'
+  | 'portal-case-detail'
+  | 'portal-invoices'
+  | 'portal-documents'
+  | 'portal-messages'
+  | 'portal-profile'
+
+export type PortalViewName =
+  | 'portal-dashboard'
+  | 'portal-cases'
+  | 'portal-case-detail'
+  | 'portal-invoices'
+  | 'portal-documents'
+  | 'portal-messages'
+  | 'portal-profile'
 
 interface AppState {
   user: UserInfo | null
   isAuthenticated: boolean
   currentView: ViewName
   sidebarOpen: boolean
+  // Portal client state
+  portalUser: PortalUserInfo | null
+  isPortalAuthenticated: boolean
+  portalCurrentView: PortalViewName
+  portalSelectedCaseId: string | null
+  // Actions
   login: (user: UserInfo) => void
   logout: () => void
   setCurrentView: (view: ViewName) => void
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   hasPermission: (resource: string, action: string) => boolean
+  // Portal actions
+  portalLogin: (user: PortalUserInfo) => void
+  portalLogout: () => void
+  setPortalView: (view: PortalViewName) => void
+  setPortalSelectedCaseId: (id: string | null) => void
 }
 
 const loadUser = (): UserInfo | null => {
@@ -68,11 +129,26 @@ const loadUser = (): UserInfo | null => {
   return null
 }
 
+const loadPortalUser = (): PortalUserInfo | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    const stored = localStorage.getItem('jurislink_portal_user')
+    if (stored) return JSON.parse(stored)
+  } catch {
+    // ignore
+  }
+  return null
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   user: loadUser(),
   isAuthenticated: !!loadUser(),
   currentView: loadUser()?.role === 'root_admin' ? 'admin-dashboard' : (loadUser() ? 'dashboard' : 'login'),
   sidebarOpen: false,
+  portalUser: loadPortalUser(),
+  isPortalAuthenticated: !!loadPortalUser(),
+  portalCurrentView: 'portal-dashboard',
+  portalSelectedCaseId: null,
   login: (user) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jurislink_user', JSON.stringify(user))
@@ -97,4 +173,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     )
     return perm?.allowed ?? false
   },
+  portalLogin: (portalUser) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jurislink_portal_user', JSON.stringify(portalUser))
+    }
+    set({ portalUser, isPortalAuthenticated: true, portalCurrentView: 'portal-dashboard', portalSelectedCaseId: null })
+  },
+  portalLogout: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('jurislink_portal_user')
+    }
+    set({ portalUser: null, isPortalAuthenticated: false, portalCurrentView: 'portal-dashboard', portalSelectedCaseId: null })
+  },
+  setPortalView: (view) => set({ portalCurrentView: view }),
+  setPortalSelectedCaseId: (id) => set({ portalSelectedCaseId: id }),
 }))

@@ -2,7 +2,8 @@
 
 /**
  * Override window.fetch to automatically inject X-User-Id and X-Tenant-Id headers
- * from the Zustand store. Call initAuthFetch() once at app startup.
+ * from the Zustand store. For portal routes (/api/portal/), injects X-Portal-User-Id instead.
+ * Call initAuthFetch() once at app startup.
  */
 let _initialized = false
 
@@ -13,12 +14,19 @@ export function initAuthFetch() {
   const originalFetch = window.fetch
   window.fetch = async (input, init) => {
     try {
-      const stored = localStorage.getItem('jurislink_user')
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : ''
+      const isPortal = url.includes('/api/portal/')
+      const key = isPortal ? 'jurislink_portal_user' : 'jurislink_user'
+      const stored = localStorage.getItem(key)
       if (stored) {
-        const user = JSON.parse(stored)
+        const data = JSON.parse(stored)
         const headers = new Headers(init?.headers)
-        if (user.id) headers.set('X-User-Id', user.id)
-        if (user.tenantId) headers.set('X-Tenant-Id', user.tenantId)
+        if (isPortal) {
+          if (data.id) headers.set('X-Portal-User-Id', data.id)
+        } else {
+          if (data.id) headers.set('X-User-Id', data.id)
+          if (data.tenantId) headers.set('X-Tenant-Id', data.tenantId)
+        }
         return originalFetch(input, { ...init, headers })
       }
     } catch {

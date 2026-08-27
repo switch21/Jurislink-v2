@@ -635,3 +635,23 @@ Stage Summary:
 
 ### Known Issues
 - Upload de fichiers (documents, logos) échouera sur Vercel (filesystem read-only) — nécessite stockage cloud (S3/Blob)
+
+---
+Task ID: TBD
+Agent: Sub-agent (general-purpose)
+Task: Run subscription check-expiry cron logic directly against DB (dev server down)
+
+Work Log:
+- Read /src/app/api/subscriptions/check-expiry/route.ts to understand the expiry logic
+- Read /prisma/schema.prisma to confirm model definitions (Subscription, Tenant, Notification, User, SubscriptionPlan)
+- Rewrote /scripts/check-expiry-direct.js with explicit DATABASE_URL and verbose logging
+- Ran the script successfully against the production database
+
+Stage Summary:
+- Script ran at 2026-08-27T08:51:34Z
+- 3 active subscriptions checked, 0 actions taken
+- Mengue & Associés (Professionnel): 125 days left — OK
+- Fotso Law Firm (Starter): 184 days left — OK
+- SCP NDOKI (Premium): 363 days left — OK
+- No expirations or alert thresholds triggered
+- Script is ready for reuse: `node scripts/check-expiry-direct.js`

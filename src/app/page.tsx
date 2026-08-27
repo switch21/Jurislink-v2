@@ -9,7 +9,7 @@ import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, 
 import { fr } from 'date-fns/locale'
 import { toast } from '@/hooks/use-toast'
 import { useTheme } from 'next-themes'
-import { useAppStore, type ViewName, type UserInfo } from '@/store/appStore'
+import { useAppStore, type ViewName, type UserInfo, type PortalViewName, type PortalUserInfo, type PortalClientInfo } from '@/store/appStore'
 import { cn } from '@/lib/utils'
 import { initAuthFetch } from '@/lib/auth-fetch'
 
@@ -61,7 +61,8 @@ import {
   FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen,
   Crown, UsersRound, Building as BuildingIcon, CreditCard as CreditCardIcon, ShieldCheck, UserPlus, ArrowUpDown,
   FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2,
-  FileImage, List, LayoutGrid, History
+  FileImage, List, LayoutGrid, History,
+  Globe, ShieldUser, FileDown, MessageCircleReply, UserCog
 } from 'lucide-react'
 
 // ==================== Types ====================
@@ -209,6 +210,60 @@ interface TimeSummary {
   byCase: Array<{ caseId: string; caseReference: string; caseTitle: string; totalSeconds: number; totalAmount: number }>;
 }
 
+// ==================== Portal Types ====================
+interface PortalCaseItem {
+  id: string; reference: string | null; title: string; description?: string | null;
+  caseType: string; status: string; priority: string; createdAt: string; updatedAt: string;
+  clientId: string; tenantId: string;
+  adversary?: string | null; jurisdiction?: string | null; amountInDispute?: number | null;
+  assignments?: Array<{ id: string; userId: string; user?: { id: string; fullName: string; email: string; role: string; avatarUrl?: string | null } | null }>;
+  _count?: { documents: number; events: number; notes: number; tasks: number };
+}
+interface PortalCaseDetail extends PortalCaseItem {
+  client: { id: string; fullName: string };
+  documents?: Array<{ id: string; fileName: string; fileSize: number; mimeType?: string | null; version: number; createdAt: string; uploadedBy?: { id: string; fullName: string } | null }>;
+  events?: Array<{ id: string; title: string; description?: string | null; startTime: string; endTime?: string | null; eventType: string; criticality: string }>;
+  notes?: Array<{ id: string; content: string; createdAt: string; author?: { id: string; fullName: string } | null }>;
+  tasks?: Array<{ id: string; title: string; status: string; priority: string; dueDate?: string | null; createdAt: string }>;
+  invoices?: Array<{ id: string; invoiceNumber?: string | null; amount: number; status: string; issuedAt?: string | null; dueDate?: string | null }>;
+  timeEntries?: Array<{ id: string; description: string; duration: number; startTime: string; user?: { id: string; fullName: string } | null; totalAmount?: number | null }>;
+}
+interface PortalTimelineEntry {
+  id: string; type: string; title: string; description?: string | null; date: string; author?: string | null;
+  metadata?: Record<string, string | number | null>;
+}
+interface PortalInvoiceItem {
+  id: string; invoiceNumber?: string | null; type: string; amount: number; paidAmount: number; status: string;
+  issuedAt?: string | null; dueDate?: string | null; notes?: string | null;
+  createdAt: string; tenantId: string; clientId: string;
+  caseId?: string | null;
+  case?: { id: string; reference: string | null; title: string } | null;
+  currency?: { id: string; code: string; name: string; symbol: string } | null;
+  payments?: Array<{ id: string; amount: number; method: string; reference?: string | null; paidAt: string; recorder?: { id: string; fullName: string } | null }>;
+  _count?: { reminders: number };
+}
+interface PortalDocItem {
+  id: string; fileName: string; fileSize: number; filePath: string; version: number;
+  folder?: string | null; tags?: string | null; documentType?: string | null; mimeType?: string | null;
+  description?: string | null; createdAt: string; updatedAt?: string | null;
+  tenantId: string; caseId?: string | null;
+  case?: { id: string; reference: string | null; title: string } | null;
+  uploadedBy?: { id: string; fullName: string } | null;
+}
+interface PortalCommunication {
+  id: string; type: string; subject?: string | null; content: string; status: string;
+  sentAt?: string | null; createdAt: string;
+  caseId?: string | null;
+  case?: { id: string; reference: string | null; title: string } | null;
+  sentBy?: { id: string; fullName: string } | null;
+}
+interface PortalDashboardData {
+  casesByStatus: Record<string, number>;
+  totalInvoicesAmount: number; totalPaid: number; totalRemaining: number;
+  overdueInvoicesCount: number; activeCasesCount: number; totalCasesCount: number;
+  recentCases: PortalCaseItem[]; recentInvoices: PortalInvoiceItem[];
+  recentCommunications: PortalCommunication[];
+}
 
 // ==================== Query Client ====================
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } })
@@ -382,13 +437,18 @@ function EmptyState({ icon: Icon, title, description }: { icon: React.ElementTyp
 
 // ==================== Login Page ====================
 function LoginPage() {
-  const { login } = useAppStore()
+  const { login, portalLogin } = useAppStore()
+  const [tab, setTab] = useState<'cabinet' | 'portal'>('cabinet')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [portalEmail, setPortalEmail] = useState('')
+  const [portalPassword, setPortalPassword] = useState('')
+  const [portalShowPw, setPortalShowPw] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCabinetSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email) { toast.error('Veuillez entrer votre email'); return }
     if (!password) { toast.error('Veuillez entrer votre mot de passe'); return }
@@ -401,24 +461,65 @@ function LoginPage() {
     } catch { toast.error('Erreur de connexion au serveur') } finally { setLoading(false) }
   }
 
+  const handlePortalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!portalEmail) { toast.error('Veuillez entrer votre email'); return }
+    if (!portalPassword) { toast.error('Veuillez entrer votre mot de passe'); return }
+    setPortalLoading(true)
+    try {
+      const res = await fetch('/api/portal/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: portalEmail, password: portalPassword }) })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Erreur de connexion au portail'); return }
+      portalLogin(data); toast.success(`Bienvenue, ${data.client?.fullName || data.email} !`)
+    } catch { toast.error('Erreur de connexion au serveur') } finally { setPortalLoading(false) }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA] p-4">
       <div className="w-full max-w-md">
         <Card className="rounded-2xl shadow-sm border border-[#E5E7EB] bg-white">
-          <CardHeader className="text-center pb-2 pt-8">
-            <div className="mx-auto mb-4 flex items-center justify-center">
-              <img src="/splash.png" alt="JurisLink" className="h-16 w-auto object-contain" />
+          <Tabs value={tab} onValueChange={v => setTab(v as 'cabinet' | 'portal')}>
+            <div className="flex border-b border-[#E5E7EB]">
+              <button onClick={() => setTab('cabinet')} className={cn('flex-1 py-3.5 text-sm font-semibold text-center transition-colors border-b-2 -mb-px', tab === 'cabinet' ? 'border-[#1E5A8A] text-[#1E5A8A]' : 'border-transparent text-[#9CA3AF] hover:text-[#6B7280]')}>Cabinet</button>
+              <button onClick={() => setTab('portal')} className={cn('flex-1 py-3.5 text-sm font-semibold text-center transition-colors border-b-2 -mb-px', tab === 'portal' ? 'border-[#1E5A8A] text-[#1E5A8A]' : 'border-transparent text-[#9CA3AF] hover:text-[#6B7280]')}>Portail Client</button>
             </div>
-            <CardDescription className="text-sm mt-1 text-[#6B7280]">Le système d'exploitation de votre cabinet</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2"><Label htmlFor="email">Adresse e-mail</Label><Input id="email" type="email" placeholder="email@jurislink.com" value={email} onChange={e => setEmail(e.target.value)} className="h-11 rounded-lg border-[#E5E7EB] bg-white" /></div>
-              <div className="space-y-2"><Label htmlFor="password">Mot de passe</Label><div className="relative"><Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="h-11 rounded-lg border-[#E5E7EB] bg-white pr-10" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors" tabIndex={-1}>{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></div>
-              <Button type="submit" className="w-full h-11 bg-[#1E5A8A] hover:bg-[#164070] text-white rounded-lg font-medium" disabled={loading}>{loading ? <RefreshCw className="size-4 animate-spin" /> : 'Se connecter'}</Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-[#9CA3AF]">Connectez-vous avec votre email</p></CardFooter>
+            {tab === 'cabinet' && <>
+              <CardHeader className="text-center pb-2 pt-8">
+                <div className="mx-auto mb-4 flex items-center justify-center">
+                  <img src="/splash.png" alt="JurisLink" className="h-16 w-auto object-contain" />
+                </div>
+                <CardDescription className="text-sm mt-1 text-[#6B7280]">Le système d'exploitation de votre cabinet</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <form onSubmit={handleCabinetSubmit} className="space-y-4">
+                  <div className="space-y-2"><Label htmlFor="email">Adresse e-mail</Label><Input id="email" type="email" placeholder="email@jurislink.com" value={email} onChange={e => setEmail(e.target.value)} className="h-11 rounded-lg border-[#E5E7EB] bg-white" /></div>
+                  <div className="space-y-2"><Label htmlFor="password">Mot de passe</Label><div className="relative"><Input id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} className="h-11 rounded-lg border-[#E5E7EB] bg-white pr-10" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors" tabIndex={-1}>{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></div>
+                  <Button type="submit" className="w-full h-11 bg-[#1E5A8A] hover:bg-[#164070] text-white rounded-lg font-medium" disabled={loading}>{loading ? <RefreshCw className="size-4 animate-spin" /> : 'Se connecter'}</Button>
+                </form>
+              </CardContent>
+              <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-[#9CA3AF]">Connectez-vous avec votre email</p></CardFooter>
+            </>}
+            {tab === 'portal' && <>
+              <CardHeader className="text-center pb-2 pt-8">
+                <div className="mx-auto mb-4 flex items-center justify-center gap-3">
+                  <div className="size-12 rounded-xl bg-[#E8F0F8] flex items-center justify-center"><Globe className="size-6 text-[#1E5A8A]" /></div>
+                  <span className="text-xl font-bold tracking-tight"><span className="text-[#1E5A8A]">Juris</span><span className="text-[#C8A45D]">Link</span></span>
+                </div>
+                <CardDescription className="text-sm mt-1 text-[#6B7280]">Espace client — Accédez à vos dossiers</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <form onSubmit={handlePortalSubmit} className="space-y-4">
+                  <div className="space-y-2"><Label htmlFor="portal-email">Adresse e-mail</Label><Input id="portal-email" type="email" placeholder="votre@email.com" value={portalEmail} onChange={e => setPortalEmail(e.target.value)} className="h-11 rounded-lg border-[#E5E7EB] bg-white" /></div>
+                  <div className="space-y-2"><Label htmlFor="portal-password">Mot de passe</Label><div className="relative"><Input id="portal-password" type={portalShowPw ? 'text' : 'password'} placeholder="••••••••" value={portalPassword} onChange={e => setPortalPassword(e.target.value)} className="h-11 rounded-lg border-[#E5E7EB] bg-white pr-10" /><button type="button" onClick={() => setPortalShowPw(!portalShowPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors" tabIndex={-1}>{portalShowPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></div>
+                  <Button type="submit" className="w-full h-11 bg-[#1E5A8A] hover:bg-[#164070] text-white rounded-lg font-medium" disabled={portalLoading}>{portalLoading ? <RefreshCw className="size-4 animate-spin" /> : 'Accéder à mon espace'}</Button>
+                </form>
+                <div className="mt-4 text-center">
+                  <button type="button" onClick={() => toast.info('Fonctionnalité bientôt disponible')} className="text-xs text-[#1E5A8A] hover:underline">Mot de passe oublié ?</button>
+                </div>
+              </CardContent>
+              <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-[#9CA3AF]">Espace réservé aux clients</p></CardFooter>
+            </>}
+          </Tabs>
         </Card>
         <p className="text-center text-xs text-[#9CA3AF] mt-6">© 2025 JurisLink — Tous droits réservés</p>
       </div>

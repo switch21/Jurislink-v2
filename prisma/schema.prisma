@@ -47,6 +47,7 @@ model Tenant {
   documentTemplates DocumentTemplate[]
   communications    Communication[]
   reminderLogs     ReminderLog[]
+  clientPortals    ClientPortal[]
 
   @@map("tenants")
 }
@@ -207,6 +208,7 @@ model Client {
   cases               Case[]
   invoices            Invoice[]
   communications      Communication[]
+  portalAccounts      ClientPortal[]
 
   @@map("clients")
 }
@@ -596,6 +598,26 @@ model ReminderLog {
   @@index([invoiceId])
   @@index([tenantId])
   @@map("reminder_logs")
+}
+
+// ==================== CLIENT PORTAL ====================
+model ClientPortal {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at")
+  resetToken    String?   @unique @map("reset_token")
+  resetTokenExpiry DateTime? @map("reset_token_expiry")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  clientId String @map("client_id") @db.Uuid
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("client_portals")
 }
 
 // ==================== CURRENCY ====================
