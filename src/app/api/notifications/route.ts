@@ -24,6 +24,12 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
+
+    // When polling unread count, return structured format
+    if (unreadOnly === 'true') {
+      return NextResponse.json({ count: notifications.length, notifications })
+    }
+
     return NextResponse.json(notifications)
   } catch (error) {
     console.error('List notifications error:', error)

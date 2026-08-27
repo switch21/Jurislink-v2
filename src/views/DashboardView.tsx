@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon } from './shared-ui'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, EmptyState } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
+import { usePollingNotifications } from '@/hooks/use-polling-notifications'
 // ==================== Dashboard ====================
 export function DashboardView() {
   const { user, setCurrentView } = useAppStore()
@@ -18,6 +19,13 @@ export function DashboardView() {
     queryFn: () => fetch(`/api/subscriptions?tenantId=${user?.tenantId}`).then(r => r.json()),
     enabled: !!user?.tenantId,
   })
+
+  // Polling notifications for the dashboard card
+  const { notifications: recentNotifs, unreadCount: notifUnread, refetchNow: refetchNotifs } = usePollingNotifications(!!user?.tenantId)
+  const recentFive = recentNotifs.slice(0, 5)
+
+  const notifViewMap: Record<string, ViewName> = { dossier: 'cases', echeance: 'calendar', facture: 'invoices', document: 'documents', tache: 'tasks', message: 'messages' }
+  const notifCatIcons: Record<string, React.ElementType> = { dossier: Briefcase, echeance: Clock, facture: Receipt, document: FileText, tache: ClipboardList, message: MessageSquare }
   const subscriptionAlert = useMemo(() => {
     if (!subData?.currentPeriodEnd) return null
     const days = differenceInDays(new Date(subData.currentPeriodEnd), new Date())
@@ -104,6 +112,49 @@ export function DashboardView() {
           {/* Upcoming Events */}
           <Card><CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Calendar className="size-4 text-[var(--accent)]" />Prochains événements (7j)</CardTitle></CardHeader><CardContent className="p-4 pt-0"><div className="space-y-2 max-h-64 overflow-y-auto">{(stats.upcomingEventsEnhanced || []).length === 0 ? <p className="text-xs text-[var(--text-muted)] py-4 text-center">Aucun événement à venir</p> : (stats.upcomingEventsEnhanced || []).map(e => (<div key={e.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--border-light)] cursor-pointer" onClick={() => setCurrentView('calendar')}><span className={cn('w-1 h-8 rounded-full shrink-0', CRIT_COLORS[e.criticality] || CRIT_COLORS.normal)} /><div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-xs text-[var(--text-secondary)]">{fmtDateTime(e.startTime)}{e.caseReference ? ` • ${e.caseReference}` : ''}</p><p className="text-xs text-[var(--text-muted)] mt-0.5">{e.assignments.map(a => a.userName).join(', ')}</p></div><Badge variant="outline" className="text-[10px] shrink-0">{EVENT_TYPE_LABELS[e.eventType] || e.eventType}</Badge></div>))}</div></CardContent></Card>
       </div>
+
+      {/* Notifications récentes */}
+      <Card className="border-l-4 border-l-jl-blue">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Bell className={cn('size-4', notifUnread > 0 ? 'text-jl-blue' : 'text-jl-muted')} />
+              Notifications récentes
+              {notifUnread > 0 && <Badge className="bg-jl-blue text-white text-[10px]">{notifUnread}</Badge>}
+            </CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs text-jl-blue hover:text-jl-blue" onClick={() => setCurrentView('notifications')}>Voir tout<ExternalLink className="size-3 ml-1" /></Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <div className="space-y-2">
+            {recentFive.length === 0 ? (
+              <p className="text-xs text-jl-muted py-4 text-center">Aucune notification non lue</p>
+            ) : recentFive.map(n => {
+              const CatIcon = notifCatIcons[n.category] || Bell
+              return (
+                <div
+                  key={n.id}
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--border-light)] cursor-pointer group"
+                  onClick={() => {
+                    if (!n.read) fetch(`/api/notifications/${n.id}`, { method: 'PUT' }).then(() => refetchNotifs()).catch(() => {})
+                    setCurrentView(notifViewMap[n.category] || 'notifications')
+                  }}
+                >
+                  <div className="flex items-center gap-2 shrink-0">
+                    {!n.read && <span className="size-2 rounded-full bg-jl-blue shrink-0" />}
+                    <CatIcon className="size-4 text-jl-secondary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{n.title}</p>
+                    <p className="text-[10px] text-jl-muted">{relativeTime(n.createdAt)}</p>
+                  </div>
+                  <ExternalLink className="size-3 text-jl-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Documents en attente + Dossiers sans échéance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
