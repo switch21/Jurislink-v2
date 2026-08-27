@@ -2093,7 +2093,7 @@ function DocumentsView() {
                   {v.changeNote && <p className="text-[10px] text-[#374151] mt-0.5 italic">{v.changeNote}</p>}
                   {v.uploadedBy && <p className="text-[10px] text-[#9CA3AF]">par {v.uploadedBy.fullName}</p>}
                 </div>
-                <a href={`/api/document-versions/${v.id}/download`} className="shrink-0"><Button variant="ghost" size="icon" className="size-7"><Download className="size-3.5" /></Button></a>
+                <a href={`/api/documents/${selectedDoc!.id}/versions/${v.id}/download`} className="shrink-0"><Button variant="ghost" size="icon" className="size-7"><Download className="size-3.5" /></Button></a>
               </div>
             )) : (
               <p className="text-xs text-[#9CA3AF] text-center py-6">Aucune version précédente</p>

@@ -123,6 +123,7 @@ export async function GET(request: Request) {
       },
       include: {
         client: { select: { fullName: true } },
+        currency: { select: { code: true } },
       },
       orderBy: { dueDate: 'asc' },
     })

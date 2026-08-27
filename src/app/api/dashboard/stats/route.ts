@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'dashboard', 'read')
   if (auth instanceof NextResponse) return auth
+  const db = getDb()
   try {
     const { searchParams } = new URL(request.url)
     const tenantId = searchParams.get('tenantId')
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
       include: {
         assignments: {
           include: {
-            user: { select: { id: true, name: true } },
+            user: { select: { id: true, fullName: true } },
           },
         },
         case: { select: { id: true, reference: true, title: true } },
@@ -63,21 +64,21 @@ export async function GET(request: Request) {
     }
 
     const casesByTypeRaw = await db.case.groupBy({
-      by: ['type'],
+      by: ['caseType'],
       where,
-      _count: { type: true },
+      _count: { caseType: true },
     })
     const casesByType: Record<string, number> = {}
     for (const item of casesByTypeRaw) {
-      casesByType[item.type] = item._count.type
+      casesByType[item.caseType] = item._count.caseType
     }
 
     const recentActivity = await db.auditLog.findMany({
       where,
       include: {
-        user: { select: { id: true, name: true } },
+        user: { select: { id: true, fullName: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { timestamp: 'desc' },
       take: 10,
     })
 
@@ -97,5 +98,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Dashboard stats error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
   }
 }

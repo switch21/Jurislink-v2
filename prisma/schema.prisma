@@ -288,6 +288,7 @@ model Document {
   documentType String? @map("document_type")
   mimeType    String? @map("mime_type")
   description String?
+  status      String  @default("actif")
   uploadedById String? @map("uploaded_by_id") @db.Uuid
   uploadedBy  User?   @relation("DocumentUploader", fields: [uploadedById], references: [id])
   createdAt   DateTime @default(now()) @map("created_at")
