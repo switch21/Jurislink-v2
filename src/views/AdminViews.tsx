@@ -31,7 +31,7 @@ export function AdminDashboardView() {
         <div className='flex items-end gap-2 h-40'>{months.map(([m, v]) => (<div key={m} className='flex-1 flex flex-col items-center gap-1'><span className='text-[10px] text-jl-secondary'>{v}</span><div className='w-full bg-jl-gold rounded-t' style={{ height: `${Math.max((v / maxMonth) * 120, 2)}px` }} /><span className='text-[9px] text-jl-muted truncate w-full text-center'>{m}</span></div>))}</div>
       </Card>
       <Card className='p-4'><CardTitle className='text-sm font-semibold mb-3'>Cabinets récents</CardTitle>
-        <div className='space-y-3'>{(data.recentTenants || []).slice(0, 5).map(t => (<div key={t.id} className='flex items-center justify-between'><div><p className='text-sm font-medium text-jl-primary'>{t.name}</p><p className='text-xs text-jl-muted'>{t._count.users} utilisateur{t._count.users > 1 ? 's' : ''} · {fmtDate(t.createdAt)}</p></div>{t.subscription?.plan && <Badge className='bg-jl-blue-light text-jl-blue text-[10px]'>{t.subscription.plan.name}</Badge>}</div>))}</div>
+        <div className='space-y-3'>{(Array.isArray(data.recentTenants) ? data.recentTenants : []).slice(0, 5).map(t => (<div key={t.id} className='flex items-center justify-between'><div><p className='text-sm font-medium text-jl-primary'>{t.name}</p><p className='text-xs text-jl-muted'>{t._count.users} utilisateur{t._count.users > 1 ? 's' : ''} · {fmtDate(t.createdAt)}</p></div>{t.subscription?.plan && <Badge className='bg-jl-blue-light text-jl-blue text-[10px]'>{t.subscription.plan.name}</Badge>}</div>))}</div>
       </Card>
     </div>
     <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
@@ -310,7 +310,7 @@ export function AdminPlansView() {
   const [featuresText, setFeaturesText] = useState('')
   const [form, setForm] = useState({ name: '', slug: '', description: '', priceAnnual: 0, priceSemiAnnual: 0, priceQuarterly: 0, priceMonthly: 0, currencyCode: 'XAF', maxUsers: 5, maxStorageGb: 5, hasAI: false, isActive: true, sortOrder: 0 })
   const qc = useQueryClient()
-  const { data: plans, isLoading } = useQuery<any[]>({ queryKey: ['admin-plans'], queryFn: () => fetch('/api/subscription-plans').then(r => r.json()) })
+  const { data: plans, isLoading } = useQuery<any[]>({ queryKey: ['admin-plans'], queryFn: () => fetch('/api/subscription-plans').then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
   const saveMut = useMutation({
     mutationFn: async (f: any) => {
       const payload = { ...f, features: JSON.stringify(featuresText.split('\n').filter(Boolean)) }
@@ -326,7 +326,7 @@ export function AdminPlansView() {
     onError: (e: Error) => toast.error(e.message)
   })
   const openCreate = () => { setEditing(null); setForm({ name: '', slug: '', description: '', priceAnnual: 0, priceSemiAnnual: 0, priceQuarterly: 0, priceMonthly: 0, currencyCode: 'XAF', maxUsers: 5, maxStorageGb: 5, hasAI: false, isActive: true, sortOrder: 0 }); setFeaturesText(''); setDialogOpen(true) }
-  const openEdit = (p: any) => { setEditing(p); setForm({ name: p.name, slug: p.slug, description: p.description || '', priceAnnual: p.priceAnnual || 0, priceSemiAnnual: p.priceSemiAnnual || 0, priceQuarterly: p.priceQuarterly || 0, priceMonthly: p.priceMonthly || 0, currencyCode: p.currencyCode || 'XAF', maxUsers: p.maxUsers || 5, maxStorageGb: p.maxStorageGb || 5, hasAI: p.hasAI || false, isActive: p.isActive ?? true, sortOrder: p.sortOrder || 0 }); try { setFeaturesText((JSON.parse(p.features || '[]') as string[]).join('\n')) } catch { setFeaturesText('') }; setDialogOpen(true) }
+  const openEdit = (p: any) => { setEditing(p); setForm({ name: p.name, slug: p.slug, description: p.description || '', priceAnnual: p.priceAnnual || 0, priceSemiAnnual: p.priceSemiAnnual || 0, priceQuarterly: p.priceQuarterly || 0, priceMonthly: p.priceMonthly || 0, currencyCode: p.currencyCode || 'XAF', maxUsers: p.maxUsers || 5, maxStorageGb: p.maxStorageGb || 5, hasAI: p.hasAI || false, isActive: p.isActive ?? true, sortOrder: p.sortOrder || 0 }); try { const feat = JSON.parse(p.features || '[]'); setFeaturesText(Array.isArray(feat) ? feat.join('\n') : typeof feat === 'string' ? feat : '') } catch { setFeaturesText('') }; setDialogOpen(true) }
   const parseFeatures = (f: any): string[] => { if (Array.isArray(f)) return f; if (!f) return []; try { const parsed = JSON.parse(f); return Array.isArray(parsed) ? parsed : [String(parsed)]; } catch { return typeof f === 'string' && f.trim() ? f.split('\n').filter(Boolean) : [] } }
   return (<div className='p-6 space-y-4'>
     <div className='flex items-center justify-between flex-wrap gap-3'>
@@ -335,13 +335,13 @@ export function AdminPlansView() {
     </div>
     {isLoading ? <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className='h-72 rounded-xl' />)}</div> :
     <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-      {(plans || []).map((p: any) => (<Card key={p.id} className={cn('p-5 flex flex-col', !p.isActive && 'opacity-60')}><div className='flex items-start justify-between mb-3'><div><h3 className='text-base font-bold text-jl-primary'>{p.name}</h3><p className='text-xs text-jl-muted mt-0.5'>{p.description || ''}</p></div><div className='flex items-center gap-1'><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(p)}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[var(--danger)]' onClick={() => delMut.mutate(p.id)}><Trash2 className='size-3.5' /></Button></div></div>
+      {plans.map((p: any) => (<Card key={p.id} className={cn('p-5 flex flex-col', !p.isActive && 'opacity-60')}><div className='flex items-start justify-between mb-3'><div><h3 className='text-base font-bold text-jl-primary'>{p.name}</h3><p className='text-xs text-jl-muted mt-0.5'>{p.description || ''}</p></div><div className='flex items-center gap-1'><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(p)}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[var(--danger)]' onClick={() => delMut.mutate(p.id)}><Trash2 className='size-3.5' /></Button></div></div>
         <div className='mb-3'><span className='text-2xl font-bold text-jl-blue'>{fmtMoney(p.priceAnnual)}</span><span className='text-xs text-jl-muted'>/an</span></div>
         {p.priceMonthly > 0 && <p className='text-[10px] text-jl-muted mb-3'>{fmtMoney(p.priceMonthly)}/mois · {fmtMoney(p.priceQuarterly || 0)}/trimestre · {fmtMoney(p.priceSemiAnnual || 0)}/semestre</p>}
-        <div className='flex-1 space-y-1.5 mb-4'>{(parseFeatures(p.features) || []).slice(0, 6).map((f: string, i: number) => (<div key={i} className='flex items-center gap-2 text-xs text-jl-secondary'><CheckCircle2 className='size-3 text-[var(--success)] shrink-0' /><span>{f}</span></div>))}</div>
+        <div className='flex-1 space-y-1.5 mb-4'>{parseFeatures(p.features).slice(0, 6).map((f: string, i: number) => (<div key={i} className='flex items-center gap-2 text-xs text-jl-secondary'><CheckCircle2 className='size-3 text-[var(--success)] shrink-0' /><span>{f}</span></div>))}</div>
         <div className='flex items-center gap-2 flex-wrap'><Badge className='bg-jl-blue-light text-jl-blue text-[10px]'>{p.maxUsers} utilisateurs</Badge><Badge className='bg-jl-page text-jl-secondary text-[10px]'>{p.maxStorageGb} Go</Badge>{p.hasAI && <Badge className='bg-jl-gold text-white text-[10px]'>IA</Badge>}<Badge className={cn('text-[10px]', p.isActive ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#FEE2E2] text-[#991B1B]')}>{p.isActive ? 'Actif' : 'Inactif'}</Badge></div>
       </Card>))}
-      {(plans || []).length === 0 && <div className='col-span-full'><EmptyState icon={CreditCardIcon} title='Aucun forfait' /></div>}
+      {plans.length === 0 && <div className='col-span-full'><EmptyState icon={CreditCardIcon} title='Aucun forfait' /></div>}
     </div>}
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent className='max-w-lg max-h-[90vh] overflow-y-auto'><DialogHeader><DialogTitle>{editing ? 'Modifier le forfait' : 'Nouveau forfait'}</DialogTitle></DialogHeader>
       <div className='space-y-3'>
