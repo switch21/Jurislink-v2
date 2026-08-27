@@ -1,17 +1,15 @@
 import { NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
 import sharp from 'sharp'
 import { getDb } from '@/lib/db'
-import { randomUUID } from 'crypto'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
-import { getUploadsDir } from '@/lib/uploads'
+import { getSupabase, isStorageAvailable } from '@/lib/supabase'
+import { uploadFile } from '@/lib/storage'
 
 const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'tenant', 'update')
+  const auth = await authenticate(request, 'tenant', 'edit')
   if (isErrorResponse(auth)) return auth
 
   const db = getDb()
@@ -25,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Type de fichier non autorisé (PNG, JPEG, WebP, SVG)' }, { status: 400 })
+      return NextResponse.json({ error: 'Type non autorisé (PNG, JPEG, WebP, SVG)' }, { status: 400 })
     }
 
     if (file.size > MAX_SIZE) {
@@ -35,7 +33,6 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Resize to max 400x400, keep aspect ratio
     const processed = file.type === 'image/svg+xml'
       ? buffer
       : await sharp(buffer)
@@ -43,19 +40,22 @@ export async function POST(request: Request) {
           .png()
           .toBuffer()
 
-    const uploadsDir = await getUploadsDir()
-    const logoDir = path.join(uploadsDir, 'logos')
-    await mkdir(logoDir, { recursive: true })
-
     const ext = file.type === 'image/svg+xml' ? 'svg' : 'png'
-    const filename = `${tenantId}_${randomUUID().slice(0, 8)}.${ext}`
-    const filepath = path.join(logoDir, filename)
+    const logoFileName = `${tenantId}_logo.${ext}`
 
-    await writeFile(filepath, processed)
+    const storageKey = await uploadFile(processed, logoFileName, ext === 'svg' ? 'image/svg+xml' : 'image/png', 'logos')
 
-    const logoUrl = `/uploads/logos/${filename}`
+    // For Supabase, try to get a public URL
+    let logoUrl = `/api/tenants/logo?file=${encodeURIComponent(storageKey)}`
+    if (isStorageAvailable() && storageKey.startsWith('sb://')) {
+      const supabase = getSupabase()
+      if (supabase) {
+        const pathInBucket = storageKey.replace('sb://', '')
+        const { data } = supabase.storage.from('documents').getPublicUrl(pathInBucket)
+        logoUrl = data.publicUrl
+      }
+    }
 
-    // Update tenant
     const tenant = await db.tenant.update({
       where: { id: tenantId },
       data: { logoUrl },
@@ -64,7 +64,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ logoUrl, tenant })
   } catch (error) {
     console.error('Logo upload error:', error)
-    return NextResponse.json({ error: 'Erreur lors de l\'upload' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : "Erreur lors de l'upload"
+    return NextResponse.json({ error: msg }, { status: 500 })
   } finally {
     await db.$disconnect().catch(() => {})
   }

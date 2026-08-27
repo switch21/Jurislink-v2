@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { writeFile } from 'fs/promises'
-import path from 'path'
-import { randomUUID } from 'crypto'
-import { authenticate, isErrorResponse } from '@/lib/auth-server'
-import { getUploadsDir } from '@/lib/uploads'
+import { authenticate } from '@/lib/auth-server'
+import { uploadFile } from '@/lib/storage'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'document', 'view')
@@ -32,7 +29,6 @@ export async function GET(request: Request) {
       ]
     }
     if (tag) {
-      // Prisma doesn't support array_contains on String fields, use contains
       ;(where as Record<string, unknown>).tags = { contains: tag }
     }
 
@@ -47,7 +43,6 @@ export async function GET(request: Request) {
       take: 200,
     })
 
-    // Get all unique tags for this tenant
     const allDocs = await db.document.findMany({
       where: { tenantId },
       select: { tags: true },
@@ -61,7 +56,6 @@ export async function GET(request: Request) {
       }
     }
 
-    // Get all unique folders
     const folderSet = new Set<string>()
     for (const d of documents as Array<{ folder?: string | null }>) {
       if (d.folder) folderSet.add(d.folder)
@@ -103,20 +97,13 @@ export async function POST(request: Request) {
       )
     }
 
-    const uploadsDir = await getUploadsDir()
-
-    const ext = path.extname(file.name)
-    const uniqueName = `${randomUUID()}${ext}`
-    const filePath = path.join(uploadsDir, uniqueName)
-
-    const bytes = await file.arrayBuffer()
-    await writeFile(filePath, Buffer.from(bytes))
+    const storageKey = await uploadFile(file, file.name, file.type, tenantId)
 
     const document = await db.document.create({
       data: {
         fileName: file.name,
         fileSize: file.size,
-        filePath: uniqueName,
+        filePath: storageKey,
         version: 1,
         folder,
         tags: tags || null,

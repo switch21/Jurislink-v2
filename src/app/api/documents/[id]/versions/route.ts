@@ -4,11 +4,8 @@
  */
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { writeFile } from 'fs/promises'
-import path from 'path'
-import { randomUUID } from 'crypto'
-import { authenticate, isErrorResponse } from '@/lib/auth-server'
-import { getUploadsDir } from '@/lib/uploads'
+import { authenticate } from '@/lib/auth-server'
+import { uploadFile } from '@/lib/storage'
 
 export async function GET(
   request: Request,
@@ -44,10 +41,9 @@ export async function POST(
   if (auth instanceof NextResponse) return auth
 
   const db = getDb()
- try {
+  try {
     const { id } = await params
 
-    // Find the document
     const doc = await db.document.findUnique({ where: { id } })
     if (!doc) {
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
@@ -61,19 +57,12 @@ export async function POST(
       return NextResponse.json({ error: 'Fichier requis' }, { status: 400 })
     }
 
-    const uploadsDir = await getUploadsDir()
-    const ext = path.extname(file.name)
-    const uniqueName = `${randomUUID()}${ext}`
-    const filePath = path.join(uploadsDir, uniqueName)
-    const bytes = await file.arrayBuffer()
-    await writeFile(filePath, Buffer.from(bytes))
+    const storageKey = await uploadFile(file, file.name, file.type, doc.tenantId || undefined)
 
-    const newVersion = doc.version + 1
-
-    // Create version record
+    // Archive current version
     await db.documentVersion.create({
       data: {
-        version: doc.version, // Save old version number
+        version: doc.version,
         fileName: doc.fileName,
         fileSize: doc.fileSize,
         filePath: doc.filePath,
@@ -84,13 +73,13 @@ export async function POST(
       },
     })
 
-    // Update document with new file
+    const newVersion = doc.version + 1
     const updated = await db.document.update({
       where: { id },
       data: {
         fileName: file.name,
         fileSize: file.size,
-        filePath: uniqueName,
+        filePath: storageKey,
         version: newVersion,
         mimeType: file.type || doc.mimeType,
       },
@@ -99,7 +88,8 @@ export async function POST(
     return NextResponse.json(updated, { status: 200 })
   } catch (error) {
     console.error('Upload version error:', error)
-    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
+    const msg = error instanceof Error ? error.message : 'Erreur interne'
+    return NextResponse.json({ error: msg }, { status: 500 })
   } finally {
     await db.$disconnect().catch(() => {})
   }

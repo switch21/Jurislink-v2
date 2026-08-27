@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { readFile } from 'fs/promises'
-import path from 'path'
-import { authenticate, isErrorResponse } from '@/lib/auth-server'
-import { getUploadsDir } from '@/lib/uploads'
+import { authenticate } from '@/lib/auth-server'
+import { downloadFile } from '@/lib/storage'
 
 export async function GET(
   request: Request,
@@ -20,29 +18,28 @@ export async function GET(
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
     }
 
-    const filePath = path.join(await getUploadsDir(), doc.filePath)
     let fileBuffer: Buffer
     try {
-      fileBuffer = await readFile(filePath)
+      fileBuffer = await downloadFile(doc.filePath)
     } catch {
       return NextResponse.json({ error: 'Fichier introuvable sur le serveur' }, { status: 404 })
     }
 
-    const ext = path.extname(doc.fileName).toLowerCase()
+    const ext = doc.fileName.split('.').pop()?.toLowerCase()
     const mimeMap: Record<string, string> = {
-      '.pdf': 'application/pdf',
-      '.doc': 'application/msword',
-      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      '.xls': 'application/vnd.ms-excel',
-      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      '.ppt': 'application/vnd.ms-powerpoint',
-      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-      '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml',
-      '.txt': 'text/plain', '.csv': 'text/csv',
-      '.zip': 'application/zip', '.rar': 'application/x-rar-compressed',
+      pdf: 'application/pdf',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      xls: 'application/vnd.ms-excel',
+      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ppt: 'application/vnd.ms-powerpoint',
+      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      jpg: 'image/jpeg', jpeg: 'image/jpeg',
+      png: 'image/png', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+      txt: 'text/plain', csv: 'text/csv',
+      zip: 'application/zip', rar: 'application/x-rar-compressed',
     }
-    const contentType = doc.mimeType || mimeMap[ext] || 'application/octet-stream'
+    const contentType = doc.mimeType || mimeMap[ext || ''] || 'application/octet-stream'
 
     return new NextResponse(fileBuffer, {
       headers: {

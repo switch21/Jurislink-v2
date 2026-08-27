@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { readFile } from 'fs/promises'
-import path from 'path'
-import { getUploadsDir } from '@/lib/uploads'
+import { downloadFile } from '@/lib/storage'
 
 export async function GET(
   request: Request,
@@ -30,29 +28,27 @@ export async function GET(
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
     }
 
-    // Verify portal user has access to this document's case
     if (doc.case?.client?.portalUserId !== portalUserId) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const filePath = path.join(await getUploadsDir(), doc.filePath)
     let fileBuffer: Buffer
     try {
-      fileBuffer = await readFile(filePath)
+      fileBuffer = await downloadFile(doc.filePath)
     } catch {
       return NextResponse.json({ error: 'Fichier introuvable' }, { status: 404 })
     }
 
-    const ext = path.extname(doc.fileName).toLowerCase()
+    const ext = doc.fileName.split('.').pop()?.toLowerCase()
     const mimeMap: Record<string, string> = {
-      '.pdf': 'application/pdf',
-      '.doc': 'application/msword',
-      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-      '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp',
-      '.txt': 'text/plain', '.csv': 'text/csv',
+      pdf: 'application/pdf',
+      doc: 'application/msword',
+      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      jpg: 'image/jpeg', jpeg: 'image/jpeg',
+      png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+      txt: 'text/plain', csv: 'text/csv',
     }
-    const contentType = doc.mimeType || mimeMap[ext] || 'application/octet-stream'
+    const contentType = doc.mimeType || mimeMap[ext || ''] || 'application/octet-stream'
 
     return new NextResponse(fileBuffer, {
       headers: {

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { unlink } from 'fs/promises'
-import path from 'path'
-import { authenticate, isErrorResponse } from '@/lib/auth-server'
-import { getUploadsDir } from '@/lib/uploads'
+import { authenticate } from '@/lib/auth-server'
+import { deleteFile } from '@/lib/storage'
 
 export async function GET(
   request: Request,
@@ -76,7 +74,6 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    // Fetch document to get file path before deleting
     const document = await db.document.findUnique({
       where: { id },
       select: { filePath: true },
@@ -86,18 +83,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Delete file from disk
     if (document.filePath) {
-      const absolutePath = path.join(await getUploadsDir(), document.filePath)
-      try {
-        await unlink(absolutePath)
-      } catch (fsError) {
-        // Log but don't fail if file is already missing
-        console.warn(`File not found on disk: ${absolutePath}`, fsError)
-      }
+      await deleteFile(document.filePath).catch(() => {})
     }
 
-    // Delete database record
     await db.document.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (error) {
