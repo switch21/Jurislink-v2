@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { hasPermission } from '@/lib/rbac'
 
+/** UUID v4 regex — validates format before hitting Prisma */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export interface AuthUser {
   id: string
   email: string
@@ -19,7 +22,7 @@ export interface AuthUser {
  */
 export async function getAuthUser(request: Request): Promise<AuthUser | null> {
   const userId = request.headers.get('x-user-id')
-  if (!userId) return null
+  if (!userId || !UUID_RE.test(userId)) return null
 
   try {
     const db = getDb()
