@@ -134,3 +134,21 @@ Stage Summary:
 - 4 files fixed (3 view imports + 1 shared-ui re-export)
 - Dev server compiles and runs without errors
 - Version: v3.8.68 (hotfix)
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix document upload bug, gold color regression, and subscription update issues
+
+Work Log:
+- Investigated document upload error "Erreur lors du téléchargement" in DocumentsView.tsx
+- Found root cause: XHR requests did not include X-User-Id/X-Tenant-Id auth headers (auth-fetch.ts only overrides window.fetch, not XMLHttpRequest)
+- Added xhr.setRequestHeader('X-User-Id', user.id) and xhr.setRequestHeader('X-Tenant-Id', user.tenantId) to both handleUpload and handleUploadVersion
+- Fixed gold color regression: tailwind.config.ts had hsl() wrappers around CSS variables that contain hex values (e.g., hsl(#C8A45D) is invalid CSS). Removed all hsl() wrappers since @theme inline in globals.css already handles the mapping correctly
+- Improved subscription update error handling in AdminViews.tsx: mutation now extracts and displays actual error message from API response
+- Ran subscription expiry check: 3 active subscriptions, all healthy
+
+Stage Summary:
+- Document upload fix: src/views/DocumentsView.tsx lines 85-86 and 108-109 (added auth headers to XHR)
+- Gold color fix: tailwind.config.ts (removed hsl() wrappers from all color definitions)
+- Subscription error handling: src/views/AdminViews.tsx line 91 (better error extraction), line 93 (detailed error message)
+- All changes pass lint (only pre-existing script require() errors remain)

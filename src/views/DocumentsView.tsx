@@ -79,9 +79,11 @@ export function DocumentsView() {
       const xhr = new XMLHttpRequest()
       xhr.upload.onprogress = e => { if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100)) }
       await new Promise<void>((resolve, reject) => {
-        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { resolve() } else { reject(new Error('Upload failed')) } }
+        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { resolve() } else { reject(new Error(`Upload failed: ${xhr.status}`)) } }
         xhr.onerror = () => reject(new Error('Upload failed'))
         xhr.open('POST', '/api/documents')
+        if (user?.id) xhr.setRequestHeader('X-User-Id', user.id)
+        if (user?.tenantId) xhr.setRequestHeader('X-Tenant-Id', user.tenantId)
         xhr.send(fd)
       })
       toast.success('Document ajouté')
@@ -100,9 +102,11 @@ export function DocumentsView() {
       const xhr = new XMLHttpRequest()
       xhr.upload.onprogress = e => { if (e.lengthComputable) setVersionProgress(Math.round((e.loaded / e.total) * 100)) }
       await new Promise<void>((resolve, reject) => {
-        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { resolve() } else { reject(new Error('Version upload failed')) } }
+        xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) { resolve() } else { reject(new Error(`Version upload failed: ${xhr.status}`)) } }
         xhr.onerror = () => reject(new Error('Version upload failed'))
         xhr.open('POST', `/api/documents/${versionsDoc.id}/versions`)
+        if (user?.id) xhr.setRequestHeader('X-User-Id', user.id)
+        if (user?.tenantId) xhr.setRequestHeader('X-Tenant-Id', user.tenantId)
         xhr.send(fd)
       })
       toast.success(`Version ${versionsDoc.version + 1} créée`)
