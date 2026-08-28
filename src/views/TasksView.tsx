@@ -32,7 +32,7 @@ export function TasksView() {
 
   const { data: cases } = useQuery({
     queryKey: ['cases-mini', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
 
   const createMut = useMutation({
@@ -118,7 +118,7 @@ export function TasksView() {
                 <TableCell className="hidden sm:table-cell">
                   <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="text-[10px] h-7 gap-1"><Badge variant="outline" className={cn('text-[10px] border-0 p-0', taskStatusColor(t.status))}>{taskStatusLabel(t.status)}</Badge><ChevronDown className="size-3" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => { if (t.status !== 'a_faire') updateMut.mutate({ id: t.id, status: 'a_faire' }) }}><CircleDot className="size-3 mr-2" />À faire</DropdownMenuItem><DropdownMenuItem onClick={() => { if (t.status !== 'en_cours') updateMut.mutate({ id: t.id, status: 'en_cours' }) }}><Timer className="size-3 mr-2" />En cours</DropdownMenuItem><DropdownMenuItem onClick={() => { if (t.status !== 'terminee') updateMut.mutate({ id: t.id, status: 'terminee' }) }}><CheckCircle2 className="size-3 mr-2" />Terminée</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
                 </TableCell>
-                <TableCell className="hidden lg:table-cell"><div className="flex items-center gap-1.5">{t.assignedToUser ? <><Avatar className="size-5"><AvatarFallback className="text-[8px] bg-jl-blue text-white">{initials(t.assignedToUser.fullName)}</AvatarFallback></Avatar><span className="text-xs text-jl-secondary">{t.assignedToUser.fullName}</span></> : <span className="text-xs text-jl-muted">—</span>}</div></TableCell>
+                <TableCell className="hidden lg:table-cell"><div className="flex items-center gap-1.5">{t.assignedUsers && t.assignedUsers.length > 0 ? <><Avatar className="size-5"><AvatarFallback className="text-[8px] bg-jl-blue text-white">{initials(t.assignedUsers[0].fullName)}</AvatarFallback></Avatar><span className="text-xs text-jl-secondary">{t.assignedUsers[0].fullName}</span></> : <span className="text-xs text-jl-muted">—</span>}</div></TableCell>
                 <TableCell className="hidden lg:table-cell text-sm text-jl-secondary">{fmtDate(t.dueDate)}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">

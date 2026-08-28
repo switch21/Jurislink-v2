@@ -100,9 +100,9 @@ export async function GET(request: Request) {
       db.case.groupBy({ by: ['caseType'], where, _count: { caseType: true } }),
       // Activity
       db.auditLog.findMany({ where, include: { user: { select: { id: true, fullName: true } } }, orderBy: { timestamp: 'desc' }, take: 10 }),
-      // Overdue invoices
+      // Overdue invoices (factures only, due date <= now — same logic as /api/invoices/overdue)
       db.invoice.findMany({
-        where: { ...where, dueDate: { lt: now }, status: { in: ['non_paye', 'partiel'] } },
+        where: { ...where, type: 'facture', dueDate: { lte: now }, status: { in: ['non_paye', 'partiel'] } },
         include: { client: { select: { fullName: true } }, currency: { select: { code: true } } },
         orderBy: { dueDate: 'asc' },
       }),
@@ -124,9 +124,9 @@ export async function GET(request: Request) {
         include: { client: { select: { fullName: true } }, events: { where: { startTime: { gte: now, lte: threeDays } }, orderBy: { startTime: 'asc' }, take: 1 } },
         take: 10,
       }),
-      // Financial KPIs
-      db.invoice.aggregate({ where: { ...where, status: { in: ['non_paye', 'partiel'] } }, _sum: { amount: true } }),
-      db.invoice.count({ where: { ...where, dueDate: { lt: now }, status: { in: ['non_paye', 'partiel'] } } }),
+      // Financial KPIs (toRecover: all unpaid/partial; overdueInvoicesCount: overdue factures only)
+      db.invoice.aggregate({ where: { ...where, type: 'facture', status: { in: ['non_paye', 'partiel'] } }, _sum: { amount: true } }),
+      db.invoice.count({ where: { ...where, type: 'facture', dueDate: { lte: now }, status: { in: ['non_paye', 'partiel'] } } }),
       db.payment.aggregate({ where: { ...where, paidAt: { gte: firstDayOfMonth, lte: lastDayOfMonth }, status: { not: 'annule' } }, _sum: { amount: true } }),
       // Activity counts
       db.case.count({ where: { ...where, createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth } } }),

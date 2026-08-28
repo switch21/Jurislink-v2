@@ -397,7 +397,7 @@ export function CasesView() {
       const p = new URLSearchParams()
       if (user?.tenantId) p.set('tenantId', user.tenantId)
       if (statusFilter !== 'all') p.set('status', statusFilter)
-      if (typeFilter !== 'all') p.set('type', typeFilter)
+      if (typeFilter !== 'all') p.set('caseType', typeFilter)
       if (priorityFilter !== 'all') p.set('priority', priorityFilter)
       if (search) p.set('search', search)
       return fetch(`/api/cases?${p}`).then(r => r.json()).then(d => Array.isArray(d) ? d : [])
