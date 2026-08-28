@@ -17,6 +17,7 @@ export interface UserInfo {
   preferredLanguage?: string
   isActive?: boolean
   permissions?: UserPermission[]
+  roleObj?: { id: string; name: string; label: string; level: number; isSystem: boolean }
 }
 
 export interface PortalClientInfo {
@@ -160,10 +161,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   portalCurrentView: 'portal-dashboard',
   portalSelectedCaseId: null,
   login: (user) => {
+    // Normalize role: use roleObj.name if available (Prisma @default('lawyer') overrides the real role)
+    const normalized = { ...user, role: user.roleObj?.name || user.role }
     if (typeof window !== 'undefined') {
-      localStorage.setItem('jurislink_user', JSON.stringify(user))
+      localStorage.setItem('jurislink_user', JSON.stringify(normalized))
     }
-    set({ user, isAuthenticated: true, currentView: user.role === 'root_admin' ? 'admin-dashboard' : 'dashboard' })
+    set({ user: normalized, isAuthenticated: true, currentView: normalized.role === 'root_admin' ? 'admin-dashboard' : 'dashboard' })
   },
   logout: () => {
     if (typeof window !== 'undefined') {
@@ -177,7 +180,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   hasPermission: (resource, action) => {
     const user = get().user
     if (!user) return false
-    if (user.role === 'root_admin') return true
+    if (user.role === 'root_admin' || user.roleObj?.name === 'root_admin') return true
     const perm = user.permissions?.find(
       (p) => p.resource === resource && p.action === action
     )

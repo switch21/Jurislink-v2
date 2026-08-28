@@ -9,7 +9,7 @@ export interface AuthUser {
   id: string
   email: string
   fullName: string
-  role: string
+  role: string // normalized from roleObj.name in getAuthUser
   roleId: string | null
   tenantId: string | null
   isActive: boolean
@@ -37,13 +37,16 @@ export async function getAuthUser(request: Request): Promise<AuthUser | null> {
         tenantId: true,
         isActive: true,
         tenant: { select: { isActive: true } },
+        roleObj: { select: { name: true } },
       },
     })
     await db.$disconnect().catch(() => {})
 
     if (!user || !user.isActive) return null
     if (user.tenant && !user.tenant.isActive) return null
-    return user
+    // Normalize role: use roleObj.name (the real role) instead of the default 'lawyer' string
+    const { roleObj, ...rest } = user
+    return { ...rest, role: roleObj?.name ?? user.role }
   } catch {
     return null
   }

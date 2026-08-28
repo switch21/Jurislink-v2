@@ -166,7 +166,7 @@ if (typeof window !== 'undefined') {
 // ==================== MAIN APP ====================
 function AppInner() {
   const { isAuthenticated, isPortalAuthenticated, user } = useAppStore()
-  const isRootAdmin = user?.role === 'root_admin'
+  const isRootAdmin = user?.roleObj?.name === 'root_admin' || user?.role === 'root_admin'
   const needsTenant = isAuthenticated && !user?.tenantId && !isRootAdmin
   const [searchOpen, setSearchOpen] = useState(false)
 

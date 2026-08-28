@@ -29,12 +29,13 @@ export async function GET(
         createdAt: true,
         updatedAt: true,
         tenantId: true,
+        roleObj: { select: { id: true, name: true, label: true } },
       },
     })
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
-    return NextResponse.json(user)
+    return NextResponse.json({ ...user, role: user.roleObj?.name ?? user.role })
   } catch (error) {
     console.error('Get user error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -58,8 +59,8 @@ export async function PUT(
 
     // Prevent deactivation of root_admin
     if (body.isActive === false) {
-      const targetUser = await db.user.findUnique({ where: { id }, select: { role: true } })
-      if (targetUser?.role === 'root_admin') {
+      const targetUser = await db.user.findUnique({ where: { id }, select: { roleObj: { select: { name: true } } } })
+      if (targetUser?.roleObj?.name === 'root_admin') {
         return NextResponse.json({ error: 'Le compte root_admin ne peut pas être désactivé' }, { status: 403 })
       }
     }
@@ -92,9 +93,10 @@ export async function PUT(
         updatedAt: true,
         tenantId: true,
         tenant: { select: { id: true, name: true, slug: true, plan: true } },
+        roleObj: { select: { id: true, name: true, label: true } },
       },
     })
-    return NextResponse.json(user)
+    return NextResponse.json({ ...user, role: user.roleObj?.name ?? user.role })
   } catch (error) {
     console.error('Update user error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -114,11 +116,11 @@ export async function DELETE(
   const db = getDb()
   try {
     const { id } = await params
-    const targetUser = await db.user.findUnique({ where: { id }, select: { role: true, email: true } })
+    const targetUser = await db.user.findUnique({ where: { id }, select: { roleObj: { select: { name: true } }, email: true } })
     if (!targetUser) {
       return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
     }
-    if (targetUser.role === 'root_admin') {
+    if (targetUser.roleObj?.name === 'root_admin') {
       return NextResponse.json({ error: 'Le compte root_admin ne peut pas être supprimé' }, { status: 403 })
     }
     await db.user.delete({ where: { id } })

@@ -1,21 +1,28 @@
 import type { NextConfig } from "next";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
-// Load .env manually for Turbopack compatibility
+// Load .env manually for Turbopack compatibility (merge with process.env, don't override)
 const envPath = join(process.cwd(), '.env');
-let envFile: Record<string, string> = {};
-try {
-  const content = readFileSync(envPath, 'utf-8');
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx > 0) {
-      envFile[trimmed.slice(0, eqIdx)] = trimmed.slice(eqIdx + 1);
+const envFile: Record<string, string> = {};
+if (existsSync(envPath)) {
+  try {
+    const content = readFileSync(envPath, 'utf-8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx > 0) {
+        envFile[trimmed.slice(0, eqIdx)] = trimmed.slice(eqIdx + 1);
+      }
     }
+  } catch { /* ignore */ }
+} else {
+  // No .env file: pass through DATABASE_URL and JWT_SECRET from system env
+  for (const key of ['DATABASE_URL', 'JWT_SECRET', 'NEXTAUTH_SECRET', 'NEXTAUTH_URL', 'CRON_SECRET']) {
+    if (process.env[key]) envFile[key] = process.env[key]!
   }
-} catch { /* ignore */ }
+}
 
 const nextConfig: NextConfig = {
   typescript: {

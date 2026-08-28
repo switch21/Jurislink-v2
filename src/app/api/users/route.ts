@@ -26,11 +26,11 @@ export async function GET(request: Request) {
     if (effectiveTenantId) {
       where.tenantId = effectiveTenantId
       // Never expose root_admin to tenant-scoped queries
-      if (role) where.role = role
-      else where.role = { not: 'root_admin' }
+      if (role) where.roleObj = { name: role }
+      else where.roleObj = { name: { not: 'root_admin' } }
     } else {
-      if (role) where.role = role
-      else if (!includeRootAdmin) where.role = { not: 'root_admin' }
+      if (role) where.roleObj = { name: role }
+      else if (!includeRootAdmin) where.roleObj = { name: { not: 'root_admin' } }
     }
     if (!includeInactive) where.isActive = true
     if (search) {
@@ -66,7 +66,10 @@ export async function GET(request: Request) {
       db.user.count({ where }),
     ])
 
-    return NextResponse.json({ users, total, page, limit })
+    // Normalize role from roleObj.name (the 'role' column has Prisma default 'lawyer')
+    const normalizedUsers = users.map(u => ({ ...u, role: u.roleObj?.name ?? u.role }))
+
+    return NextResponse.json({ users: normalizedUsers, total, page, limit })
   } catch (error) {
     console.error('List users error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
