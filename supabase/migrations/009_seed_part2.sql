@@ -3,7 +3,7 @@ SET session_replication_role = 'replica';
 -- Section 7: Users
 INSERT INTO users (id, full_name, email, password, role_id, tenant_id, phone, is_active, preferred_language, created_at, updated_at)
 VALUES
-  ('a1000000-0007-0000-0000-000000000001', 'Administrateur Système', 'admin@jurislink.com', '$2b$10$plfP9RPtwfQ0F.l0XRXCIOpNU5BHeWreWm9my1Rxr36D/.IbCW9j6', 'a1000000-0002-0000-0000-000000000001', NULL, NULL, true, 'fr', NOW(), NOW()),
+  ('a1000000-0007-0000-0000-000000000001', 'Root Administrateur', 'pat.epee@gmail.com', '$2b$10$plfP9RPtwfQ0F.l0XRXCIOpNU5BHeWreWm9my1Rxr36D/.IbCW9j6', 'a1000000-0002-0000-0000-000000000001', NULL, NULL, true, 'fr', NOW(), NOW()),
   ('a1000000-0007-0000-0000-000000000002', 'Maître Mbeki', 'mbeki@jurislink.com', '$2b$10$plfP9RPtwfQ0F.l0XRXCIOpNU5BHeWreWm9my1Rxr36D/.IbCW9j6', 'a1000000-0002-0000-0000-000000000003', 'a1000000-0005-0000-0000-000000000001', '+237 6 11 22 33', true, 'fr', NOW(), NOW()),
   ('a1000000-0007-0000-0000-000000000003', 'Me Ngassa Paul', 'ngassa@jurislink.com', '$2b$10$plfP9RPtwfQ0F.l0XRXCIOpNU5BHeWreWm9my1Rxr36D/.IbCW9j6', 'a1000000-0002-0000-0000-000000000004', 'a1000000-0005-0000-0000-000000000001', '+237 6 55 44 33', true, 'fr', NOW(), NOW()),
   ('a1000000-0007-0000-0000-000000000004', 'Me Fotso Marie', 'fotso@jurislink.com', '$2b$10$plfP9RPtwfQ0F.l0XRXCIOpNU5BHeWreWm9my1Rxr36D/.IbCW9j6', 'a1000000-0002-0000-0000-000000000004', 'a1000000-0005-0000-0000-000000000001', '+237 6 77 88 99', true, 'fr', NOW(), NOW()),
