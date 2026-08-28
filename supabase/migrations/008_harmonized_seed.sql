@@ -282,7 +282,7 @@ INSERT INTO permissions (id, name, resource, action, description, created_at) VA
 -- ============================================================
 INSERT INTO role_permissions (id, role_id, permission_id, allowed, created_at)
 SELECT
-  'a1000000-0004-' || LPAD(seq::text, 4, '0') || '-0000-' || LPAD(seq::text, 12, '0'),
+  ('a1000000-0004-' || LPAD(seq::text, 4, '0') || '-0000-' || LPAD(seq::text, 12, '0'))::uuid,
   role_id,
   permission_id,
   CASE
