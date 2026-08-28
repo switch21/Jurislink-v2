@@ -761,3 +761,34 @@ Stage Summary:
 - All API routes now connect to the real Supabase database
 - Login authentication confirmed working (pat.epee@gmail.com / Admin@123)
 - Frontend should now display data after user logs in through the Preview Panel
+---
+Task ID: fix-dashboard-no-data
+Agent: Main Agent
+Task: Fix admin dashboard not showing tenants/users/dossiers data; Cabinet Mbeki has no dossiers
+
+Work Log:
+- Diagnosed root cause: `cases.ai_analysis` column missing in Supabase PostgreSQL database
+  - Prisma schema defines `aiAnalysis String? @map("ai_analysis")` on Case model (line 232)
+  - Column was never added via migration to the Supabase production database
+  - ALL `case.findMany()` calls failed with: "The column cases.ai_analysis does not exist"
+  - This caused: admin dashboard crash (counts cases), cases view empty, dashboard stats empty
+  - `Case.count()` worked (no column select), but `Case.findMany()` failed
+- Fixed by running: `ALTER TABLE cases ADD COLUMN IF NOT EXISTS ai_analysis TEXT;`
+- Verified all 11 cases now load correctly (9 for Mbeki, 2 for Ndong)
+- Updated `next.config.ts` to read both `.env` and `.env.local` with proper precedence
+  - `.env.local` now contains Supabase PostgreSQL DATABASE_URL
+  - Added proper quote stripping in env file parser
+  - System env vars used as final fallback
+- Verified all database queries pass: tenants (2), users (9), cases (11), clients (10), invoices (11), payments (6)
+- Verified admin dashboard data: 2 active tenants, 8 active users, 10 active cases
+
+Stage Summary:
+- **ROOT CAUSE**: Missing `ai_analysis` column in Supabase `cases` table
+  - This single column caused ALL case-related API endpoints to return 500 errors
+  - Admin dashboard, regular dashboard, cases view, and any view with case data was affected
+- **FIX 1**: Added `ai_analysis TEXT` column to `cases` table via direct SQL
+- **FIX 2**: Updated `next.config.ts` to properly read `.env.local` (contains Supabase URL)
+- Cabinet Mbeki & Associés actually has 9 dossiers (they were always in the DB, just couldn't be queried)
+- Etude Ndong Avocats has 2 dossiers
+- Commit: c9bb2be pushed to main
+- Note: .env.local is gitignored and contains sensitive DATABASE_URL
