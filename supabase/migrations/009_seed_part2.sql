@@ -24,7 +24,7 @@ VALUES
   ('a1000000-0008-0000-0000-000000000006', 'Pierre Epee', 'Epee & Co', 'p.epee@email.com', '+237 6 44 33 22', 'Douala', 'Cameroun', 'entreprise', 'moyen', 'recommandation', '987654321B', 'Ancien client du cabinet Ndong', 'a1000000-0007-0000-0000-000000000004', NOW(), 'a1000000-0005-0000-0000-000000000001', NOW(), NOW()),
   ('a1000000-0008-0000-0000-000000000007', 'Solange Nkoulou', NULL, 's.nkoulou@email.com', '+237 6 22 11 00', 'Douala', 'Cameroun', 'particulier', 'eleve', 'bouche_a_oreille', NULL, NULL, 'a1000000-0007-0000-0000-000000000003', NOW() - interval '2 days', 'a1000000-0005-0000-0000-000000000001', NOW(), NOW()),
   ('a1000000-0008-0000-0000-000000000008', 'André Mbarga', 'Mbarga Consulting', 'a.mbarga@email.com', '+237 6 33 44 55', 'Yaoundé', 'Cameroun', 'entreprise', 'faible', 'internet', NULL, NULL, NULL, NULL, 'a1000000-0005-0000-0000-000000000001', NOW(), NOW()),
-  ('a1000000-0008-0000-0000-000000000009', 'Paul Ondo', 'Ondo Import', 'p.ondo@email.com', '+241 06 11 22 33', 'Libreville', 'Gabon', 'entreprise', 'faible', NULL, NULL, NULL, NULL, 'a1000000-0007-0000-0000-000000000008', 'a1000000-0005-0000-0000-000000000002', NOW(), NOW()),
+  ('a1000000-0008-0000-0000-000000000009', 'Paul Ondo', 'Ondo Import', 'p.ondo@email.com', '+241 06 11 22 33', 'Libreville', 'Gabon', 'entreprise', 'faible', NULL, NULL, NULL, 'a1000000-0007-0000-0000-000000000008', NULL, 'a1000000-0005-0000-0000-000000000002', NOW(), NOW()),
   ('a1000000-0008-0000-0000-000000000010', 'Marie Nzoussi', NULL, 'm.nzoussi@email.com', '+241 06 44 55 66', 'Libreville', 'Gabon', 'particulier', 'moyen', NULL, NULL, NULL, NULL, NULL, 'a1000000-0005-0000-0000-000000000002', NOW(), NOW());
 
 -- Section 9: Cases
