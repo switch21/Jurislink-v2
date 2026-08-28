@@ -131,7 +131,14 @@ const loadUser = (): UserInfo | null => {
   if (typeof window === 'undefined') return null
   try {
     const stored = localStorage.getItem('jurislink_user')
-    if (stored) return JSON.parse(stored)
+    if (stored) {
+      const user = JSON.parse(stored)
+      // Normalize role from roleObj.name (fix for cached sessions with wrong role)
+      if (user.roleObj?.name) {
+        user.role = user.roleObj.name
+      }
+      return user
+    }
   } catch {
     // ignore
   }
