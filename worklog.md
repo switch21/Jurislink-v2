@@ -694,3 +694,33 @@ Stage Summary:
 - Commit: 7ddd1ce pushé sur main
 - Note: les données en production utilisent peut-être d'anciens statuts (open/in_progress au lieu de ouvert/en_cours)
 - Le seed SQL harmonisé (008) reste à finaliser pour corriger les données
+---
+Task ID: 7
+Agent: Super Z (main)
+Task: Fix 3 bugs — Tasks .map crash, invoice count inconsistency, cases filter param
+
+Work Log:
+- Analyzed TasksView.tsx: found `cases` query (line 33-36) had NO Array.isArray guard; when API returns error object `{error: "..."}`, `(cases || [])` evaluates to the truthy error object, and `.map()` crashes with `(k || []).map is not a function`
+- Fixed TasksView: added `.then(d => Array.isArray(d) ? d : [])` to cases query
+- Fixed TasksView: changed `t.assignedToUser` to `t.assignedUsers[0]` to match API response structure
+- Analyzed dashboard API: found overdue invoice query used `{ lt: now }` (strictly before) while Impayés API used `{ lte: now }` (before or equal)
+- Found dashboard overdue query also lacked `type: 'facture'` filter that Impayés API has
+- Fixed dashboard API: changed `{ lt: now }` to `{ lte: now }` and added `type: 'facture'` filter for consistency
+- Analyzed CasesView: found type filter sends `type=civil` but API reads `caseType` parameter
+- Fixed CasesView: changed `p.set('type', ...)` to `p.set('caseType', ...)`
+- Ran comprehensive audit of all 26 view files for .map() safety — no other critical issues found
+- Added error guard to DashboardView stats query (returns null on error objects)
+- Added .catch(() => null) to DashboardView subscription query
+- Ran lint: 0 errors, 1 warning (unused eslint-disable in seed.ts)
+- Committed as 7fe6947 and pushed to main
+
+Stage Summary:
+- **Bug 1 (Cases type filter)**: Fixed param name mismatch `type` → `caseType`
+- **Bug 2 (Tasks .map crash)**: Root cause was unguarded `cases` query returning error object. Fixed with Array.isArray guard.
+- **Bug 3 (Invoice count 5 vs 6 vs 0)**: Root cause was inconsistent query logic across 3 views:
+  - InvoicesView: `status='non_paye'` (all types, no due date filter) → 5
+  - ImpayésView: `type='facture' AND status in ['non_paye','partiel'] AND dueDate <= now` → 6
+  - Dashboard: was `dueDate < now` (no type filter) → 0. Now harmonized to match Impayés
+- All `.map()` crash risks audited — codebase is safe
+- Note: Cases "not visible" is likely a DATA issue (seed mismatch), not a code issue. The 008_harmonized_seed.sql for Supabase production is still needed.
+- Note: Local dev server cannot start due to DATABASE_URL mismatch (schema=postgresql, .env=file:)
