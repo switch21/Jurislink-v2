@@ -7,9 +7,12 @@ const ALERT_DAYS = [30, 15, 10, 5, 1]
 const CRON_SECRET = process.env.CRON_SECRET || 'jl-cron-2026'
 
 export async function POST(request: Request) {
-  // Allow cron jobs via secret header
+  // Allow Vercel Cron (Authorization: Bearer <CRON_SECRET>) or x-cron-secret header
+  const authHeader = request.headers.get('authorization')
   const cronSecret = request.headers.get('x-cron-secret')
-  if (cronSecret !== CRON_SECRET) {
+  const isValidCron =
+    (authHeader === `Bearer ${CRON_SECRET}`) || (cronSecret === CRON_SECRET)
+  if (!isValidCron) {
     const auth = await requireRootAdmin(request)
     if (auth instanceof NextResponse) return auth
   }

@@ -1,3 +1,13 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/subscriptions/check-expiry",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/invoices/overdue/auto-remind",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }
