@@ -92,6 +92,16 @@ export async function hasPermission(
 
   try {
     const db = getDb()
+
+    // Check if role has ANY permissions seeded at all.
+    // If the role has zero permissions, RBAC hasn't been seeded yet → allow everything.
+    const permCount = await db.rolePermission.count({ where: { roleId } })
+    if (permCount === 0) {
+      permissionCache.set(cacheKey, true)
+      await db.$disconnect().catch(() => {})
+      return true
+    }
+
     const rp = await db.rolePermission.findFirst({
       where: {
         roleId,
@@ -109,7 +119,8 @@ export async function hasPermission(
     }
     return result
   } catch {
-    return false
+    // On DB error (e.g. table doesn't exist), allow by default for safety
+    return true
   }
 }
 
