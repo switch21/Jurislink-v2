@@ -186,25 +186,26 @@ export async function GET(request: Request) {
     const casesByType: Record<string, number> = {}
     for (const item of casesByTypeRaw) casesByType[item.caseType] = item._count.caseType
 
-    const overdueInvoicesFormatted = overdueInvoices.map((inv: any) => {
+    const overdueInvoicesFormatted = (overdueInvoices || []).map((inv: any) => {
       const daysOverdue = Math.ceil((now.getTime() - new Date(inv.dueDate).getTime()) / 86400000)
-      return { id: inv.id, clientName: inv.client.fullName, amount: inv.amount, currencyCode: inv.currency?.code ?? 'XAF', dueDate: inv.dueDate, status: inv.status, daysOverdue }
+      return { id: inv.id, clientName: inv.client?.fullName ?? 'Inconnu', amount: inv.amount, currencyCode: inv.currency?.code ?? 'XAF', dueDate: inv.dueDate, status: inv.status, daysOverdue }
     })
 
-    const urgentTasksFormatted = urgentTasks.map((t: any) => ({
+    const urgentTasksFormatted = (urgentTasks || []).map((t: any) => ({
       id: t.id, title: t.title, priority: t.priority, status: t.status, dueDate: t.dueDate, caseReference: t.case?.reference ?? null
     }))
 
-    const upcomingEventsFormatted = upcomingEventsEnhanced.map((e: any) => ({
+    const upcomingEventsFormatted = (upcomingEventsEnhanced || []).map((e: any) => ({
       id: e.id, title: e.title, description: e.description, startTime: e.startTime, endTime: e.endTime, eventType: e.eventType, criticality: e.criticality,
-      caseReference: e.case?.reference ?? null, assignments: e.assignments.map((a: any) => ({ userId: a.userId, userName: a.user.fullName })),
+      caseReference: e.case?.reference ?? null, assignments: (e.assignments || []).map((a: any) => ({ userId: a.userId, userName: a.user?.fullName ?? 'Inconnu' })),
     }))
 
-    const urgencies = urgencyCases.map((c: any) => {
-      const nextEvent = c.events[0]
+    const urgencies = (urgencyCases || []).map((c: any) => {
+      const nextEvent = c.events?.[0]
+      if (!nextEvent) return null
       const daysRemaining = Math.ceil((new Date(nextEvent.startTime).getTime() - now.getTime()) / 86400000)
-      return { id: c.id, reference: c.reference, title: c.title, clientName: c.client.fullName, nextDueDate: nextEvent.startTime, daysRemaining }
-    })
+      return { id: c.id, reference: c.reference, title: c.title, clientName: c.client?.fullName ?? 'Inconnu', nextDueDate: nextEvent.startTime, daysRemaining }
+    }).filter(Boolean)
 
     const myTasks = tasks.map((t: any) => ({
       id: t.id, title: t.title, priority: t.priority, status: t.status, dueDate: t.dueDate, caseReference: t.case?.reference ?? null
@@ -214,7 +215,7 @@ export async function GET(request: Request) {
       id: d.id, fileName: d.fileName, status: d.status, createdAt: d.createdAt, caseReference: d.case?.reference ?? null, caseTitle: d.case?.title ?? null, uploadedBy: d.uploadedBy?.fullName ?? null
     }))
 
-    const casesWithoutDeadlinesFormatted = casesWithoutDeadlinesRaw.map((c: any) => ({
+    const casesWithoutDeadlinesFormatted = (casesWithoutDeadlinesRaw || []).map((c: any) => ({
       id: c.id, reference: c.reference, title: c.title, clientName: c.client?.fullName ?? null, status: c.status, updatedAt: c.updatedAt, pendingTasksCount: c._count.tasks
     }))
 
@@ -236,9 +237,9 @@ export async function GET(request: Request) {
       upcomingEventsEnhanced: upcomingEventsFormatted,
       myTasks,
       todayEventsCount: todayEvents.length,
-      todayEvents: todayEvents.map((e: any) => ({
+      todayEvents: (todayEvents || []).map((e: any) => ({
         id: e.id, title: e.title, startTime: e.startTime, endTime: e.endTime, eventType: e.eventType, criticality: e.criticality,
-        caseReference: e.case?.reference ?? null, assignments: e.assignments.map((a: any) => ({ userName: a.user.fullName })),
+        caseReference: e.case?.reference ?? null, assignments: (e.assignments || []).map((a: any) => ({ userName: a.user?.fullName ?? 'Inconnu' })),
       })),
       financial: {
         revenueThisMonth: revenueThisMonthResult._sum.amount ?? 0,

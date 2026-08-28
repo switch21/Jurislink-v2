@@ -10,7 +10,7 @@ export function DashboardView() {
   const { user, setCurrentView } = useAppStore()
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboard', user?.tenantId],
-    queryFn: () => fetch(`/api/dashboard?tenantId=${user!.tenantId}&userId=${user!.id}`).then(r => r.json()).then(d => d && typeof d === 'object' && !d.error ? d : null),
+    queryFn: () => fetch(`/api/dashboard?tenantId=${user!.tenantId}&userId=${user!.id}`).then(r => r.json()),
     enabled: !!user?.tenantId, refetchInterval: 60000
   })
 
