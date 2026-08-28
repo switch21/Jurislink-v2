@@ -22,8 +22,8 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       db.tenant.count(),
       db.tenant.count({ where: { isActive: true } }),
-      db.user.count({ where: { role: { not: 'root_admin' } } }),
-      db.user.count({ where: { role: { not: 'root_admin' }, isActive: true } }),
+      db.user.count({ where: { roleId: { not: 'a1000000-0002-0000-0000-000000000001' } } }),
+      db.user.count({ where: { roleId: { not: 'a1000000-0002-0000-0000-000000000001' }, isActive: true } }),
       db.case.count(),
       db.case.count({ where: { status: { in: ['nouveau', 'ouvert', 'en_cours', 'en_attente'] } } }),
       db.client.count(),
@@ -55,11 +55,16 @@ export async function GET(request: Request) {
     })
 
     // Users by role
-    const usersByRole = await db.user.groupBy({
-      by: ['role'],
-      _count: { id: true },
-      where: { role: { not: 'root_admin' } },
+    const usersByRole = await db.user.findMany({
+      select: { roleObj: { select: { name: true, label: true } } },
+      where: { roleId: { not: 'a1000000-0002-0000-0000-000000000001' } },
     })
+    const roleCounts: Record<string, number> = {}
+    for (const u of usersByRole) {
+      const name = u.roleObj?.name || 'unknown'
+      roleCounts[name] = (roleCounts[name] || 0) + 1
+    }
+    const usersByRoleFormatted = Object.entries(roleCounts).map(([role, count]) => ({ role, _count: { id: count } }))
 
     // Recent tenants
     const recentTenants = await db.tenant.findMany({
@@ -101,7 +106,7 @@ export async function GET(request: Request) {
       totalRevenue: paymentsAgg._sum.amount || 0,
       thisMonthRevenue: thisMonthPayments._sum.amount || 0,
       tenantsByPlan,
-      usersByRole,
+      usersByRole: usersByRoleFormatted,
       recentTenants,
       signupsByMonth,
       plans,
