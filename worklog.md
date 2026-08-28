@@ -724,3 +724,21 @@ Stage Summary:
 - All `.map()` crash risks audited — codebase is safe
 - Note: Cases "not visible" is likely a DATA issue (seed mismatch), not a code issue. The 008_harmonized_seed.sql for Supabase production is still needed.
 - Note: Local dev server cannot start due to DATABASE_URL mismatch (schema=postgresql, .env=file:)
+
+---
+Task ID: 7b
+Agent: Super Z (main)
+Task: Fix dashboard blank page + diagnose empty cases
+
+Work Log:
+- Diagnosed dashboard blank page: my previous commit added `.then(d => d && typeof d === 'object' && !d.error ? d : null)` guard which returned null on ANY API error, causing `if (!stats) return null` to show blank page
+- Reverted the overly aggressive dashboard query guard
+- Found ROOT CAUSE of dashboard 500 crash: null relation access in API (inv.client.fullName, a.user.fullName, c.client.fullName, c.events[0]) — when an invoice has no client or an event has no user, the .map() crashes the entire Promise.all
+- Fixed all null relation access in /api/dashboard/route.ts: added ?. optional chaining and (arr || []) guards on all .map() calls
+- Cases empty: confirmed as DATA problem — seed.ts was rewritten but never run on production Supabase. Other menus (invoices, tasks, clients) have data from earlier seeding.
+- Committed as 4776bc3 and pushed
+
+Stage Summary:
+- Dashboard should now load even with incomplete data (null relations handled gracefully)
+- Cases menu requires production data seeding — 008_harmonized_seed.sql still needed
+- 2 commits pushed: 7fe6947 (3 bug fixes) + 4776bc3 (dashboard crash fix)
