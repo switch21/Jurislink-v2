@@ -27,7 +27,7 @@ async function generateInvoiceNumber(db: ReturnType<typeof getDb>, type: string,
 }
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'invoices', 'read')
+  const auth = await authenticate(request, 'invoice', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'invoices', 'create')
+  const auth = await authenticate(request, 'invoice', 'create')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {

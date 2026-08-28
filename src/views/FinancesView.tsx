@@ -16,7 +16,7 @@ export function FinancesView() {
 
   const { data: paymentsData, isLoading: payLoading } = useQuery({
     queryKey: ['payments-finances', user?.tenantId],
-    queryFn: () => fetch(`/api/payments?tenantId=${user?.tenantId}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/payments?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : Array.isArray(d?.payments) ? d.payments : []),
     enabled: !!user?.tenantId,
   })
 
@@ -27,8 +27,8 @@ export function FinancesView() {
   })
 
   const fin = dashData?.financial
-  const payments: Payment[] = (paymentsData?.payments || paymentsData || [])
-  const overdueInvoices: Invoice[] = overdueData || []
+  const payments: Payment[] = Array.isArray(paymentsData) ? paymentsData : Array.isArray(paymentsData?.payments) ? paymentsData.payments : []
+  const overdueInvoices: Invoice[] = Array.isArray(overdueData) ? overdueData : []
   const now = new Date()
 
   const overdueList = useMemo(() => {
@@ -170,7 +170,7 @@ export function FinancesView() {
           <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Tous les clients" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les clients</SelectItem>
-            {(finClients || []).map((c: Client) => (
+            {(Array.isArray(finClients) ? finClients : []).map((c: Client) => (
               <SelectItem key={c.id} value={c.id}>{c.fullName}{c.company ? ` (${c.company})` : ''}</SelectItem>
             ))}
           </SelectContent>

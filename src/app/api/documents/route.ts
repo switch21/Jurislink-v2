@@ -121,7 +121,8 @@ export async function POST(request: Request) {
       },
     })
     // Trigger real-time notification (fire-and-forget)
-    fetch('http://localhost:3005/notify', {
+    const notifyUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3005'
+    fetch(`${notifyUrl}/notify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

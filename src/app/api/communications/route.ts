@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'communications', 'read')
+  const auth = await authenticate(request, 'communication', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -16,10 +16,7 @@ export async function GET(request: Request) {
     const status = searchParams.get('status')
 
     if (!tenantId) {
-  
-  const auth = await authenticate(request, 'communication', 'read')
-  if (auth instanceof NextResponse) return auth
-    return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
+      return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
     }
 
     const where: Prisma.CommunicationWhereInput = { tenantId }
@@ -49,7 +46,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'communications', 'create')
+  const auth = await authenticate(request, 'communication', 'create')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {

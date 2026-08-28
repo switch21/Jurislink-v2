@@ -7,7 +7,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticate(request, 'message', 'update')
+  const auth = await authenticate(request, 'message', 'edit')
   if (auth instanceof NextResponse) return auth
 
   const db = getDb()

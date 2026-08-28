@@ -6,7 +6,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticate(request, 'case', 'read')
+  const auth = await authenticate(request, 'case', 'view')
   if (auth instanceof NextResponse) return auth
 
   const db = getDb()
@@ -53,7 +53,8 @@ export async function POST(
     const caseLabel = caseRef?.reference || caseRef?.title || id
 
     // Trigger real-time notification to the assigned user (fire-and-forget)
-    fetch('http://localhost:3005/notify-user', {
+    const notifyUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3005'
+    fetch(`${notifyUrl}/notify-user`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

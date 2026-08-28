@@ -178,10 +178,10 @@ export function PortalCasesView() {
   const [statusFilter, setStatusFilter] = useState('all')
   const { data: cases, isLoading } = useQuery({
     queryKey: ['portal-cases'],
-    queryFn: () => fetch('/api/portal/cases').then(r => r.json()),
+    queryFn: () => fetch('/api/portal/cases').then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
   if (isLoading) return <div className='p-6 space-y-3'>{[1,2,3].map(i=><Skeleton key={i} className='h-32 rounded-xl' />)}</div>
-  const filtered = (cases || []).filter((c: PortalCaseItem) => {
+  const filtered = (Array.isArray(cases) ? cases : []).filter((c: PortalCaseItem) => {
     if (statusFilter !== 'all' && c.status !== statusFilter) return false
     if (search && !c.title.toLowerCase().includes(search.toLowerCase()) && !(c.reference || '').toLowerCase().includes(search.toLowerCase())) return false
     return true
@@ -239,7 +239,7 @@ export function PortalCaseDetailView() {
   })
   const { data: timeline } = useQuery({
     queryKey: ['portal-case-timeline', portalSelectedCaseId],
-    queryFn: () => fetch(`/api/portal/cases/${portalSelectedCaseId}/timeline`).then(r => r.json()),
+    queryFn: () => fetch(`/api/portal/cases/${portalSelectedCaseId}/timeline`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
     enabled: !!portalSelectedCaseId && tab === 'timeline',
   })
   if (isLoading) return <div className='p-6 space-y-4'><Skeleton className='h-40 rounded-xl' /><Skeleton className='h-60 rounded-xl' /></div>
@@ -368,7 +368,7 @@ export function PortalInvoicesView() {
   const currencyCode = portalUser?.tenant?.currencyCode || 'XAF'
   const { data: invoices, isLoading } = useQuery({
     queryKey: ['portal-invoices', statusFilter],
-    queryFn: () => fetch(`/api/portal/invoices${statusFilter !== 'all' ? `?status=${statusFilter}` : ''}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/portal/invoices${statusFilter !== 'all' ? `?status=${statusFilter}` : ''}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
   const { data: invoiceDetail } = useQuery({
     queryKey: ['portal-invoice-detail', selectedInvoice?.id],
@@ -376,7 +376,7 @@ export function PortalInvoicesView() {
     enabled: !!selectedInvoice,
   })
   if (isLoading) return <div className='p-6 space-y-3'>{[1,2,3].map(i=><Skeleton key={i} className='h-24 rounded-xl' />)}</div>
-  const filtered = invoices || []
+  const filtered = Array.isArray(invoices) ? invoices : []
   const totalAmount = filtered.reduce((s: number, inv: PortalInvoiceItem) => s + inv.amount, 0)
   const statusPills = ['all', 'non_paye', 'partiel', 'paye']
   return (
@@ -454,18 +454,18 @@ export function PortalDocumentsView() {
   const [search, setSearch] = useState('')
   const { data: docs, isLoading } = useQuery({
     queryKey: ['portal-documents', search],
-    queryFn: () => fetch(`/api/portal/documents${search ? `?search=${encodeURIComponent(search)}` : ''}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/portal/documents${search ? `?search=${encodeURIComponent(search)}` : ''}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
   if (isLoading) return <div className='p-6 space-y-3'>{[1,2,3].map(i=><Skeleton key={i} className='h-16 rounded-xl' />)}</div>
   return (
     <div className='p-4 lg:p-6 space-y-4'>
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
-        <div><h2 className='text-xl font-bold text-jl-primary'>Documents</h2><p className='text-sm text-jl-secondary'>{(docs || []).length} document{(docs || []).length > 1 ? 's' : ''}</p></div>
+        <div><h2 className='text-xl font-bold text-jl-primary'>Documents</h2><p className='text-sm text-jl-secondary'>{(Array.isArray(docs) ? docs : []).length} document{(Array.isArray(docs) ? docs : []).length > 1 ? 's' : ''}</p></div>
         <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' /><Input placeholder='Rechercher un document...' value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-jl' /></div>
       </div>
-      {(docs || []).length === 0 ? <EmptyState icon={FileText} title='Aucun document' description={search ? 'Aucun résultat' : 'Aucun document disponible'} /> : (
+      {(Array.isArray(docs) && docs.length === 0) ? <EmptyState icon={FileText} title='Aucun document' description={search ? 'Aucun résultat' : 'Aucun document disponible'} /> : (
         <div className='space-y-2'>
-          {(docs as PortalDocItem[]).map(doc => (
+          {(Array.isArray(docs) ? docs : []).map((doc: PortalDocItem) => (
             <div key={doc.id} className='flex items-center gap-3 p-3 rounded-lg bg-jl-card border border-jl hover:shadow-sm transition-shadow'>
               <div className={cn('size-10 rounded-lg flex items-center justify-center shrink-0', doc.mimeType?.includes('pdf') ? 'bg-[#FEE2E2]' : doc.mimeType?.includes('image') ? 'bg-[#D1FAE5]' : doc.mimeType?.includes('word') || doc.mimeType?.includes('document') ? 'bg-jl-blue-light' : 'bg-jl-blue-light')}>
                 {doc.mimeType?.includes('pdf') ? <FileText className='size-5 text-[var(--danger)]' /> : doc.mimeType?.includes('image') ? <FileImage className='size-5 text-[var(--success)]' /> : <FileText className='size-5 text-jl-blue' />}
@@ -494,11 +494,11 @@ export function PortalMessagesView() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { data: communications, isLoading } = useQuery({
     queryKey: ['portal-communications'],
-    queryFn: () => fetch('/api/portal/communications').then(r => r.json()),
+    queryFn: () => fetch('/api/portal/communications').then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
   const { data: cases } = useQuery({
     queryKey: ['portal-cases-mini'],
-    queryFn: () => fetch('/api/portal/cases').then(r => r.json()).then(d => (d || []).map((c: PortalCaseItem) => ({ id: c.id, reference: c.reference, title: c.title }))),
+    queryFn: () => fetch('/api/portal/cases').then(r => r.json()).then(d => (Array.isArray(d) ? d : []).map((c: PortalCaseItem) => ({ id: c.id, reference: c.reference, title: c.title }))),
   })
   const sendMessage = useMutation({
     mutationFn: async () => {
@@ -510,7 +510,7 @@ export function PortalMessagesView() {
   })
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [communications])
   if (isLoading) return <div className='p-6'><Skeleton className='h-96 rounded-xl' /></div>
-  const comms = (communications || []).reverse() as PortalCommunication[]
+  const comms = (Array.isArray(communications) ? [...communications].reverse() : []) as PortalCommunication[]
   return (
     <div className='flex flex-col h-[calc(100vh-8rem)]'>
       <div className='px-4 lg:px-6 pb-3'><h2 className='text-xl font-bold text-jl-primary'>Messagerie</h2><p className='text-sm text-jl-secondary'>Échangez avec votre cabinet</p></div>

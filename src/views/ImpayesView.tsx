@@ -25,7 +25,7 @@ export function ImpayesView() {
 
   const { data: reminderHistory } = useQuery({
     queryKey: ['reminder-history', historyDialog],
-    queryFn: () => fetch(`/api/invoices/${historyDialog}/remind`).then(r => r.json()),
+    queryFn: () => fetch(`/api/invoices/${historyDialog}/remind`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
     enabled: !!historyDialog,
   })
 

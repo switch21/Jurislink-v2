@@ -3,7 +3,7 @@ import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'audit-logs', 'read')
+  const auth = await authenticate(request, 'audit', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'audit-logs', 'create')
+  const auth = await authenticate(request, 'audit', 'create')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {

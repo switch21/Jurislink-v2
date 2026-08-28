@@ -85,7 +85,7 @@ export function AdminCabinsView() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin-tenants'] }); toast.success('Cabinet supprimé') },
     onError: () => toast.error('Erreur lors de la suppression')
   })
-  const { data: plans } = useQuery<Array<{ id: string; name: string; slug: string; priceAnnual: number; priceSemiAnnual: number; priceQuarterly: number; priceMonthly: number; maxUsers: number; maxStorageGb: number; isActive: boolean }>>({ queryKey: ['admin-plans-subs'], queryFn: () => fetch('/api/subscription-plans').then(r => r.json()) })
+  const { data: plans } = useQuery<Array<{ id: string; name: string; slug: string; priceAnnual: number; priceSemiAnnual: number; priceQuarterly: number; priceMonthly: number; maxUsers: number; maxStorageGb: number; isActive: boolean }>>({ queryKey: ['admin-plans-subs'], queryFn: () => fetch('/api/subscription-plans').then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
   const subMut = useMutation({
     mutationFn: (body: { tenantId: string; planId: string; billingPeriod: string; action: string }) =>
       fetch('/api/subscriptions/admin', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { if (!r.ok) { const err = await r.json().catch(() => ({})); throw new Error(err.error || `Erreur ${r.status}`); } return r.json() }),
@@ -335,13 +335,13 @@ export function AdminPlansView() {
     </div>
     {isLoading ? <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className='h-72 rounded-xl' />)}</div> :
     <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-      {plans.map((p: any) => (<Card key={p.id} className={cn('p-5 flex flex-col', !p.isActive && 'opacity-60')}><div className='flex items-start justify-between mb-3'><div><h3 className='text-base font-bold text-jl-primary'>{p.name}</h3><p className='text-xs text-jl-muted mt-0.5'>{p.description || ''}</p></div><div className='flex items-center gap-1'><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(p)}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[var(--danger)]' onClick={() => delMut.mutate(p.id)}><Trash2 className='size-3.5' /></Button></div></div>
+      {(plans || []).map((p: any) => (<Card key={p.id} className={cn('p-5 flex flex-col', !p.isActive && 'opacity-60')}><div className='flex items-start justify-between mb-3'><div><h3 className='text-base font-bold text-jl-primary'>{p.name}</h3><p className='text-xs text-jl-muted mt-0.5'>{p.description || ''}</p></div><div className='flex items-center gap-1'><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(p)}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[var(--danger)]' onClick={() => delMut.mutate(p.id)}><Trash2 className='size-3.5' /></Button></div></div>
         <div className='mb-3'><span className='text-2xl font-bold text-jl-blue'>{fmtMoney(p.priceAnnual)}</span><span className='text-xs text-jl-muted'>/an</span></div>
         {p.priceMonthly > 0 && <p className='text-[10px] text-jl-muted mb-3'>{fmtMoney(p.priceMonthly)}/mois · {fmtMoney(p.priceQuarterly || 0)}/trimestre · {fmtMoney(p.priceSemiAnnual || 0)}/semestre</p>}
         <div className='flex-1 space-y-1.5 mb-4'>{parseFeatures(p.features).slice(0, 6).map((f: string, i: number) => (<div key={i} className='flex items-center gap-2 text-xs text-jl-secondary'><CheckCircle2 className='size-3 text-[var(--success)] shrink-0' /><span>{f}</span></div>))}</div>
         <div className='flex items-center gap-2 flex-wrap'><Badge className='bg-jl-blue-light text-jl-blue text-[10px]'>{p.maxUsers} utilisateurs</Badge><Badge className='bg-jl-page text-jl-secondary text-[10px]'>{p.maxStorageGb} Go</Badge>{p.hasAI && <Badge className='bg-jl-gold text-white text-[10px]'>IA</Badge>}<Badge className={cn('text-[10px]', p.isActive ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#FEE2E2] text-[#991B1B]')}>{p.isActive ? 'Actif' : 'Inactif'}</Badge></div>
       </Card>))}
-      {plans.length === 0 && <div className='col-span-full'><EmptyState icon={CreditCardIcon} title='Aucun forfait' /></div>}
+      {!(plans || []).length && <div className='col-span-full'><EmptyState icon={CreditCardIcon} title='Aucun forfait' /></div>}
     </div>}
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent className='max-w-lg max-h-[90vh] overflow-y-auto'><DialogHeader><DialogTitle>{editing ? 'Modifier le forfait' : 'Nouveau forfait'}</DialogTitle></DialogHeader>
       <div className='space-y-3'>

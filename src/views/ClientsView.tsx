@@ -21,7 +21,7 @@ export function ClientsView() {
       const p = new URLSearchParams()
       if (user?.tenantId) p.set('tenantId', user.tenantId)
       if (search) p.set('search', search)
-      return fetch(`/api/clients?${p}`).then(r => r.json())
+      return fetch(`/api/clients?${p}`).then(r => r.json()).then(d => Array.isArray(d) ? d : [])
     },
   })
 
@@ -67,7 +67,7 @@ export function ClientsView() {
       <div className="relative max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-xs" /></div>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (clients || []).length === 0 ? <EmptyState icon={Users} title="Aucun client" description="Ajoutez votre premier client" /> :
+        (Array.isArray(clients) && clients.length === 0) ? <EmptyState icon={Users} title="Aucun client" description="Ajoutez votre premier client" /> :
         <Card><CardContent className="p-0"><div className="max-h-[500px] overflow-y-auto">
           <Table><TableHeader><TableRow>
             <TableHead>Nom</TableHead>
@@ -77,7 +77,7 @@ export function ClientsView() {
             <TableHead className="hidden sm:table-cell">Dossiers</TableHead>
             <TableHead className="w-24">Actions</TableHead>
           </TableRow></TableHeader><TableBody>
-            {(clients || []).map((c: Client, i: number) => (
+            {(Array.isArray(clients) ? clients : []).map((c: Client, i: number) => (
               <TableRow key={c.id} className={cn(i % 2 === 1 && 'bg-jl-page', 'cursor-pointer')} onClick={() => { setSelectedClient(c); setDetailOpen(true) }}>
                 <TableCell>
                   <div className="flex items-center gap-2">

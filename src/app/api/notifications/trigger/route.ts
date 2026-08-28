@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { authenticate } from '@/lib/auth-server'
 
-const NOTIFICATION_SERVICE_URL = 'http://localhost:3005'
+const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3005'
 
 export async function POST(request: Request) {
   // Auth check — skip RBAC for internal trigger but require valid user

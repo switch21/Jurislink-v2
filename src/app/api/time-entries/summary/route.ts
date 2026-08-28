@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'time-entries', 'read')
+  const auth = await authenticate(request, 'time_entry', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {

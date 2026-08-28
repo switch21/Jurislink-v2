@@ -21,7 +21,7 @@ export function TasksView() {
       if (user?.tenantId) p.set('tenantId', user.tenantId)
       if (statusFilter !== 'all') p.set('status', statusFilter)
       if (priorityFilter !== 'all') p.set('priority', priorityFilter)
-      return fetch(`/api/tasks?${p}`).then(r => r.json()).then(d => d.tasks || d)
+      return fetch(`/api/tasks?${p}`).then(r => r.json()).then(d => Array.isArray(d?.tasks) ? d.tasks : Array.isArray(d) ? d : [])
     },
   })
 

@@ -400,13 +400,13 @@ export function CasesView() {
       if (typeFilter !== 'all') p.set('type', typeFilter)
       if (priorityFilter !== 'all') p.set('priority', priorityFilter)
       if (search) p.set('search', search)
-      return fetch(`/api/cases?${p}`).then(r => r.json())
+      return fetch(`/api/cases?${p}`).then(r => r.json()).then(d => Array.isArray(d) ? d : [])
     },
   })
 
   const { data: clients } = useQuery({
     queryKey: ['clients-mini', user?.tenantId],
-    queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
 
   const { data: users } = useQuery({
@@ -422,7 +422,7 @@ export function CasesView() {
 
   const { data: caseTasks } = useQuery({
     queryKey: ['case-tasks', selectedCase?.id],
-    queryFn: () => fetch(`/api/tasks?caseId=${selectedCase!.id}&tenantId=${user?.tenantId}`).then(r => r.json()).then(d => d.tasks || d || []),
+    queryFn: () => fetch(`/api/tasks?caseId=${selectedCase!.id}&tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : Array.isArray(d?.tasks) ? d.tasks : []),
     enabled: !!selectedCase?.id && detailOpen,
   })
 
@@ -474,7 +474,7 @@ export function CasesView() {
   // Unified timeline query from server
   const { data: timelineData, isLoading: timelineLoading } = useQuery({
     queryKey: ['case-timeline', selectedCase?.id, timelineSearch],
-    queryFn: () => fetch(`/api/cases/${selectedCase!.id}/timeline?tenantId=${user?.tenantId}&search=${encodeURIComponent(timelineSearch)}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/cases/${selectedCase!.id}/timeline?tenantId=${user?.tenantId}&search=${encodeURIComponent(timelineSearch)}`).then(r => r.json()).then(d => d || {}),
     enabled: !!selectedCase?.id && detailOpen,
   })
 
@@ -586,9 +586,9 @@ export function CasesView() {
       </div>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (cases || []).length === 0 ? <EmptyState icon={Briefcase} title="Aucun dossier" description="Créez votre premier dossier" /> :
+        (Array.isArray(cases) && cases.length === 0) ? <EmptyState icon={Briefcase} title="Aucun dossier" description="Créez votre premier dossier" /> :
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
-          {(cases || []).map(c => (
+          {(Array.isArray(cases) ? cases : []).map(c => (
             <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication'])); setShowInlineNote(false); setShowInlineEvent(false); setTimelineSearch('') }}>
               <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[var(--accent)]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-2">
@@ -615,7 +615,7 @@ export function CasesView() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Référence *</Label><Input value={form.reference} onChange={e => setForm(f => ({ ...f, reference: e.target.value }))} placeholder="REF-001" /></div>
-              <div><Label>Client *</Label><Select value={form.clientId} onValueChange={v => setForm(f => ({ ...f, clientId: v }))}><SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger><SelectContent>{(clients || []).map(cl => <SelectItem key={cl.id} value={cl.id}>{cl.fullName}{cl.company ? ` (${cl.company})` : ''}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>Client *</Label><Select value={form.clientId} onValueChange={v => setForm(f => ({ ...f, clientId: v }))}><SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger><SelectContent>{(Array.isArray(clients) ? clients : []).map(cl => <SelectItem key={cl.id} value={cl.id}>{cl.fullName}{cl.company ? ` (${cl.company})` : ''}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div><Label>Titre *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
             <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
@@ -642,7 +642,7 @@ export function CasesView() {
             <div className="mt-3">
               <Label className="text-xs mb-1.5 block">Collaborateurs du dossier</Label>
               <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 border rounded-lg bg-jl-page">
-                {users && users.map(u => (
+                {Array.isArray(users) && users.map(u => (
                   <label key={u.id} className={cn('flex items-center gap-1 px-2 py-1 rounded-md text-xs cursor-pointer transition-colors', selectedCollabs.includes(u.id) ? 'bg-jl-blue text-white' : 'bg-jl-card border border-jl hover:bg-jl-blue-light')}>
                     <input type="checkbox" className="hidden" checked={selectedCollabs.includes(u.id)} onChange={e => { if (e.target.checked) setSelectedCollabs(prev => [...prev, u.id]); else setSelectedCollabs(prev => prev.filter(id => id !== u.id)) }} />
                     <Avatar className="size-4 mr-1"><AvatarFallback className="text-[7px] bg-jl-blue-light text-jl-secondary">{initials(u.fullName)}</AvatarFallback></Avatar>
@@ -950,14 +950,14 @@ export function CasesView() {
             </TabsContent>
             <TabsContent value="taches" className="mt-4 overflow-y-auto max-h-[50vh]">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-jl-secondary">{(caseTasks || []).length} tâche{(caseTasks || []).length > 1 ? 's' : ''}</span>
+                <span className="text-xs font-medium text-jl-secondary">{(Array.isArray(caseTasks) ? caseTasks : []).length} tâche{(Array.isArray(caseTasks) ? caseTasks : []).length > 1 ? 's' : ''}</span>
                 <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={handleGenerateWorkflow} disabled={generatingWorkflow}>
                   {generatingWorkflow ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
                   Générer les tâches
                 </Button>
               </div>
-              {(caseTasks || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune tâche — cliquez sur « Générer les tâches » pour créer les tâches recommandées</p> :
-              <div className="space-y-2">{(caseTasks || []).map((t: TaskItem) => (
+              {(Array.isArray(caseTasks) && caseTasks.length === 0) ? <p className="text-sm text-jl-muted text-center py-8">Aucune tâche — cliquez sur « Générer les tâches » pour créer les tâches recommandées</p> :
+              <div className="space-y-2">{(Array.isArray(caseTasks) ? caseTasks : []).map((t: TaskItem) => (
                 <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
                   <span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[var(--danger)]' : t.priority === 'haute' ? 'bg-[var(--accent)]' : 'bg-jl-gold')} />
                   <div className="min-w-0 flex-1"><p className={cn('text-sm font-medium', t.status === 'terminee' && 'line-through')}>{t.title}</p>{t.dueDate && <p className="text-[10px] text-jl-muted">Échéance: {fmtDate(t.dueDate)}</p>}</div>
@@ -1009,7 +1009,7 @@ export function CasesView() {
             </TabsContent>
             <TabsContent value="workflow" className="mt-4 overflow-y-auto max-h-[50vh]">
               {/* Progress indicator */}
-              {(caseTasks || []).length > 0 && (
+              {(Array.isArray(caseTasks) && caseTasks.length > 0) && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-medium text-jl-secondary">Progression des tâches</span>

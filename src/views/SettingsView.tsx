@@ -34,7 +34,7 @@ export function SettingsView() {
 
   const { data: currencies } = useQuery({
     queryKey: ['currencies'],
-    queryFn: () => fetch('/api/currencies').then(r => r.json()),
+    queryFn: () => fetch('/api/currencies').then(r => r.json()).then(d => Array.isArray(d) ? d : []),
     enabled: isAdmin,
   })
 
@@ -64,7 +64,7 @@ export function SettingsView() {
 
   const { data: plans } = useQuery({
     queryKey: ['subscription-plans'],
-    queryFn: () => fetch('/api/subscription-plans').then(r => r.json()),
+    queryFn: () => fetch('/api/subscription-plans').then(r => r.json()).then(d => Array.isArray(d) ? d : []),
     enabled: isAdmin,
   })
 

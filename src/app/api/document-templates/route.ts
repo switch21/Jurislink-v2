@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'document-templates', 'read')
+  const auth = await authenticate(request, 'document_template', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'document-templates', 'create')
+  const auth = await authenticate(request, 'document_template', 'create')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const auth = await authenticate(request, 'document-templates', 'delete')
+  const auth = await authenticate(request, 'document_template', 'delete')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {

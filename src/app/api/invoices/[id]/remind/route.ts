@@ -65,7 +65,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticate(request, 'invoice', 'update')
+  const auth = await authenticate(request, 'invoice', 'edit')
   if (auth instanceof NextResponse) return auth
 
   const db = getDb()

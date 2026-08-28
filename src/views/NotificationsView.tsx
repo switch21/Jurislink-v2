@@ -18,7 +18,7 @@ export function NotificationsView() {
       if (user?.tenantId) p.set('tenantId', user.tenantId)
       if (category !== 'all') p.set('category', category)
       if (unreadOnly) p.set('unreadOnly', 'true')
-      return fetch(`/api/notifications?${p}`).then(r => r.json())
+      return fetch(`/api/notifications?${p}`).then(r => r.json()).then(d => { if (Array.isArray(d)) return d; if (Array.isArray(d?.notifications)) return d.notifications; return [] })
     },
   })
 
@@ -28,7 +28,7 @@ export function NotificationsView() {
     onError: () => toast.error('Erreur'),
   })
 
-  const notifications: Notification[] = notifsData?.notifications || notifsData || []
+  const notifications: Notification[] = Array.isArray(notifsData) ? notifsData : Array.isArray(notifsData?.notifications) ? notifsData.notifications : []
   const unreadCount = notifications.filter(n => !n.read).length
 
   const catTabs = [

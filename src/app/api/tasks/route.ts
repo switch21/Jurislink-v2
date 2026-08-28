@@ -3,7 +3,7 @@ import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'tasks', 'read')
+  const auth = await authenticate(request, 'task', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'tasks', 'create')
+  const auth = await authenticate(request, 'task', 'create')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -153,7 +153,8 @@ export async function POST(request: Request) {
     }
 
     // Trigger real-time notification (fire-and-forget)
-    fetch('http://localhost:3005/notify', {
+    const notifyUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3005'
+    fetch(`${notifyUrl}/notify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

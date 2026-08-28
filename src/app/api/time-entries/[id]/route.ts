@@ -6,7 +6,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await authenticate(request, 'time_entry', 'read')
+  const auth = await authenticate(request, 'time_entry', 'view')
   if (auth instanceof NextResponse) return auth
 
   const db = getDb()
@@ -37,7 +37,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await authenticate(request, 'time_entry', 'update')
+  const auth = await authenticate(request, 'time_entry', 'edit')
   if (auth instanceof NextResponse) return auth
 
   const db = getDb()

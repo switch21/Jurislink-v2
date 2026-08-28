@@ -16,7 +16,7 @@ export function AuditLogsView() {
       const p = new URLSearchParams()
       if (user?.tenantId) p.set('tenantId', user.tenantId)
       if (resourceType !== 'all') p.set('resourceType', resourceType)
-      return fetch(`/api/audit-logs?${p}`).then(r => r.json())
+      return fetch(`/api/audit-logs?${p}`).then(r => r.json()).then(d => Array.isArray(d) ? d : [])
     },
     enabled: isAdmin,
   })
@@ -32,7 +32,7 @@ export function AuditLogsView() {
       </Select>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (logs || []).length === 0 ? <EmptyState icon={Shield} title="Aucune entrée" /> :
+        (Array.isArray(logs) && logs.length === 0) ? <EmptyState icon={Shield} title="Aucune entrée" /> :
         <Card><CardContent className="p-0"><div className="max-h-[500px] overflow-y-auto">
           <Table><TableHeader><TableRow>
             <TableHead>Date</TableHead>
@@ -41,7 +41,7 @@ export function AuditLogsView() {
             <TableHead className="hidden md:table-cell">Ressource</TableHead>
             <TableHead className="hidden lg:table-cell">IP</TableHead>
           </TableRow></TableHeader><TableBody>
-            {(logs || []).map((log: AuditLogItem) => (
+            {(Array.isArray(logs) ? logs : []).map((log: AuditLogItem) => (
               <TableRow key={log.id}>
                 <TableCell className="text-xs text-jl-secondary">{fmtDateTime(log.timestamp)}</TableCell>
                 <TableCell className="text-sm">{log.user?.fullName || 'Système'}</TableCell>

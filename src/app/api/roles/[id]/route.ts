@@ -23,10 +23,7 @@ export async function GET(
     })
 
     if (!role) {
- 
-  const auth = await authenticate(request, 'roles', 'read')
-  if (auth instanceof NextResponse) return auth
-     return NextResponse.json({ error: 'Rôle introuvable' }, { status: 404 })
+      return NextResponse.json({ error: 'Rôle introuvable' }, { status: 404 })
     }
 
     return NextResponse.json(role)
@@ -43,7 +40,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticate(request, 'role', 'update')
+  const auth = await authenticate(request, 'role', 'edit')
   if (isErrorResponse(auth)) return auth
 
   const db = getDb()

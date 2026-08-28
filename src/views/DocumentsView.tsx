@@ -32,7 +32,7 @@ export function DocumentsView() {
 
   const { data: cases } = useQuery({
     queryKey: ['cases-mini-docs', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
 
   const { data: docsData, isLoading } = useQuery({
@@ -54,7 +54,7 @@ export function DocumentsView() {
 
   const { data: versions } = useQuery({
     queryKey: ['doc-versions', versionsDoc?.id],
-    queryFn: () => fetch(`/api/documents/${versionsDoc!.id}/versions`).then(r => r.json()),
+    queryFn: () => fetch(`/api/documents/${versionsDoc!.id}/versions`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
     enabled: !!versionsDoc?.id,
   })
 
@@ -143,7 +143,7 @@ export function DocumentsView() {
         </div>
         <Select value={caseFilter} onValueChange={setCaseFilter}>
           <SelectTrigger className="w-full sm:w-[200px] h-9 text-xs"><SelectValue placeholder="Filtrer par dossier" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tous les dossiers</SelectItem>{(cases || []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent>
+          <SelectContent><SelectItem value="all">Tous les dossiers</SelectItem>{(Array.isArray(cases) ? cases : []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent>
         </Select>
         <div className="flex gap-1 items-center">
           <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" className="size-9" onClick={() => setViewMode('list')}><List className="size-4" /></Button></TooltipTrigger><TooltipContent>Liste</TooltipContent></Tooltip></TooltipProvider>
@@ -257,7 +257,7 @@ export function DocumentsView() {
               {selectedFile ? <><FileUp className="size-8 mx-auto text-jl-blue mb-2" /><p className="text-sm font-medium truncate">{selectedFile.name}</p><p className="text-xs text-jl-muted">{fmtFileSize(selectedFile.size)}</p></> : <><Upload className="size-8 mx-auto text-jl-muted mb-2" /><p className="text-sm font-medium">Cliquez pour sélectionner un fichier</p><p className="text-xs text-jl-muted">PDF, DOC, XLS, JPG, PNG, et plus</p></>}
             </div>
             {uploading && <div className="space-y-1"><div className="flex justify-between text-xs"><span className="text-jl-secondary">Téléchargement...</span><span className="font-medium">{uploadProgress}%</span></div><Progress value={uploadProgress} className="h-1.5" /></div>}
-            <div><Label className="text-xs">Dossier lié</Label><Select value={uploadForm.caseId} onValueChange={v => setUploadForm(f => ({ ...f, caseId: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue placeholder="Aucun" /></SelectTrigger><SelectContent>{(cases || []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label className="text-xs">Dossier lié</Label><Select value={uploadForm.caseId} onValueChange={v => setUploadForm(f => ({ ...f, caseId: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue placeholder="Aucun" /></SelectTrigger><SelectContent>{(Array.isArray(cases) ? cases : []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs">Répertoire</Label><Select value={uploadForm.folder} onValueChange={v => setUploadForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
               <div><Label className="text-xs">Type de document</Label><Select value={uploadForm.documentType} onValueChange={v => setUploadForm(f => ({ ...f, documentType: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{docTypes.map(dt => <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>)}</SelectContent></Select></div>

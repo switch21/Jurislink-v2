@@ -587,3 +587,89 @@ Stage Summary:
 - Build: ✓ Compiled successfully
 - Lint: ✓ No errors
 - Commit: bdf25c5, pushed to main
+---
+Task ID: 2
+Agent: General-purpose (sub-agent)
+Task: Fix Array.isArray guards in all view files to prevent crash on API error responses
+
+Work Log:
+- Root cause: API error responses (e.g. `{error: 'Unauthorized'}`) are truthy objects, so `(data || [])` passes them through, and subsequent `.map()` / `.filter()` calls crash with "X.map is not a function"
+- Fixed 14 view files with Array.isArray guards across ~35 vulnerable patterns
+
+Files modified (with changes):
+1. **FinancesView.tsx** (MOST CRITICAL — likely source of reported bug)
+   - Line 19: Added `.then(d => Array.isArray(d) ? d : Array.isArray(d?.payments) ? d.payments : [])` to payments query
+   - Line 30: Changed `(paymentsData?.payments || paymentsData || [])` → `Array.isArray(paymentsData) ? paymentsData : Array.isArray(paymentsData?.payments) ? paymentsData.payments : []`
+   - Line 31: Changed `overdueData || []` → `Array.isArray(overdueData) ? overdueData : []`
+   - Line 173: Changed `(finClients || []).map(...)` → `(Array.isArray(finClients) ? finClients : []).map(...)`
+
+2. **AuditLogsView.tsx**
+   - Line 19: Added `.then(d => Array.isArray(d) ? d : [])` to queryFn
+   - Lines 35, 44: Changed `(logs || [])` → `Array.isArray(logs)` checks
+
+3. **ArchivesView.tsx**
+   - Line 13: Added `.then(d => Array.isArray(d) ? d : [])` to queryFn
+   - Lines 20, 22: Changed `(cases || [])` → `Array.isArray(cases)` checks
+
+4. **CalendarView.tsx**
+   - Line 25: Added `.then(d => Array.isArray(d) ? d : [])` to tenantCases query
+   - Line 156: Changed `(tenantUsers || []).map(...)` → `(Array.isArray(tenantUsers) ? tenantUsers : []).map(...)`
+   - Line 155: Changed `(tenantCases || []).map(...)` → `(Array.isArray(tenantCases) ? tenantCases : []).map(...)`
+
+5. **CasesView.tsx** (lines 394-1058)
+   - Line 403: Added `.then(d => Array.isArray(d) ? d : [])` to cases query
+   - Line 409: Added `.then(d => Array.isArray(d) ? d : [])` to clients query
+   - Line 425: Changed `d.tasks || d || []` → `Array.isArray(d) ? d : Array.isArray(d?.tasks) ? d.tasks : []`
+   - Line 477: Added `.then(d => d || {})` to timeline query (defensive)
+   - Lines 589, 591: Changed `(cases || [])` → `Array.isArray(cases)` checks
+   - Line 618: Changed `(clients || []).map(...)` → `(Array.isArray(clients) ? clients : []).map(...)`
+   - Line 645: Changed `users && users.map(...)` → `Array.isArray(users) && users.map(...)`
+   - Lines 953, 959, 1012, 1016, 1018: Added `Array.isArray(caseTasks)` guards for filter/map/length
+
+6. **NotificationsView.tsx**
+   - Line 21: Added `.then(d => { if (Array.isArray(d)) return d; if (Array.isArray(d?.notifications)) return d.notifications; return [] })`
+   - Line 31: Changed `notifsData?.notifications || notifsData || []` → `Array.isArray(notifsData) ? notifsData : Array.isArray(notifsData?.notifications) ? notifsData.notifications : []`
+
+7. **PortalViews.tsx** (641 lines, 5 exports)
+   - Line 181: Added `.then(d => Array.isArray(d) ? d : [])` to portal-cases query
+   - Line 184: Changed `(cases || []).filter(...)` → `(Array.isArray(cases) ? cases : []).filter(...)`
+   - Line 242: Added `.then(d => Array.isArray(d) ? d : [])` to timeline query
+   - Line 371: Added `.then(d => Array.isArray(d) ? d : [])` to portal-invoices query
+   - Line 379: Changed `invoices || []` → `Array.isArray(invoices) ? invoices : []`
+   - Line 457: Added `.then(d => Array.isArray(d) ? d : [])` to portal-documents query
+   - Lines 463, 466, 468: Added `Array.isArray(docs)` guards
+   - Line 497: Added `.then(d => Array.isArray(d) ? d : [])` to portal-communications query
+   - Line 501: Changed `(d || []).map(...)` → `(Array.isArray(d) ? d : []).map(...)` for portal-cases-mini
+   - Line 513: Changed `(communications || []).reverse()` → `(Array.isArray(communications) ? [...communications].reverse() : [])`
+
+8. **DocumentsView.tsx**
+   - Line 35: Added `.then(d => Array.isArray(d) ? d : [])` to cases query
+   - Line 57: Added `.then(d => Array.isArray(d) ? d : [])` to versions query
+   - Lines 146, 260: Changed `(cases || []).map(...)` → `(Array.isArray(cases) ? cases : []).map(...)`
+
+9. **ClientsView.tsx**
+   - Line 24: Added `.then(d => Array.isArray(d) ? d : [])` to clients query
+   - Lines 70, 80: Changed `(clients || [])` → `Array.isArray(clients)` checks
+
+10. **AdminViews.tsx**
+    - Line 88: Added `.then(d => Array.isArray(d) ? d : [])` to admin-plans-subs query
+
+11. **ImpayesView.tsx**
+    - Line 28: Added `.then(d => Array.isArray(d) ? d : [])` to reminderHistory query
+
+12. **SettingsView.tsx** (proactive catch)
+    - Line 37: Added `.then(d => Array.isArray(d) ? d : [])` to currencies query
+    - Line 67: Added `.then(d => Array.isArray(d) ? d : [])` to subscription-plans query
+
+Files verified as already safe (no changes needed):
+- InvoicesView.tsx — all queries already had Array.isArray guards
+- CommunicationsView.tsx — all queries already had Array.isArray guards
+- TemplatesView.tsx — all queries already had Array.isArray guards
+- TimeTrackingView.tsx — entries query already had Array.isArray guard
+- ReportsView.tsx — invoices and clients queries already had guards
+- DashboardView.tsx — uses object property access with `|| []` fallbacks (safe pattern)
+
+Stage Summary:
+- 14 files modified with ~35 Array.isArray guard additions
+- Build verification: `next build` passes cleanly
+- The most likely crash source was FinancesView.tsx line 30 → 73 where `paymentsData` (an error object) passed through the `|| []` guard and hit `.filter()`

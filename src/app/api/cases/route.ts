@@ -4,7 +4,7 @@ import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { getWorkflowTemplate } from '@/lib/workflow-templates'
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'cases', 'read')
+  const auth = await authenticate(request, 'case', 'view')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'cases', 'create')
+  const auth = await authenticate(request, 'case', 'create')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {

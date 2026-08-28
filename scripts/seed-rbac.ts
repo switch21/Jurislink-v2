@@ -23,7 +23,7 @@ async function main() {
   }
 
   // 2. Create permissions
-  const resources = ['case', 'client', 'document', 'invoice', 'task', 'event', 'audit', 'user', 'report', 'setting', 'message', 'notification']
+  const resources = ['case', 'client', 'document', 'invoice', 'task', 'event', 'audit', 'user', 'report', 'setting', 'message', 'notification', 'time_entry', 'document_template', 'payment', 'communication', 'role', 'audit_log', 'subscription']
   const actions = ['view', 'create', 'edit', 'delete', 'export', 'manage_permissions']
   let permCount = 0
   for (const res of resources) {
@@ -61,6 +61,13 @@ async function main() {
       setting: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 1 },
       message: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
       notification: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
+      time_entry: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
+      document_template: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
+      payment: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
+      communication: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
+      role: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 1 },
+      audit_log: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
+      subscription: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 1 },
     },
     associate: {
       case: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
@@ -75,6 +82,13 @@ async function main() {
       setting: { view: 1, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
       message: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
       notification: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      time_entry: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      document_template: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      payment: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      communication: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      role: { view: 1, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
+      audit_log: { view: 1, create: 0, edit: 0, delete: 0, export: 1, manage_permissions: 0 },
+      subscription: { view: 1, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
     },
     firm_admin: {
       case: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
@@ -89,6 +103,13 @@ async function main() {
       setting: { view: 1, create: 0, edit: 1, delete: 0, export: 0, manage_permissions: 0 },
       message: { view: 1, create: 1, edit: 1, delete: 1, export: 1, manage_permissions: 0 },
       notification: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      time_entry: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      document_template: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      payment: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      communication: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      role: { view: 1, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
+      audit_log: { view: 1, create: 0, edit: 0, delete: 0, export: 1, manage_permissions: 0 },
+      subscription: { view: 1, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
     },
     lawyer: {
       case: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
@@ -103,6 +124,13 @@ async function main() {
       setting: { view: 0, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
       message: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
       notification: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      time_entry: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      document_template: { view: 1, create: 0, edit: 0, delete: 0, export: 1, manage_permissions: 0 },
+      payment: { view: 1, create: 0, edit: 0, delete: 0, export: 1, manage_permissions: 0 },
+      communication: { view: 1, create: 1, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
+      role: { view: 0, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
+      audit_log: { view: 0, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
+      subscription: { view: 0, create: 0, edit: 0, delete: 0, export: 0, manage_permissions: 0 },
     },
     jurist: {
       case: { view: 1, create: 0, edit: 1, delete: 0, export: 1, manage_permissions: 0 },
@@ -113,6 +141,8 @@ async function main() {
       event: { view: 1, create: 0, edit: 0, delete: 0, export: 1, manage_permissions: 0 },
       audit: { view: 0 }, user: { view: 1 }, report: { view: 1, export: 1 },
       setting: {}, message: { view: 1 }, notification: { view: 1 },
+      time_entry: { view: 1, edit: 1 }, document_template: { view: 1 }, payment: {},
+      communication: { view: 1 }, role: {}, audit_log: {}, subscription: {},
     },
     assistant: {
       case: { view: 1, edit: 1, export: 1 },
@@ -122,6 +152,8 @@ async function main() {
       event: { view: 1, create: 1, edit: 1, export: 1 },
       audit: {}, user: { view: 1 }, report: {}, setting: {},
       message: { view: 1 }, notification: { view: 1 },
+      time_entry: { view: 1, create: 1, edit: 1 }, document_template: { view: 1 },
+      payment: {}, communication: { view: 1 }, role: {}, audit_log: {}, subscription: {},
     },
     accountant: {
       case: { view: 1 }, client: { view: 1, export: 1 },
@@ -129,12 +161,17 @@ async function main() {
       invoice: { view: 1, create: 1, edit: 1, export: 1 },
       task: { view: 1 }, event: {}, audit: {}, user: {},
       report: { view: 1, create: 1, export: 1 }, setting: {}, message: {}, notification: {},
+      time_entry: { view: 1, create: 1, edit: 1 }, document_template: { view: 1 },
+      payment: { view: 1, create: 1, edit: 1 }, communication: {}, role: {},
+      audit_log: {}, subscription: {},
     },
     client: {
       case: { view: 1, export: 1 }, client: {},
       document: { view: 1, export: 1 }, invoice: { view: 1, export: 1 },
       task: {}, event: { view: 1 }, audit: {}, user: {}, report: {},
       setting: {}, message: { view: 1, create: 1 }, notification: { view: 1 },
+      time_entry: {}, document_template: {}, payment: { view: 1 },
+      communication: { view: 1, create: 1 }, role: {}, audit_log: {}, subscription: {},
     },
   }
 

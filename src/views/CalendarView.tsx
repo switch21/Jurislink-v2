@@ -22,7 +22,7 @@ export function CalendarView() {
 
   const { data: tenantCases } = useQuery({
     queryKey: ['cases-mini-cal', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
 
   const { data: tenantUsers } = useQuery({
@@ -152,8 +152,8 @@ export function CalendarView() {
               <div><Label>Type</Label><Select value={form.eventType} onValueChange={v => setForm(f => ({ ...f, eventType: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="audience">Audience</SelectItem><SelectItem value="echeance">Échéance</SelectItem><SelectItem value="rdv">Rendez-vous</SelectItem><SelectItem value="reunion">Réunion</SelectItem><SelectItem value="autre">Autre</SelectItem></SelectContent></Select></div>
               <div><Label>Criticité</Label><Select value={form.criticality} onValueChange={v => setForm(f => ({ ...f, criticality: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normale">Normale</SelectItem><SelectItem value="importante">Importante</SelectItem><SelectItem value="urgente">Urgente</SelectItem></SelectContent></Select></div>
             </div>
-            <div><Label>Dossier lié</Label><Select value={form.caseId} onValueChange={v => setForm(f => ({ ...f, caseId: v }))}><SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger><SelectContent>{(tenantCases || []).map((c: CaseItem) => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
-            <div><Label>Personnes assignées</Label><div className="border rounded-lg p-2 max-h-32 overflow-y-auto space-y-1">{(tenantUsers || []).map((u: UserItem) => {
+            <div><Label>Dossier lié</Label><Select value={form.caseId} onValueChange={v => setForm(f => ({ ...f, caseId: v }))}><SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger><SelectContent>{(Array.isArray(tenantCases) ? tenantCases : []).map((c: CaseItem) => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label>Personnes assignées</Label><div className="border rounded-lg p-2 max-h-32 overflow-y-auto space-y-1">{(Array.isArray(tenantUsers) ? tenantUsers : []).map((u: UserItem) => {
               const ids = form.assignments.split(',').filter(Boolean)
               const checked = ids.includes(u.id)
               return <label key={u.id} className="flex items-center gap-2 text-sm cursor-pointer py-0.5"><Checkbox checked={checked} onCheckedChange={v => { const arr = ids.filter(x => x !== u.id); if (v) arr.push(u.id); setForm(f => ({ ...f, assignments: arr.join(',') })) }} className="size-3.5" /><span>{u.fullName}</span></label>
