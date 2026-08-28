@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  allowedDevOrigins: ['preview-chat-7ebde8f6-efcb-49e0-a57f-98f745913b44.space-z.ai', '21.0.11.132', '21.0.16.38'],
+  allowedDevOrigins: ['preview-chat-7ebde8f6-efcb-49e0-a57f-98f745913b44.space-z.ai', '21.0.11.132', '21.0.16.38', '21.0.18.181', '127.0.0.1'],
   env: envFile,
 };
 

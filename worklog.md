@@ -742,3 +742,22 @@ Stage Summary:
 - Dashboard should now load even with incomplete data (null relations handled gracefully)
 - Cases menu requires production data seeding — 008_harmonized_seed.sql still needed
 - 2 commits pushed: 7fe6947 (3 bug fixes) + 4776bc3 (dashboard crash fix)
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix DATABASE_URL mismatch - connect frontend to Supabase PostgreSQL
+
+Work Log:
+- Diagnosed root cause: .env had `DATABASE_URL=file:/home/z/my-project/db/custom.db` (SQLite) but Prisma schema uses `provider = "postgresql"`
+- Updated .env with Supabase PostgreSQL connection URL
+- Ran `bunx prisma generate` to regenerate Prisma Client
+- Verified login API works: `POST /api/auth/login` returns user data for pat.epee@gmail.com with root_admin role and all permissions
+- Verified homepage renders HTML correctly (login page with splash screen)
+- Updated `allowedDevOrigins` in next.config.ts with current IP (21.0.18.181) and 127.0.0.1
+- Dev server confirmed running on port 3000, responding HTTP 200
+
+Stage Summary:
+- **ROOT CAUSE FOUND AND FIXED**: DATABASE_URL was SQLite instead of PostgreSQL
+- All API routes now connect to the real Supabase database
+- Login authentication confirmed working (pat.epee@gmail.com / Admin@123)
+- Frontend should now display data after user logs in through the Preview Panel
