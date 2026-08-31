@@ -48,6 +48,7 @@ model Tenant {
   communications    Communication[]
   reminderLogs     ReminderLog[]
   clientPortals    ClientPortal[]
+  currencies       Currency[]
 
   @@map("tenants")
 }
@@ -625,14 +626,17 @@ model ClientPortal {
 
 // ==================== CURRENCY ====================
 model Currency {
-  id        String   @id @default(uuid()) @db.Uuid
-  code      String   @unique
+  id        String    @id @default(uuid()) @db.Uuid
+  code      String
   name      String
   symbol    String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  tenantId  String?   @map("tenant_id") @db.Uuid
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
   invoices  Invoice[]
 
+  @@unique([code, tenantId])
   @@map("currencies")
 }

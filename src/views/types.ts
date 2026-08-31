@@ -117,7 +117,7 @@ export interface DashboardStats {
 export interface ConflictResult {
   type: string; case: { id: string; reference: string; title: string; clientName: string }; description: string;
 }
-export interface CurrencyItem { id: string; code: string; name: string; symbol: string }
+export interface CurrencyItem { id: string; code: string; name: string; symbol: string; tenantId?: string | null }
 export interface TimeEntry {
   id: string; description: string; startTime: string; endTime?: string | null; duration: number;
   isBillable: boolean; hourlyRate?: number | null; totalAmount?: number | null;

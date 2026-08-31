@@ -41,9 +41,9 @@ export function SettingsView() {
   })
 
   const { data: currencies } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: () => fetch('/api/currencies').then(r => r.json()).then(d => Array.isArray(d) ? d : []),
-    enabled: isAdmin,
+    queryKey: ['currencies', user?.tenantId],
+    queryFn: () => fetch(`/api/currencies?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    enabled: !!user?.tenantId,
   })
 
   // RBAC data
@@ -169,10 +169,24 @@ export function SettingsView() {
     onError: () => toast.error('Erreur lors de la création'),
   })
 
+  const [editingCurrency, setEditingCurrency] = useState<{ id: string; name: string; symbol: string } | null>(null)
+
   const createCurrencyMut = useMutation({
-    mutationFn: (body: Record<string, unknown>) => fetch('/api/currencies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+    mutationFn: (body: Record<string, unknown>) => fetch('/api/currencies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
     onSuccess: () => { toast.success('Devise ajoutée'); qc.invalidateQueries({ queryKey: ['currencies'] }); setShowNewCurrency(false); setNewCurrency({ code: '', name: '', symbol: '' }) },
-    onError: () => toast.error('Erreur'),
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const updateCurrencyMut = useMutation({
+    mutationFn: ({ id, ...body }: { id: string; name: string; symbol: string }) => fetch(`/api/currencies/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: () => { toast.success('Devise modifiée'); qc.invalidateQueries({ queryKey: ['currencies'] }); setEditingCurrency(null) },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const deleteCurrencyMut = useMutation({
+    mutationFn: (id: string) => fetch(`/api/currencies/${id}`, { method: 'DELETE' }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: () => { toast.success('Devise supprimée'); qc.invalidateQueries({ queryKey: ['currencies'] }) },
+    onError: (e: Error) => toast.error(e.message),
   })
 
   // Build permission matrix for selected role
@@ -232,7 +246,7 @@ export function SettingsView() {
           {isAdmin && <TabsTrigger value="equipe" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Équipe</TabsTrigger>}
           {canManagePerms && <TabsTrigger value="permissions" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Permissions RBAC</TabsTrigger>}
           {isAdmin && <TabsTrigger value="abonnement" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Abonnement</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="devises" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Devises</TabsTrigger>}
+          {user?.tenantId && <TabsTrigger value="devises" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Devises</TabsTrigger>}
         </TabsList>
 
         {/* PROFIL */}
@@ -486,12 +500,45 @@ export function SettingsView() {
         </TabsContent>}
 
         {/* DEVISES */}
-        {isAdmin && <TabsContent value="devises"><Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle className="text-sm font-semibold">Devises disponibles</CardTitle><Button size="sm" variant="outline" onClick={() => setShowNewCurrency(true)}><Plus className="size-3.5 mr-1" />Ajouter</Button></CardHeader><CardContent>
-          {showNewCurrency && <div className="border border-jl rounded-lg p-4 mb-4 space-y-3 bg-jl-page"><p className="text-xs font-semibold text-jl-primary">Nouvelle devise</p><div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div className="space-y-1.5"><Label className="text-xs">Code</Label><Input value={newCurrency.code} onChange={e => setNewCurrency(c => ({ ...c, code: e.target.value }))} placeholder="XAF" /></div><div className="space-y-1.5"><Label className="text-xs">Nom</Label><Input value={newCurrency.name} onChange={e => setNewCurrency(c => ({ ...c, name: e.target.value }))} placeholder="Franc CFA" /></div><div className="space-y-1.5"><Label className="text-xs">Symbole</Label><Input value={newCurrency.symbol} onChange={e => setNewCurrency(c => ({ ...c, symbol: e.target.value }))} placeholder="FCFA" /></div></div><div className="flex gap-2"><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => createCurrencyMut.mutate(newCurrency)} disabled={!newCurrency.code || !newCurrency.name}>Ajouter</Button><Button size="sm" variant="outline" onClick={() => setShowNewCurrency(false)}>Annuler</Button></div></div>}
+        {user?.tenantId && <TabsContent value="devises"><Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle className="text-sm font-semibold">Devises disponibles</CardTitle><Button size="sm" variant="outline" onClick={() => setShowNewCurrency(true)}><Plus className="size-3.5 mr-1" />Ajouter</Button></CardHeader><CardContent>
+          {showNewCurrency && <div className="border border-jl rounded-lg p-4 mb-4 space-y-3 bg-jl-page"><p className="text-xs font-semibold text-jl-primary">Nouvelle devise</p><div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div className="space-y-1.5"><Label className="text-xs">Code</Label><Input value={newCurrency.code} onChange={e => setNewCurrency(c => ({ ...c, code: e.target.value }))} placeholder="XAF" /></div><div className="space-y-1.5"><Label className="text-xs">Nom</Label><Input value={newCurrency.name} onChange={e => setNewCurrency(c => ({ ...c, name: e.target.value }))} placeholder="Franc CFA" /></div><div className="space-y-1.5"><Label className="text-xs">Symbole</Label><Input value={newCurrency.symbol} onChange={e => setNewCurrency(c => ({ ...c, symbol: e.target.value }))} placeholder="FCFA" /></div></div><div className="flex gap-2"><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => createCurrencyMut.mutate(newCurrency)} disabled={createCurrencyMut.isPending || !newCurrency.code || !newCurrency.name}>{createCurrencyMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Plus className="size-3.5 mr-1" />}Ajouter</Button><Button size="sm" variant="outline" onClick={() => setShowNewCurrency(false)}>Annuler</Button></div></div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {(currencies || []).map((c: CurrencyItem) => (
-              <div key={c.id} className="border border-jl rounded-lg p-3 bg-jl-card"><div className="flex items-center justify-between"><span className="font-semibold text-sm">{c.code}</span><Badge variant="outline" className="text-[10px]">{c.symbol}</Badge></div><p className="text-xs text-jl-secondary mt-0.5">{c.name}</p></div>
-            ))}
+            {(currencies || []).map((c: CurrencyItem) => {
+              const isGlobal = !c.tenantId
+              const isEditing = editingCurrency?.id === c.id
+              return (
+                <div key={c.id} className={cn('border rounded-lg p-3 bg-jl-card transition-all', isGlobal ? 'border-jl opacity-75' : 'border-jl hover:border-jl-gold/50')}>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 mb-1"><span className="font-semibold text-sm">{c.code}</span><Badge variant="outline" className="text-[10px]">{c.symbol}</Badge></div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1"><Label className="text-[10px]">Nom</Label><Input className="h-8 text-xs" value={editingCurrency.name} onChange={e => setEditingCurrency(ed => ({ ...ed, name: e.target.value }))} /></div>
+                        <div className="space-y-1"><Label className="text-[10px]">Symbole</Label><Input className="h-8 text-xs" value={editingCurrency.symbol} onChange={e => setEditingCurrency(ed => ({ ...ed, symbol: e.target.value }))} /></div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <Button size="sm" className="h-7 text-[10px] bg-jl-blue hover:bg-jl-blue" disabled={updateCurrencyMut.isPending || !editingCurrency.name} onClick={() => updateCurrencyMut.mutate({ id: c.id, name: editingCurrency.name, symbol: editingCurrency.symbol })}>{updateCurrencyMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}Enregistrer</Button>
+                        <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setEditingCurrency(null)}>Annuler</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2"><span className="font-semibold text-sm">{c.code}</span>{isGlobal && <Badge className="bg-jl-page text-jl-muted text-[9px] border-jl">Système</Badge>}</div>
+                        <Badge variant="outline" className="text-[10px]">{c.symbol}</Badge>
+                      </div>
+                      <p className="text-xs text-jl-secondary mt-0.5">{c.name}</p>
+                      {!isGlobal && (
+                        <div className="flex gap-1 mt-2">
+                          <button onClick={() => setEditingCurrency({ id: c.id, name: c.name, symbol: c.symbol })} className="text-[10px] text-jl-secondary hover:text-jl-blue transition-colors flex items-center gap-1"><Edit className="size-3" />Modifier</button>
+                          <button onClick={() => { if (confirm('Supprimer cette devise ?')) deleteCurrencyMut.mutate(c.id) }} className="text-[10px] text-jl-muted hover:text-[var(--danger)] transition-colors flex items-center gap-1"><Trash2 className="size-3" />Supprimer</button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+            {(!currencies || currencies.length === 0) && <p className="col-span-full text-center text-xs text-jl-muted py-8">Aucune devise disponible</p>}
           </div>
         </CardContent></Card></TabsContent>}
       </Tabs>
