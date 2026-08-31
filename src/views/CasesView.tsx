@@ -199,7 +199,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
 
 // ==================== CASES VIEW ====================
 export function CasesView() {
-  const { user } = useAppStore()
+  const { user, pendingResourceOpen, setPendingResourceOpen } = useAppStore()
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -256,6 +256,22 @@ export function CasesView() {
   const [page, setPage] = useState(1)
   const pageSize = 12
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+
+  // Deep-linking: open a case if pendingResourceOpen is set
+  useEffect(() => {
+    if (pendingResourceOpen?.resourceType === 'case' && pendingResourceOpen.resourceId) {
+      fetch(`/api/cases/${pendingResourceOpen.resourceId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            setSelectedCase(data)
+            setDetailOpen(true)
+          }
+        })
+        .catch(() => {})
+        .finally(() => setPendingResourceOpen(null))
+    }
+  }, [pendingResourceOpen, setPendingResourceOpen])
 
   // Check subscription for AI access
   const hasAI = useQuery({

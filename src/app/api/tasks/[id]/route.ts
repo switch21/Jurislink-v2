@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { fireNotification } from '@/lib/notify'
 
 export async function GET(
   request: Request,
@@ -60,7 +61,10 @@ export async function PUT(
     }
 
     // Handle status transition
+    let oldStatus: string | undefined
     if (body.status !== undefined) {
+      const existing = await db.task.findUnique({ where: { id }, select: { status: true } })
+      oldStatus = existing?.status
       updateData.status = body.status
     }
 
@@ -72,6 +76,21 @@ export async function PUT(
         event: { select: { id: true, title: true } },
       },
     })
+
+    // Notification: task status changed
+    if (oldStatus && body.status && oldStatus !== body.status) {
+      const statusLabel = body.status === 'terminee' ? 'terminée' : body.status === 'en_cours' ? 'en cours' : body.status === 'a_faire' ? 'à faire' : body.status
+      const caseRef = task.case?.reference || ''
+      fireNotification({
+        tenantId: task.tenantId,
+        type: 'tache',
+        title: 'Statut de tâche modifié',
+        message: `« ${task.title} »${caseRef ? ` (${caseRef})` : ''} → ${statusLabel}`,
+        resourceType: 'task',
+        resourceId: task.id,
+      })
+    }
+
     return NextResponse.json(task)
   } catch (error) {
     console.error('Update task error:', error)

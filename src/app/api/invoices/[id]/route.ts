@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { fireNotification } from '@/lib/notify'
 
 export async function GET(
   request: Request,
@@ -54,7 +55,7 @@ export async function PUT(
 
     const existing = await db.invoice.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, status: true, tenantId: true },
     })
     if (!existing) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
@@ -132,6 +133,20 @@ export async function PUT(
         },
       })
     })
+
+    // Notification: invoice status changed
+    if (body.status && existing.status !== body.status) {
+      const statusLabels: Record<string, string> = { non_paye: 'non payée', paye: 'payée', partiel: 'partiellement payée', annule: 'annulée' }
+      const label = statusLabels[body.status] || body.status
+      fireNotification({
+        tenantId: existing.tenantId,
+        type: 'facture',
+        title: 'Statut de facture modifié',
+        message: `${invoice.invoiceNumber || 'Facture'} → ${label}${invoice.client ? ` (${invoice.client.fullName || invoice.client.company})` : ''}`,
+        resourceType: 'invoice',
+        resourceId: invoice.id,
+      })
+    }
 
     return NextResponse.json(invoice)
   } catch (error) {

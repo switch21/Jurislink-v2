@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutatio
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
+
 // ==================== DOCUMENTS VIEW ====================
 export function DocumentsView() {
   const { user } = useAppStore()
@@ -30,13 +31,36 @@ export function DocumentsView() {
   const [versionProgress, setVersionProgress] = useState(0)
   const versionFileRef = useRef<HTMLInputElement>(null)
 
+  // Sorting & pagination
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [page, setPage] = useState(1)
+  const pageSize = 20
+
+  // Edit dialog
+  const [editDoc, setEditDoc] = useState<Doc | null>(null)
+  const [editForm, setEditForm] = useState({ fileName: '', description: '', folder: '', tags: '', documentType: '', status: '' })
+  const [editSaving, setEditSaving] = useState(false)
+
+  // Bulk operations
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkAction, setBulkAction] = useState<string | null>(null)
+  const [bulkValue, setBulkValue] = useState('')
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+
+  // Drag & drop
+  const [dragOver, setDragOver] = useState(false)
+  const dropZoneRef = useRef<HTMLDivElement>(null)
+  const dragCounterRef = useRef(0)
+
   const { data: cases } = useQuery({
     queryKey: ['cases-mini-docs', user?.tenantId],
     queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
 
   const { data: docsData, isLoading } = useQuery({
-    queryKey: ['documents', user?.tenantId, caseFilter, search, selectedTag, selectedFolder],
+    queryKey: ['documents', user?.tenantId, caseFilter, search, selectedTag, selectedFolder, sortBy, sortOrder, page],
     queryFn: () => {
       const p = new URLSearchParams()
       if (user?.tenantId) p.set('tenantId', user.tenantId)
@@ -44,6 +68,10 @@ export function DocumentsView() {
       if (search) p.set('search', search)
       if (selectedTag) p.set('tag', selectedTag)
       if (selectedFolder) p.set('folder', selectedFolder)
+      p.set('page', String(page))
+      p.set('limit', String(pageSize))
+      p.set('sortBy', sortBy)
+      p.set('sortOrder', sortOrder)
       return fetch(`/api/documents?${p}`).then(r => r.json())
     },
   })
@@ -51,6 +79,11 @@ export function DocumentsView() {
   const documents: Doc[] = (docsData as any)?.documents || []
   const allTags: string[] = (docsData as any)?.tags || []
   const allFolders: string[] = (docsData as any)?.folders || []
+  const total: number = (docsData as any)?.total || 0
+  const totalPages: number = (docsData as any)?.totalPages || 1
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); setSelectedIds(new Set()) }, [caseFilter, search, selectedTag, selectedFolder, sortBy, sortOrder])
 
   const { data: versions } = useQuery({
     queryKey: ['doc-versions', versionsDoc?.id],
@@ -64,12 +97,35 @@ export function DocumentsView() {
     onError: () => toast.error('Erreur lors de la suppression'),
   })
 
-  const handleUpload = async () => {
-    if (!selectedFile) return
+  const editMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: typeof editForm }) =>
+      fetch(`/api/documents/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast.success('Document modifié'); setEditDoc(null) },
+    onError: () => toast.error('Erreur lors de la modification'),
+  })
+
+  const bulkMut = useMutation({
+    mutationFn: (body: { action: string; ids: string[]; value?: string }) =>
+      fetch('/api/documents/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+    onSuccess: (data, vars) => {
+      qc.invalidateQueries({ queryKey: ['documents'] })
+      setSelectedIds(new Set())
+      setBulkAction(null)
+      setBulkValue('')
+      setBulkDeleteConfirm(false)
+      if (vars.action === 'delete') toast.success(`${data.deleted || vars.ids.length} document(s) supprimé(s)`)
+      else toast.success(`${data.updated || vars.ids.length} document(s) mis à jour`)
+    },
+    onError: () => toast.error('Erreur lors de l\'opération groupée'),
+  })
+
+  const handleUpload = async (file?: File | null) => {
+    const f = file || selectedFile
+    if (!f) return
     setUploading(true); setUploadProgress(0)
     try {
       const fd = new FormData()
-      fd.append('file', selectedFile)
+      fd.append('file', f)
       fd.append('tenantId', user?.tenantId || '')
       if (uploadForm.caseId) fd.append('caseId', uploadForm.caseId)
       fd.append('folder', uploadForm.folder)
@@ -98,8 +154,67 @@ export function DocumentsView() {
     } catch (err: any) { toast.error(err?.message || 'Erreur lors du téléchargement') } finally { setVersionUploading(false); setVersionProgress(0) }
   }
 
+  // Edit dialog handlers
+  const openEdit = (d: Doc) => {
+    setEditDoc(d)
+    setEditForm({ fileName: d.fileName, description: d.description || '', folder: d.folder || '', tags: d.tags || '', documentType: d.documentType || '', status: d.status || 'actif' })
+  }
+  const saveEdit = () => {
+    if (!editDoc) return
+    setEditSaving(true)
+    editMut.mutate({ id: editDoc.id, data: editForm }, { onSettled: () => setEditSaving(false) })
+  }
+
+  // Bulk handlers
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  }
+  const toggleSelectAll = () => {
+    if (selectedIds.size === documents.length) setSelectedIds(new Set())
+    else setSelectedIds(new Set(documents.map(d => d.id)))
+  }
+  const executeBulk = () => {
+    if (!bulkAction) return
+    if (bulkAction === 'delete') {
+      if (!bulkDeleteConfirm) { setBulkDeleteConfirm(true); return }
+    }
+    setBulkLoading(true)
+    bulkMut.mutate({ action: bulkAction, ids: Array.from(selectedIds), value: bulkValue || undefined }, { onSettled: () => setBulkLoading(false) })
+  }
+
+  // Drag & drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation()
+    dragCounterRef.current++
+    if (e.dataTransfer.types.includes('Files')) setDragOver(true)
+  }, [])
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation()
+    dragCounterRef.current--
+    if (dragCounterRef.current === 0) setDragOver(false)
+  }, [])
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.stopPropagation() }, [])
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation()
+    dragCounterRef.current = 0
+    setDragOver(false)
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      setSelectedFile(files[0])
+      setUploadOpen(true)
+    }
+  }, [])
+
   const folders = ['Général', 'Procédure', 'Contrats', 'Pièces client', 'Correspondances', 'Décisions', 'Factures', 'Archives']
   const docTypes = [{ value: 'contrat', label: 'Contrat' }, { value: 'conclusion', label: 'Conclusion' }, { value: 'assignation', label: 'Assignation' }, { value: 'jugement', label: 'Jugement' }, { value: 'correspondance', label: 'Correspondance' }, { value: 'autre', label: 'Autre' }]
+
+  const sortOptions = [
+    { value: 'createdAt', label: 'Date de création' },
+    { value: 'updatedAt', label: 'Date de modification' },
+    { value: 'fileName', label: 'Nom du fichier' },
+    { value: 'fileSize', label: 'Taille' },
+    { value: 'folder', label: 'Répertoire' },
+  ]
 
   const docTypeIcon = (mimeType?: string | null, docType?: string | null) => {
     if (mimeType?.includes('pdf') || docType === 'jugement') return <FileText className="size-5 text-red-500" />
@@ -123,13 +238,32 @@ export function DocumentsView() {
     return groups
   }, [documents])
 
+  const pageStart = (page - 1) * pageSize + 1
+  const pageEnd = Math.min(page * pageSize, total)
+
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div ref={dropZoneRef} className="p-4 md:p-6 space-y-4 relative"
+      onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}
+    >
+      {/* Drag & Drop Overlay */}
+      <AnimatePresence>
+        {dragOver && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm rounded-lg border-2 border-dashed border-jl-blue flex flex-col items-center justify-center gap-3"
+          >
+            <FileUp className="size-16 text-jl-blue animate-bounce" />
+            <p className="text-lg font-semibold text-jl-primary">Déposez vos fichiers ici</p>
+            <p className="text-sm text-jl-secondary">PDF, DOC, XLS, JPG, PNG...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Documents</h2>
-          <p className="text-xs text-jl-secondary">{documents.length} document{documents.length > 1 ? 's' : ''} {caseFilter !== 'all' ? '• filtré par dossier' : ''}</p>
+          <p className="text-xs text-jl-secondary">{total} document{total > 1 ? 's' : ''} {caseFilter !== 'all' ? '• filtré par dossier' : ''}</p>
         </div>
         <Button size="sm" onClick={() => setUploadOpen(true)}><Upload className="size-4 mr-1.5" />Ajouter un document</Button>
       </div>
@@ -145,6 +279,11 @@ export function DocumentsView() {
           <SelectTrigger className="w-full sm:w-[200px] h-9 text-xs"><SelectValue placeholder="Filtrer par dossier" /></SelectTrigger>
           <SelectContent><SelectItem value="all">Tous les dossiers</SelectItem>{(Array.isArray(cases) ? cases : []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent>
         </Select>
+        <Select value={sortBy} onValueChange={v => setSortBy(v)}>
+          <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs"><SelectValue placeholder="Trier par" /></SelectTrigger>
+          <SelectContent>{sortOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+        </Select>
+        <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="size-9 shrink-0" onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}>{sortOrder === 'desc' ? <ArrowDown className="size-4" /> : <ArrowUp className="size-4" />}</Button></TooltipTrigger><TooltipContent>{sortOrder === 'desc' ? 'Décroissant' : 'Croissant'}</TooltipContent></Tooltip></TooltipProvider>
         <div className="flex gap-1 items-center">
           <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" className="size-9" onClick={() => setViewMode('list')}><List className="size-4" /></Button></TooltipTrigger><TooltipContent>Liste</TooltipContent></Tooltip></TooltipProvider>
           <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant={viewMode === 'grid' ? 'default' : 'outline'} size="icon" className="size-9" onClick={() => setViewMode('grid')}><LayoutGrid className="size-4" /></Button></TooltipTrigger><TooltipContent>Grille</TooltipContent></Tooltip></TooltipProvider>
@@ -171,22 +310,74 @@ export function DocumentsView() {
         </div>
       )}
 
+      {/* Bulk Selection Toolbar */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-jl-blue/5 border border-jl-blue/20"
+          >
+            <span className="text-xs font-medium text-jl-primary">{selectedIds.size} sélectionné{selectedIds.size > 1 ? 's' : ''}</span>
+            <div className="flex gap-1 ml-2">
+              <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={toggleSelectAll}>{selectedIds.size === documents.length ? 'Tout désélectionner' : 'Tout sélectionner'}</Button>
+              <Separator orientation="vertical" className="h-5" />
+              <Select value={bulkAction || ''} onValueChange={v => { setBulkAction(v); setBulkDeleteConfirm(false); setBulkValue('') }}>
+                <SelectTrigger className="h-7 w-[130px] text-[10px]"><SelectValue placeholder="Action groupée" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="delete">Supprimer</SelectItem>
+                  <SelectItem value="folder">Changer répertoire</SelectItem>
+                  <SelectItem value="status">Changer statut</SelectItem>
+                  <SelectItem value="tags">Ajouter tags</SelectItem>
+                </SelectContent>
+              </Select>
+              {bulkAction === 'folder' && (
+                <Select value={bulkValue} onValueChange={setBulkValue}>
+                  <SelectTrigger className="h-7 w-[140px] text-[10px]"><SelectValue placeholder="Répertoire" /></SelectTrigger>
+                  <SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                </Select>
+              )}
+              {bulkAction === 'status' && (
+                <Select value={bulkValue} onValueChange={setBulkValue}>
+                  <SelectTrigger className="h-7 w-[120px] text-[10px]"><SelectValue placeholder="Statut" /></SelectTrigger>
+                  <SelectContent><SelectItem value="actif">Actif</SelectItem><SelectItem value="archivé">Archivé</SelectItem></SelectContent>
+                </Select>
+              )}
+              {bulkAction === 'tags' && (
+                <Input value={bulkValue} onChange={e => setBulkValue(e.target.value)} placeholder="tags, séparés, virgules" className="h-7 w-[180px] text-[10px]" />
+              )}
+              {bulkAction && (
+                <Button size="sm" className="h-7 text-[10px]" disabled={bulkLoading || (bulkAction !== 'delete' && !bulkValue)} onClick={executeBulk}>
+                  {bulkLoading ? <Loader2 className="size-3.5 mr-1 animate-spin" /> : null}
+                  {bulkAction === 'delete' && !bulkDeleteConfirm ? 'Confirmer' : 'Appliquer'}
+                </Button>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" className="size-7 ml-auto" onClick={() => { setSelectedIds(new Set()); setBulkAction(null); setBulkDeleteConfirm(false) }}><X className="size-4" /></Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Content */}
       {isLoading ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"><Skeleton className="h-40 rounded-lg" /><Skeleton className="h-40 rounded-lg" /><Skeleton className="h-40 rounded-lg" /></div> :
         documents.length === 0 ? (
-          <Card className="border-dashed"><CardContent className="py-16 text-center"><FileText className="size-12 mx-auto text-jl-muted mb-3" /><p className="text-sm font-medium text-jl-secondary">{search ? 'Aucun résultat' : 'Aucun document'}</p><p className="text-xs text-jl-muted mt-1">{search ? 'Essayez d\'autres termes de recherche' : 'Ajoutez votre premier document'}</p>{search && <button onClick={() => setSearch('')} className="text-xs text-jl-blue hover:underline mt-2">Effacer la recherche</button>}</CardContent></Card>
+          <Card className="border-dashed"><CardContent className="py-16 text-center"><FileText className="size-12 mx-auto text-jl-muted mb-3" /><p className="text-sm font-medium text-jl-secondary">{search ? 'Aucun résultat' : 'Aucun document'}</p><p className="text-xs text-jl-muted mt-1">{search ? 'Essayez d\'autres termes de recherche' : 'Ajoutez votre premier document ou glissez-déposez des fichiers'}</p>{search && <button onClick={() => setSearch('')} className="text-xs text-jl-blue hover:underline mt-2">Effacer la recherche</button>}</CardContent></Card>
         ) :
         viewMode === 'grid' ? (
           /* Grid View */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {documents.map(d => (
               <motion.div key={d.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                <Card className="group hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col" onClick={() => isPdf(d.mimeType) || isImage(d.mimeType) ? setPreviewDoc(d) : null}>
+                <Card className={cn('group hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col', selectedIds.has(d.id) && 'ring-2 ring-jl-blue')} onClick={() => isPdf(d.mimeType) || isImage(d.mimeType) ? setPreviewDoc(d) : null}>
                   <CardContent className="p-4 flex-1 flex flex-col">
-                    {/* File type icon area */}
+                    {/* Checkbox + File type icon area */}
                     <div className="flex items-start justify-between mb-3">
-                      <div className="p-2.5 rounded-lg bg-jl-page border border-jl">{docTypeIcon(d.mimeType, d.documentType)}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="shrink-0" onClick={e => e.stopPropagation()}>
+                          <Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => toggleSelect(d.id)} className="size-4" />
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-jl-page border border-jl">{docTypeIcon(d.mimeType, d.documentType)}</div>
+                      </div>
                       <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}><MoreHorizontal className="size-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={e => { e.stopPropagation(); openEdit(d) }}><Edit className="size-3.5 mr-2" />Modifier</DropdownMenuItem>
                         <DropdownMenuItem onClick={e => { e.stopPropagation(); setPreviewDoc(d) }}><Eye className="size-3.5 mr-2" />Aperçu</DropdownMenuItem>
                         <DropdownMenuItem onClick={e => { e.stopPropagation(); setVersionsDoc(d) }}><History className="size-3.5 mr-2" />Historique (v{d.version})</DropdownMenuItem>
                         <DropdownMenuItem asChild><a href={`/api/documents/${d.id}/download`} onClick={e => e.stopPropagation()}><Download className="size-3.5 mr-2" />Télécharger</a></DropdownMenuItem>
@@ -204,6 +395,7 @@ export function DocumentsView() {
                     <div className="flex flex-wrap gap-1 mt-2">
                       {d.folder && <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-jl"><Folder className="size-2 mr-0.5" />{d.folder}</Badge>}
                       {d.tags && d.tags.split(',').slice(0, 2).map((t, i) => <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0 border-jl"><Tag className="size-2 mr-0.5" />{t.trim()}</Badge>)}
+                      {d.status === 'archivé' && <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-jl-page">Archivé</Badge>}
                     </div>
                   </CardContent>
                   <CardFooter className="px-4 py-2.5 border-t border-jl text-[10px] text-jl-muted">
@@ -222,10 +414,11 @@ export function DocumentsView() {
                 <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-2 text-jl-secondary"><Folder className="size-4 text-jl-gold" />{folder}<Badge variant="secondary" className="text-[10px] bg-jl-page text-jl-secondary">{items.length}</Badge></CardTitle></CardHeader>
                 <CardContent className="p-2 pt-0 space-y-0.5">
                   {items.map(d => (
-                    <motion.div key={d.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 p-2 rounded-lg hover:bg-jl-page group cursor-pointer" onClick={() => isPdf(d.mimeType) || isImage(d.mimeType) ? setPreviewDoc(d) : null}>
+                    <motion.div key={d.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className={cn('flex items-center gap-3 p-2 rounded-lg hover:bg-jl-page group cursor-pointer', selectedIds.has(d.id) && 'bg-jl-blue/5')} onClick={() => isPdf(d.mimeType) || isImage(d.mimeType) ? setPreviewDoc(d) : null}>
+                      <div className="shrink-0" onClick={e => e.stopPropagation()}><Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => toggleSelect(d.id)} className="size-4" /></div>
                       <div className="shrink-0 p-1.5 rounded bg-jl-page">{docTypeIcon(d.mimeType, d.documentType)}</div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2"><p className="text-sm font-medium truncate" title={d.fileName}>{d.fileName}</p>{d.version > 1 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-jl-blue border-jl-blue/30 shrink-0">v{d.version}</Badge>}</div>
+                        <div className="flex items-center gap-2"><p className="text-sm font-medium truncate" title={d.fileName}>{d.fileName}</p>{d.version > 1 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-jl-blue border-jl-blue/30 shrink-0">v{d.version}</Badge>}{d.status === 'archivé' && <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-jl-page shrink-0">Archivé</Badge>}</div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-[10px] text-jl-muted">{fmtFileSize(d.fileSize)}</span>
                           {d.tags && d.tags.split(',').map((t, i) => <Badge key={i} variant="outline" className="text-[9px] px-1 py-0 border-jl text-jl-secondary"><Tag className="size-2 mr-0.5" />{t.trim()}</Badge>)}
@@ -234,6 +427,7 @@ export function DocumentsView() {
                       {d.case && <span className="text-[10px] text-jl-blue truncate max-w-[150px] hidden lg:block" title={d.case.reference}>{d.case.reference}</span>}
                       <span className="text-[10px] text-jl-muted shrink-0 hidden sm:block w-20 text-right">{fmtDate(d.createdAt)}</span>
                       <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="size-7" onClick={e => { e.stopPropagation(); openEdit(d) }}><Edit className="size-3.5" /></Button></TooltipTrigger><TooltipContent>Modifier</TooltipContent></Tooltip></TooltipProvider>
                         <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="size-7" onClick={e => { e.stopPropagation(); setPreviewDoc(d) }} disabled={!isPdf(d.mimeType) && !isImage(d.mimeType)}><Eye className="size-3.5" /></Button></TooltipTrigger><TooltipContent>Aperçu</TooltipContent></Tooltip></TooltipProvider>
                         <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="size-7" onClick={e => { e.stopPropagation(); setVersionsDoc(d) }}><History className="size-3.5" /></Button></TooltipTrigger><TooltipContent>Versions</TooltipContent></Tooltip></TooltipProvider>
                         <TooltipProvider><Tooltip><TooltipTrigger asChild><a href={`/api/documents/${d.id}/download`} onClick={e => e.stopPropagation()} className="inline-flex"><Button variant="ghost" size="icon" className="size-7"><Download className="size-3.5" /></Button></a></TooltipTrigger><TooltipContent>Télécharger</TooltipContent></Tooltip></TooltipProvider>
@@ -246,6 +440,29 @@ export function DocumentsView() {
             ))}
           </div>
         )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-jl-muted">{total > 0 ? `${pageStart}-${pageEnd} sur ${total}` : '0 résultat'}</span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" className="size-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="size-4" /></Button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum: number
+              if (totalPages <= 5) { pageNum = i + 1 }
+              else if (page <= 3) { pageNum = i + 1 }
+              else if (page >= totalPages - 2) { pageNum = totalPages - 4 + i }
+              else { pageNum = page - 2 + i }
+              return (
+                <Button key={pageNum} variant={page === pageNum ? 'default' : 'outline'} size="icon" className="size-8" onClick={() => setPage(pageNum)}>
+                  {pageNum}
+                </Button>
+              )
+            })}
+            <Button variant="outline" size="icon" className="size-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight className="size-4" /></Button>
+          </div>
+        </div>
+      )}
 
       {/* Upload Dialog */}
       <Dialog open={uploadOpen} onOpenChange={o => { setUploadOpen(o); if (!o) { setSelectedFile(null); setUploadForm({ caseId: '', folder: 'Général', tags: '', documentType: 'autre', description: '' }); setUploadProgress(0) } }}>
@@ -265,7 +482,33 @@ export function DocumentsView() {
             <div><Label className="text-xs">Tags (séparés par des virgules)</Label><Input value={uploadForm.tags} onChange={e => setUploadForm(f => ({ ...f, tags: e.target.value }))} placeholder="contrat, urgent, v1" className="h-9 mt-1" /></div>
             <div><Label className="text-xs">Description</Label><Textarea value={uploadForm.description} onChange={e => setUploadForm(f => ({ ...f, description: e.target.value }))} placeholder="Description du document..." className="mt-1 min-h-[60px] text-sm" /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setUploadOpen(false)}>Annuler</Button><Button onClick={handleUpload} disabled={!selectedFile || uploading}><Upload className="size-4 mr-1" />{uploading ? 'Téléchargement...' : 'Téléverser'}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setUploadOpen(false)}>Annuler</Button><Button onClick={() => handleUpload()} disabled={!selectedFile || uploading}><Upload className="size-4 mr-1" />{uploading ? 'Téléchargement...' : 'Téléverser'}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editDoc} onOpenChange={() => setEditDoc(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Modifier le document</DialogTitle><DialogDescription>Modifiez les métadonnées du document</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div><Label className="text-xs">Nom du fichier</Label><Input value={editForm.fileName} onChange={e => setEditForm(f => ({ ...f, fileName: e.target.value }))} className="h-9 mt-1" /></div>
+            <div><Label className="text-xs">Description</Label><Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder="Description du document..." className="mt-1 min-h-[60px] text-sm" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Répertoire</Label><Select value={editForm.folder} onValueChange={v => setEditForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-xs">Type de document</Label><Select value={editForm.documentType} onValueChange={v => setEditForm(f => ({ ...f, documentType: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{docTypes.map(dt => <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>)}</SelectContent></Select></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Statut</Label><Select value={editForm.status} onValueChange={v => setEditForm(f => ({ ...f, status: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="actif">Actif</SelectItem><SelectItem value="archivé">Archivé</SelectItem></SelectContent></Select></div>
+            </div>
+            <div><Label className="text-xs">Tags (séparés par des virgules)</Label><Input value={editForm.tags} onChange={e => setEditForm(f => ({ ...f, tags: e.target.value }))} placeholder="contrat, urgent" className="h-9 mt-1" /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDoc(null)}>Annuler</Button>
+            <Button onClick={saveEdit} disabled={editSaving || !editForm.fileName}>
+              {editSaving ? <Loader2 className="size-4 mr-1 animate-spin" /> : <Save className="size-4 mr-1" />}
+              Enregistrer
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -315,7 +558,7 @@ export function DocumentsView() {
                   {v.changeNote && <p className="text-[10px] text-jl-secondary mt-0.5 italic">{v.changeNote}</p>}
                   {v.uploadedBy && <p className="text-[10px] text-jl-muted">par {v.uploadedBy.fullName}</p>}
                 </div>
-                <a href={`/api/documents/${selectedDoc!.id}/versions/${v.id}/download`} className="shrink-0"><Button variant="ghost" size="icon" className="size-7"><Download className="size-3.5" /></Button></a>
+                <a href={`/api/documents/${versionsDoc!.id}/versions/${v.id}/download`} className="shrink-0"><Button variant="ghost" size="icon" className="size-7"><Download className="size-3.5" /></Button></a>
               </div>
             )) : (
               <p className="text-xs text-jl-muted text-center py-6">Aucune version précédente</p>
@@ -344,4 +587,3 @@ export function DocumentsView() {
     </div>
   )
 }
-

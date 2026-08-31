@@ -1413,3 +1413,353 @@ Stage Summary:
 - Fix critique: mise à jour des assignments de dossier
 - Assignation de tâches à des utilisateurs
 - ATTENTION: SQL migration à exécuter en production avant déploiement
+---
+Task ID: 1
+Agent: Audit sub-agent
+Task: Phase 10 (Documents) + Phase 12 (Notifications) — Pre-implementation Audit
+
+Work Log:
+- Read and analyzed DocumentsView.tsx (348 lines)
+- Read all 5 document API route files (GET/POST list, GET/PUT/DELETE single, download, versions CRUD, generate)
+- Read Prisma schema: Document (L291–316), DocumentVersion (L319–335), Notification (L457–475)
+- Read Header.tsx (bell icon dropdown, polling hook integration)
+- Read NotificationsView.tsx (97 lines, category tabs, unread filter)
+- Read 4 notification API routes (list, create, trigger, read-all, mark-read)
+- Read mini-services/notification-service/index.ts (Socket.io + HTTP API, 229 lines)
+- Read hooks: useNotificationSocket.ts, use-polling-notifications.ts
+- Read constants.ts (NAV_ITEMS includes notifications), types.ts (Notification + Doc interfaces)
+- Read storage.ts (Supabase + local fallback), rbac.ts (permission aliases), appStore.ts (notification state)
+- Cross-referenced Caddyfile for WebSocket proxy routing
+- Found 1 critical bug in DocumentsView (selectedDoc undefined)
+- Found 1 wrong API call in NotificationsView (mark-all-read)
+
+--- AUDIT REPORT ---
+
+═══════════════════════════════════════════════════════════
+A) DOCUMENTS — Current State
+═══════════════════════════════════════════════════════════
+
+UI Features (DocumentsView.tsx — 348 lines, lazy-loaded):
+  ✅ List view (grouped by folder) + Grid view toggle
+  ✅ Full-text search (fileName, description, tags)
+  ✅ Tag pill filters (dynamic from API)
+  ✅ Folder pill filters (dynamic from API, 8 hardcoded defaults in UI)
+  ✅ Case association filter (dropdown of all tenant cases)
+  ✅ Upload dialog: file picker, case link, folder, doc type, tags, description
+  ✅ Upload progress bar (uploadWithProgress helper)
+  ✅ PDF preview (iframe) and Image preview (img tag)
+  ✅ Version history dialog: list versions, upload new version with change note
+  ✅ Version upload progress bar
+  ✅ Delete with toast feedback
+  ✅ File type icons by MIME type (PDF=red, image=emerald, Word=blue, Excel=green)
+  ✅ Version count badge on grid cards
+  ✅ Motion animations (staggered entrance)
+  ✅ Empty state with clear messaging
+
+API Routes (5 files, all RBAC-protected):
+  ✅ GET /api/documents — List with search, tag, folder, caseId, documentType filters; returns tags+folders sets; hard limit 200
+  ✅ POST /api/documents — FormData upload, Supabase/local storage, fires notification to WS service
+  ✅ GET /api/documents/[id] — Single document with case+tenant
+  ✅ PUT /api/documents/[id] — Update version, folder, tags, documentType
+  ✅ DELETE /api/documents/[id] — Delete record + storage file
+  ✅ GET /api/documents/[id]/download — Stream file with MIME mapping + 1hr cache
+  ✅ GET /api/documents/[id]/versions — List all versions (desc order)
+  ✅ POST /api/documents/[id]/versions — Archive current version, update main record
+  ✅ GET /api/documents/[id]/versions/[versionId]/download — Download specific version
+  ✅ POST /api/documents/generate — Template-based generation (txt/html) with case data merge
+
+Prisma Schema:
+  Document: id, fileName, fileSize, filePath, version (int), folder?, tags? (comma-string), documentType?, mimeType?, description?, status (default 'actif'), uploadedById, tenantId, caseId
+  DocumentVersion: id, version, fileName, fileSize, filePath, mimeType?, changeNote?, documentId (cascade delete), uploadedById
+
+BUGS FOUND:
+  🐛 P0 — Line 318: `selectedDoc!.id` is undefined. The state variable is `versionsDoc`, not `selectedDoc`. Clicking "download" on a previous version will crash at runtime.
+  ⚠️ P1 — DELETE /api/documents/[id] does not delete associated DocumentVersion records or their files (orphaned storage)
+  ⚠️ P1 — PUT /api/documents/[id] does not accept `description` in update body
+  ⚠️ P2 — Hardcoded `take: 200` with no pagination cursor or offset
+  ⚠️ P2 — Folder list in UI is hardcoded (8 items) while API returns dynamic folders
+  ⚠️ P2 — No file size limit validation on upload
+
+WHAT'S MISSING:
+  ❌ No pagination (200 max, no load-more or server-side pagination)
+  ❌ No sorting options in UI (only server-side `orderBy: updatedAt desc`)
+  ❌ No document edit dialog (PUT endpoint exists but no UI)
+  ❌ No drag-and-drop upload
+  ❌ No bulk operations (select multiple, delete, move folder)
+  ❌ No document type filter in UI (API supports it, UI doesn't expose it)
+  ❌ No file size validation
+  ❌ No virus/malware scanning
+  ❌ No OCR/text extraction for content search
+  ❌ No signed URL for direct client downloads (entire file proxied through API)
+  ❌ No document locking (concurrent edit protection)
+  ❌ No document sharing/link generation
+  ❌ No ZIP bulk download
+  ❌ Tags stored as comma-separated string (no normalization, no tag management CRUD)
+  ❌ No activity/audit log for document actions (upload, download, delete)
+
+═══════════════════════════════════════════════════════════
+B) NOTIFICATIONS — Current State
+═══════════════════════════════════════════════════════════
+
+UI Features:
+  ✅ Header bell icon with animated unread badge (pulse-glow CSS)
+  ✅ Header dropdown: last 8 notifications, click-to-navigate (VIEW_MAP), "Mark all read" link
+  ✅ NotificationsView: full-page with category tabs (dossier, echeance, facture, document, tache, message)
+  ✅ NotificationsView: unread-only toggle filter
+  ✅ NotificationsView: "Mark all read" button
+  ✅ Unread indicator dot on notification cards
+  ✅ Category icons and color coding
+  ✅ Relative time display (relativeTime helper)
+  ✅ Empty state when no notifications
+
+Hooks:
+  ✅ useNotificationSocket — Socket.io client, connects via Caddy XTransformPort proxy to port 3004, emits auth, listens for 'notification' (toast+Zustand) and 'unread-count'
+  ✅ usePollingNotifications — 30s interval fallback, syncs unreadCount to Zustand, toast on new count increase
+
+API Routes (4 files, RBAC-protected):
+  ✅ GET /api/notifications — List with tenantId, userId, category, unreadOnly filters; take 100; unreadOnly returns {count, notifications}
+  ✅ POST /api/notifications — Manual notification create
+  ✅ POST /api/notifications/trigger — Forwards to WS service (fire-and-forget, graceful degradation)
+  ✅ POST /api/notifications/read-all — Mark all as read (by userId + tenantId)
+  ✅ PUT /api/notifications/[id] — Mark single as read
+  ✅ GET /api/portal/notifications — Returns communications for portal client (NOT real notifications)
+
+WebSocket Service (mini-services/notification-service/index.ts):
+  ✅ Socket.io server on port 3004, HTTP API on port 3005
+  ✅ In-memory socket→user/tenant mapping
+  ✅ Socket auth: validates user exists + isActive, matches tenantId
+  ✅ Broadcasts to tenant-wide or user-specific
+  ✅ Events: auth, mark-read, notification, unread-count
+  ✅ Graceful shutdown (SIGTERM/SIGINT)
+  ✅ Caddyfile: XTransformPort query proxy enables WebSocket through port 81
+
+Prisma Schema:
+  Notification: id, title, message, category (default 'dossier'), read (default false), resourceType?, resourceId?, tenantId, userId?, eventId?
+
+Zustand Store:
+  unreadCount: number, lastNotification: {title, message, resourceType?, resourceId?}
+  incrementUnread(), setUnreadCount(n), setLastNotification(n)
+
+BUGS FOUND:
+  🐛 P1 — NotificationsView line 26: markAllRead.mutate() calls PUT /api/notifications?tenantId=... with body {markAllRead: true}. This route doesn't exist! Should POST to /api/notifications/read-all with {userId, tenantId}. The button will silently fail.
+  ⚠️ P2 — read-all route uses RBAC resource 'notifications' (plural). Works due to rbac.ts alias but inconsistent.
+  ⚠️ P2 — WS mark-read: where clause includes userId, but tenant-wide notifications have userId=null, so mark-read via socket won't work for those.
+
+WHAT'S MISSING:
+  ❌ No DELETE endpoint for notifications (can't dismiss individual ones)
+  ❌ No notification preferences/settings UI (per-user category opt-in/out)
+  ❌ No notification grouping or deduplication logic
+  ❌ No email notifications (in-app only)
+  ❌ No notification sound effects
+  ❌ No notification history cleanup (old read notifications accumulate forever)
+  ❌ No notification scheduling (e.g., deadline reminders)
+  ❌ Portal "notifications" are actually communications repurposed, not real Notification records
+  ❌ No portal WebSocket connection (portal clients get no real-time updates)
+  ❌ NotificationsView: clicking "Voir" link navigates to view but doesn't pass resourceId (can't deep-link to specific case/task)
+  ❌ No notification for: task assignments, document uploads to specific users, invoice overdue, payment received
+  ❌ No notification action buttons (e.g., "Complete task" directly from notification)
+  ❌ No batch delete for notifications
+  ❌ No notification count in Sidebar nav item
+  ❌ No per-resource notification preferences (e.g., mute a specific case)
+
+═══════════════════════════════════════════════════════════
+C) TOP 5 Recommendations — Phase 10 (Documents)
+═══════════════════════════════════════════════════════════
+
+  1. FIX CRITICAL BUG + Cleanup cascade (P0/P1)
+     - Fix line 318: `selectedDoc!.id` → `versionsDoc!.id`
+     - DELETE route: cascade delete DocumentVersion records + their storage files
+     - PUT route: add `description` to update data
+
+  2. Server-side pagination + sorting
+     - Replace `take: 200` with cursor or offset pagination (page/pageSize params)
+     - Add `sortBy` + `sortOrder` query params (fileName, fileSize, createdAt, updatedAt)
+     - UI: add sort dropdown and "Load more" button or infinite scroll
+
+  3. Document edit dialog
+     - Add edit button to document row/card
+     - Dialog to edit: fileName, folder, documentType, tags, description
+     - Uses existing PUT /api/documents/[id] endpoint
+
+  4. Drag-and-drop + bulk operations
+     - Drop zone on DocumentsView main area (not just dialog)
+     - Multi-select checkboxes → bulk delete, bulk move to folder, bulk tag
+     - New API endpoints: PATCH /api/documents/bulk (move, tag, delete)
+
+  5. File validation + audit trail
+     - Server-side: max file size (e.g., 50MB), allowed MIME types whitelist
+     - Client-side: pre-upload validation with clear error messages
+     - Create audit log entries for upload, download, delete, version actions
+
+═══════════════════════════════════════════════════════════
+D) TOP 5 Recommendations — Phase 12 (Notifications)
+═══════════════════════════════════════════════════════════
+
+  1. Fix mark-all-read bug + add delete capability
+     - Fix NotificationsView to use POST /api/notifications/read-all with {userId, tenantId}
+     - Add DELETE /api/notifications/[id] endpoint
+     - Add swipe-to-delete or delete button on notification cards
+     - Add "Delete all read" button
+
+  2. Notification preferences system
+     - Add NotificationPreference model (userId, category, enabled, method: in_app|email|both)
+     - Settings UI: per-category toggles (dossier, echeance, facture, document, tache, message)
+     - Filter notifications at trigger time based on preferences
+
+  3. Deep-linking + action buttons
+     - NotificationsView: "Voir" link should navigate to specific resource (e.g., setCurrentView('cases') + pass caseId for auto-selection)
+     - Header dropdown: same deep-link behavior
+     - Add action buttons on certain notification types (e.g., "Mark task done" on task notifications)
+
+  4. Expand notification triggers across the app
+     - Task assignment → notification to assigned user
+     - Document upload → notification to case team
+     - Invoice overdue → notification to responsible lawyer
+     - Event reminder → notification 1 day before
+     - Payment received → notification to case lawyer
+     - Case status change → notification to team
+
+  5. Notification cleanup + portal support
+     - Auto-delete read notifications older than 30 days (cron job or lazy cleanup)
+     - Add max unread count (cap at 500 per user, oldest auto-archived)
+     - Portal: connect portal clients to notification WebSocket (separate auth flow via ClientPortal)
+     - Portal: real Notification records (not repurposed communications)
+
+═══════════════════════════════════════════════════════════
+E) Simultaneous Improvements (Both Phases)
+═══════════════════════════════════════════════════════════
+
+  1. RBAC permission seeding for new actions
+     - Ensure document:bulk_delete, notification:delete, notification:preferences are seeded
+     - Update rbac.ts RESOURCE_ALIASES if new resource names are added
+
+  2. Audit log integration
+     - Document: log upload, download, delete, version create events
+     - Notification: log when user marks read, deletes, or changes preferences
+     - Shared: use existing /api/audit-logs infrastructure
+
+  3. Zustand store enhancements
+     - Add `lastNotificationResource` for deep-link navigation from Header dropdown
+     - Add `notificationPreferences` to UserInfo for client-side filtering
+
+  4. Translation/i18n keys
+     - Both Documents and Notifications views use hardcoded French strings
+     - Add translation keys to src/lib/translations/{en,fr,de,...}.ts
+
+  5. Portal document + notification parity
+     - Portal documents: add upload capability (currently read-only download)
+     - Portal notifications: switch from communications to real Notification records
+     - Shared: portal WebSocket connection for real-time updates
+
+Stage Summary:
+- Documents: 348-line UI, 5 API route files, 2 Prisma models, fully functional GED with 1 critical bug
+- Notifications: bell dropdown + full-page view, 4 API routes, Socket.io mini-service, polling fallback, 1 P1 bug
+- Critical bugs: selectedDoc undefined (Documents L318), markAllRead wrong endpoint (Notifications L26)
+- 10 document gaps identified, 13 notification gaps identified
+- 5 simultaneous improvements identified across both phases
+- No code changes made (audit only)
+---
+Task ID: 2
+Agent: Phase 10 Agent (Documents Avancés)
+Task: Phase 10 — Documents Avancés (bug fixes, pagination, sorting, edit, bulk ops, drag-drop, audit trail)
+
+Work Log:
+- **BUG FIX** DocumentsView.tsx L318: `selectedDoc!.id` → `versionsDoc!.id` in version download link
+- **BUG FIX** DELETE /api/documents/[id]: Added cascade delete of DocumentVersion records + their storage files before deleting main document
+- **API** GET /api/documents: Added pagination (page, limit, total, totalPages) and sorting (sortBy, sortOrder with validation). Default: sortBy=createdAt, sortOrder=desc, limit=20, max=100
+- **API** PUT /api/documents/[id]: Extended to support fileName, description, status, folder, tags, documentType, version. Added audit log entry. Includes relations in response
+- **API** POST /api/documents/bulk: New bulk operations endpoint. Actions: delete (with cascade), folder change, status change, tags update. Max 100 docs per operation
+- **AUDIT** Added AuditLog entries for: document.upload (POST), document.update (PUT), document.delete (DELETE), document.version.create (version POST)
+- **UI** DocumentsView.tsx: Complete rewrite (348→589 lines) with:
+  - Sort controls (dropdown for field: name/date/size/folder, toggle button for asc/desc)
+  - Pagination (page buttons with sliding window of 5, "X-Y sur Z" counter)
+  - Edit dialog (fileName, description, folder, documentType, status, tags)
+  - Bulk operations toolbar (checkboxes on each row/card, select all/deselect, bulk delete with confirmation, folder/status/tags change)
+  - Drag & drop upload zone (full overlay with icon + text, opens upload dialog on drop)
+  - Search/filter reset on page change
+
+Files Modified:
+- src/views/DocumentsView.tsx (full rewrite)
+- src/app/api/documents/route.ts (pagination, sorting, audit log on upload)
+- src/app/api/documents/[id]/route.ts (PUT extended, DELETE cascade + audit)
+- src/app/api/documents/[id]/versions/route.ts (audit log on version create)
+
+Files Created:
+- src/app/api/documents/bulk/route.ts
+
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Phase 12 — Notifications Avancées
+
+Work Log:
+- **Bug Fix: NotificationsView markAllRead** — Changed from `PUT /api/notifications?tenantId=...` with `{markAllRead: true}` (broken) to `POST /api/notifications/read-all` with `{ userId, tenantId }`
+- **Fixed read-all API** — Corrected RBAC resource from 'notifications' to 'notification', removed unused import, returns `{ updated: count }` instead of `{ ok: true }`
+- **Created DELETE /api/notifications/[id]** — Verifies notification exists, checks tenant access via `requireTenantAccess`, returns 204 on success
+- **Created POST /api/notifications/subscribe** — Validates notification preferences, returns defaults. Client-side only storage (no schema changes). Also supports GET for defaults.
+- **Created POST /api/notifications/cleanup** — Deletes read notifications older than 30 days. Root admin only. Returns `{ deleted: count }`.
+- **Created src/lib/notify.ts** — Centralized fire-and-forget notification helper. Tries notification service (port 3005) first, falls back to direct DB insert. Includes `notifyCaseAssignees()` helper.
+- **Updated Header.tsx** — Complete rewrite of notification dropdown:
+  - Category filter chips (Tous, Dossiers, Factures, Tâches, Messages) with icons
+  - Individual delete button (X) on each notification with hover reveal
+  - "Tout marquer comme lu" button at top
+  - "Voir toutes les notifications" link at bottom
+  - Deep-linking: clicking notification navigates to resource and sets `pendingResourceOpen` in store
+  - Relative time display via `relativeTime()`
+  - ScrollArea for overflow
+  - Empty states with icon per category
+  - Unread visual indicator (blue left accent)
+- **Updated NotificationsView.tsx** — Complete rewrite of full notifications page:
+  - Category filter tabs with icons
+  - Search input with debounce
+  - Individual delete button (X) with hover reveal
+  - Bulk select with Checkbox + select all on page
+  - Bulk delete button with count
+  - Pagination with page numbers and navigation
+  - Empty states per category with descriptive messages
+  - Deep-linking (click notification → navigate to resource + set pendingResourceOpen)
+  - Relative time display
+  - Loading skeletons
+  - AnimatePresence for enter/exit animations
+  - Unread count badge
+- **Updated appStore.ts** — Added `pendingResourceOpen` state and `setPendingResourceOpen` action for cross-view deep-linking
+- **Updated CasesView.tsx** — Added useEffect to consume `pendingResourceOpen` on mount: fetches case, sets as selectedCase, opens detail dialog, clears pending
+- **Expanded notification triggers** — Using centralized `fireNotification()` helper:
+  - Task status change: `PUT /api/tasks/[id]` → notifies on status transition with old→new label
+  - Task create: `POST /api/tasks` → migrated from raw fetch to `fireNotification()`
+  - Invoice create: `POST /api/invoices` → notifies with invoice number, client name, amount
+  - Invoice status change: `PUT /api/invoices/[id]` → notifies on status transition
+  - Document upload: `POST /api/documents` → migrated from raw fetch to `fireNotification()`
+  - Case status change: `PUT /api/cases/[id]` → notifies with reference + title
+  - Case note: `POST /api/cases/[id]/notes` → notifies with reference + content preview
+
+Files Modified:
+- src/views/NotificationsView.tsx (full rewrite)
+- src/views/Header.tsx (full rewrite)
+- src/views/CasesView.tsx (added deep-linking useEffect + pendingResourceOpen)
+- src/store/appStore.ts (added pendingResourceOpen state)
+- src/app/api/notifications/read-all/route.ts (fixed RBAC, returns count)
+- src/app/api/notifications/[id]/route.ts (added DELETE handler)
+- src/app/api/tasks/route.ts (migrated to fireNotification)
+- src/app/api/tasks/[id]/route.ts (added status change notification)
+- src/app/api/invoices/route.ts (added create notification)
+- src/app/api/invoices/[id]/route.ts (added status change notification)
+- src/app/api/documents/route.ts (migrated to fireNotification)
+- src/app/api/cases/[id]/route.ts (added status change notification)
+- src/app/api/cases/[id]/notes/route.ts (added note notification)
+
+Files Created:
+- src/lib/notify.ts (centralized fire-and-forget notification helper)
+- src/app/api/notifications/subscribe/route.ts (preference validation)
+- src/app/api/notifications/cleanup/route.ts (30-day cleanup)
+
+Stage Summary:
+- Fixed critical markAllRead bug in NotificationsView
+- 3 new API routes (subscribe, cleanup, delete)
+- Notification dropdown now has category filters, delete buttons, deep-linking, relative time
+- Full notifications page has search, bulk select/delete, pagination, empty states per category
+- Deep-linking system: notification click → navigate to view + auto-open resource detail
+- 6 notification triggers added across task, invoice, document, case, and note APIs
+- Centralized notification helper (notify.ts) with service fallback
+- Version: v3.8.68 → v3.8.69

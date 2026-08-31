@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate } from '@/lib/auth-server'
 import { uploadFile } from '@/lib/storage'
+import { fireNotification } from '@/lib/notify'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'document', 'view')
@@ -15,6 +16,26 @@ export async function GET(request: Request) {
     const tag = searchParams.get('tag')
     const folder = searchParams.get('folder')
     const documentType = searchParams.get('documentType')
+
+    // Pagination params
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20))
+
+    // Sorting params
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+
+    // Validate sortBy
+    const allowedSortFields: Record<string, string> = {
+      fileName: 'fileName',
+      createdAt: 'createdAt',
+      updatedAt: 'updatedAt',
+      fileSize: 'fileSize',
+      version: 'version',
+      folder: 'folder',
+    }
+    const sortField = allowedSortFields[sortBy] || 'updatedAt'
+    const orderBy: Record<string, string> = { [sortField]: sortOrder }
 
     const where: Record<string, unknown> = {}
     if (tenantId) where.tenantId = tenantId
@@ -32,6 +53,10 @@ export async function GET(request: Request) {
       ;(where as Record<string, unknown>).tags = { contains: tag }
     }
 
+    const total = await db.document.count({ where })
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+    const skip = (page - 1) * limit
+
     const documents = await db.document.findMany({
       where,
       include: {
@@ -39,8 +64,9 @@ export async function GET(request: Request) {
         uploadedBy: { select: { id: true, fullName: true, email: true } },
         _count: { select: { versions: true } },
       },
-      orderBy: { updatedAt: 'desc' },
-      take: 200,
+      orderBy,
+      skip,
+      take: limit,
     })
 
     const allDocs = await db.document.findMany({
@@ -65,7 +91,10 @@ export async function GET(request: Request) {
       documents,
       tags: Array.from(tagSet).sort(),
       folders: Array.from(folderSet).sort(),
-      total: documents.length,
+      total,
+      page,
+      totalPages,
+      limit,
     })
   } catch (error) {
     console.error('List documents error:', error)
@@ -120,20 +149,27 @@ export async function POST(request: Request) {
         _count: { select: { versions: true } },
       },
     })
-    // Trigger real-time notification (fire-and-forget)
-    const notifyUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3005'
-    fetch(`${notifyUrl}/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tenantId,
-        type: 'document',
-        title: 'Nouveau document',
-        message: `Nouveau document : ${file.name}`,
+    // Trigger notification (fire-and-forget)
+    fireNotification({
+      tenantId,
+      type: 'document',
+      title: 'Nouveau document',
+      message: `Nouveau document : ${file.name}`,
+      resourceType: 'document',
+      resourceId: document.id,
+    })
+
+    // Audit log
+    await db.auditLog.create({
+      data: {
+        action: 'document.upload',
         resourceType: 'document',
         resourceId: document.id,
-      }),
-    }).catch(() => {})
+        metadata: JSON.stringify({ fileName: file.name, fileSize: file.size, folder, documentType }),
+        tenantId,
+        userId: auth.id || null,
+      },
+    })
 
     return NextResponse.json(document, { status: 201 })
   } catch (error) {

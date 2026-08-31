@@ -85,6 +85,18 @@ export async function POST(
       },
     })
 
+    // Audit log
+    await db.auditLog.create({
+      data: {
+        action: 'document.version.create',
+        resourceType: 'document',
+        resourceId: id,
+        metadata: JSON.stringify({ newVersion, fileName: file.name, changeNote }),
+        tenantId: doc.tenantId,
+        userId: auth.id || null,
+      },
+    }).catch(() => {})
+
     return NextResponse.json(updated, { status: 200 })
   } catch (error) {
     console.error('Upload version error:', error)

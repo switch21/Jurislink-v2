@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { fireNotification } from '@/lib/notify'
 
 const TYPE_PREFIXES: Record<string, string> = {
   facture: 'FAC',
@@ -157,6 +158,16 @@ export async function POST(request: Request) {
         },
       })
       return created
+    })
+
+    // Notification: invoice created
+    fireNotification({
+      tenantId,
+      type: 'facture',
+      title: `Nouvelle ${type === 'devis' ? 'devis' : type === 'avoir' ? 'avoir' : type === 'recu' ? 'reçu' : 'facture'}`,
+      message: `${invoiceNumber} — ${invoice.client?.fullName || invoice.client?.company || 'Client'} — ${total.toLocaleString('fr-FR')} FCFA`,
+      resourceType: 'invoice',
+      resourceId: invoice.id,
     })
 
     return NextResponse.json(invoice, { status: 201 })

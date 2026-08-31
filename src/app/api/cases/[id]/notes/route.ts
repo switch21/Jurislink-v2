@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { fireNotification } from '@/lib/notify'
 
 export async function GET(
   request: Request,
@@ -49,6 +50,26 @@ export async function POST(
         tenantId: body.tenantId,
       },
     })
+
+    // Notification: note added to case
+    if (body.tenantId) {
+      const caze = await db.case.findUnique({
+        where: { id },
+        select: { reference: true, title: true },
+      })
+      if (caze) {
+        const preview = body.content.length > 60 ? body.content.slice(0, 60) + '…' : body.content
+        fireNotification({
+          tenantId: body.tenantId,
+          type: 'dossier',
+          title: 'Nouvelle note sur un dossier',
+          message: `${caze.reference} — ${preview}`,
+          resourceType: 'case',
+          resourceId: id,
+        })
+      }
+    }
+
     return NextResponse.json(note, { status: 201 })
   } catch (error) {
     console.error('Create case note error:', error)

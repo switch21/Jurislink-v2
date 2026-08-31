@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { fireNotification } from '@/lib/notify'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'task', 'view')
@@ -152,20 +153,15 @@ export async function POST(request: Request) {
       })
     }
 
-    // Trigger real-time notification (fire-and-forget)
-    const notifyUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3005'
-    fetch(`${notifyUrl}/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tenantId,
-        type: 'task',
-        title: 'Nouvelle tâche',
-        message: `Nouvelle tâche : ${title}`,
-        resourceType: 'task',
-        resourceId: task.id,
-      }),
-    }).catch(() => {})
+    // Trigger notification (fire-and-forget)
+    fireNotification({
+      tenantId,
+      type: 'tache',
+      title: 'Nouvelle tâche',
+      message: `Nouvelle tâche : ${title}`,
+      resourceType: 'task',
+      resourceId: task.id,
+    })
 
     // Resolve assigned users for the response
     let assignedUsers: Array<{ userId: string; fullName: string }> = []

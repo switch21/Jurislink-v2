@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse, requireTenantAccess } from '@/lib/auth-server'
+import { fireNotification } from '@/lib/notify'
 
 export async function GET(
   request: Request,
@@ -128,14 +129,16 @@ export async function PUT(
     } = body
 
     // Perform all updates in a transaction
+    let oldStatus: string | undefined
     await db.$transaction(async (tx) => {
       // Verify case exists and belongs to tenant
       const existing = await tx.case.findUnique({
         where: { id },
-        select: { tenantId: true },
+        select: { tenantId: true, status: true, reference: true },
       })
       if (!existing) throw new Error('Dossier non trouvé')
       if (!requireTenantAccess(auth, existing.tenantId)) throw new Error('Accès refusé')
+      oldStatus = existing.status
 
       // Update case fields
       await tx.case.update({
@@ -235,6 +238,20 @@ export async function PUT(
     const caseWithTags = updated
       ? { ...updated, tags: updated.taggings.map((t) => t.tag), taggings: undefined }
       : null
+
+    // Notification: case status changed
+    if (body.status && oldStatus && body.status !== oldStatus) {
+      const ref = updated?.reference || ''
+      const title = updated?.title || ''
+      fireNotification({
+        tenantId: updated?.tenantId || auth.tenantId || '',
+        type: 'dossier',
+        title: 'Statut de dossier modifié',
+        message: `${ref}${title ? ` — ${title}` : ''} → ${body.status}`,
+        resourceType: 'case',
+        resourceId: id,
+      })
+    }
 
     return NextResponse.json(caseWithTags)
   } catch (error: any) {

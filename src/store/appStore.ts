@@ -104,6 +104,8 @@ interface AppState {
   // Notification state (real-time via WebSocket)
   unreadCount: number
   lastNotification: { title: string; message: string; resourceType?: string | null; resourceId?: string | null } | null
+  // Deep-linking: when a notification is clicked, set this so the target view opens the resource
+  pendingResourceOpen: { resourceType: string; resourceId: string } | null
   // Portal client state
   portalUser: PortalUserInfo | null
   isPortalAuthenticated: boolean
@@ -120,6 +122,8 @@ interface AppState {
   incrementUnread: () => void
   setUnreadCount: (n: number) => void
   setLastNotification: (n: { title: string; message: string; resourceType?: string | null; resourceId?: string | null } | null) => void
+  // Deep-linking action
+  setPendingResourceOpen: (v: { resourceType: string; resourceId: string } | null) => void
   // Portal actions
   portalLogin: (user: PortalUserInfo) => void
   portalLogout: () => void
@@ -163,6 +167,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   sidebarOpen: false,
   unreadCount: 0,
   lastNotification: null,
+  pendingResourceOpen: null,
   portalUser: loadPortalUser(),
   isPortalAuthenticated: !!loadPortalUser(),
   portalCurrentView: 'portal-dashboard',
@@ -196,6 +201,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   incrementUnread: () => set((s) => ({ unreadCount: s.unreadCount + 1 })),
   setUnreadCount: (n) => set({ unreadCount: n }),
   setLastNotification: (n) => set({ lastNotification: n }),
+  setPendingResourceOpen: (v) => set({ pendingResourceOpen: v }),
   portalLogin: (portalUser) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jurislink_portal_user', JSON.stringify(portalUser))
