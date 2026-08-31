@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { compare } from 'bcryptjs'
+import { createMfaChallenge } from '../mfa/challenge/route'
 
 export async function POST(request: Request) {
   const db = getDb()
@@ -59,6 +60,21 @@ export async function POST(request: Request) {
       }
     }
 
+    // Build user data (same as before, without password)
+    const { password: _, mfaSecret: __, mfaEnabled, ...safeUser } = user
+    const userData = { ...safeUser, permissions }
+
+    // MFA check: if user has MFA enabled, challenge instead of returning user data
+    if (mfaEnabled) {
+      const mfaToken = createMfaChallenge(user.id, userData)
+      return NextResponse.json({
+        mfaRequired: true,
+        userId: user.id,
+        mfaToken,
+      })
+    }
+
+    // No MFA — return user data directly (original flow)
     // Update last login (non-critical)
     try {
       await db.user.update({
@@ -67,9 +83,7 @@ export async function POST(request: Request) {
       })
     } catch {}
 
-    // Return user without password, with permissions
-    const { password: _, ...safeUser } = user
-    return NextResponse.json({ ...safeUser, permissions })
+    return NextResponse.json(userData)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue'
     console.error('Login error:', message)

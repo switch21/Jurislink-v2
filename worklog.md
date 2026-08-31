@@ -869,3 +869,38 @@ Stage Summary:
 - 60 new integration tests covering: auth (10), dashboard (7), cases (9), admin (6), tenants (7), users (7), invoices (7), clients (7)
 - Total: 215 tests, all passing
 - Commit: 6708daa pushed to main
+
+---
+Task ID: 13
+Agent: Super Z (main)
+Task: Phase 13 — MFA (Multi-Factor Authentication)
+
+Work Log:
+- Installed `otpauth` (TOTP library) and `qrcode` (QR code generation) packages
+- Added `mfaEnabled` (Boolean, default false) and `mfaSecret` (String?) columns to User model in Prisma schema
+- Pushed schema changes directly to Supabase PostgreSQL via `ALTER TABLE users ADD COLUMN IF NOT EXISTS`
+- Created 5 new API routes under `/api/auth/mfa/`:
+  - `POST /api/auth/mfa/setup` — Generates TOTP secret + QR code data URL
+  - `POST /api/auth/mfa/enable` — Verifies TOTP code and enables MFA, returns 8 backup codes
+  - `POST /api/auth/mfa/disable` — Verifies TOTP code and disables MFA (clears secret)
+  - `POST /api/auth/mfa/challenge` — Verifies TOTP during login (in-memory challenge store with 5-min TTL)
+  - `GET /api/auth/mfa/status` — Returns current user's MFA enabled status
+- Modified `POST /api/auth/login` to return `{mfaRequired: true, userId, mfaToken}` for MFA-enabled users
+- Modified `LoginPage.tsx`: Added MFA challenge screen with 6-digit OTP input, 5-min countdown timer, back button
+- Modified `SettingsView.tsx`: Added MFA section in profile tab with status badge, setup dialog (QR code + secret key + verification), disable dialog (confirmation + TOTP verification), backup codes display
+- Added `QrCode` and `KeyRound as Key` icon exports to `shared-ui.tsx`
+- Fixed bug: `mfaStatus?.enabled` should be `mfaStatus?.mfaEnabled` (3 occurrences in SettingsView)
+- Fixed bug: Unused `createHash` import in challenge route
+- Code review confirmed: all imports correct, otpauth API usage correct, no secret leakage, proper auth header handling
+- Lint passes: 0 errors (1 pre-existing warning in seed.ts)
+- Dev server compiles successfully (GET / 200)
+
+Stage Summary:
+- MFA fully implemented with TOTP (Google Authenticator / Authy compatible)
+- 5 new backend API routes + modified login route
+- 2 frontend UI changes: login MFA challenge + settings MFA management
+- Prisma schema updated with 2 new columns
+- Security: mfaSecret stripped from all API responses, 6-digit validation, 5-min challenge expiry, TOTP verification required for both enable and disable
+- Known limitations (documented for future): in-memory challenge store (use Redis in production), backup codes shown once and not persisted, no rate limiting on challenge endpoint
+- Files created: 5 API route files
+- Files modified: prisma/schema.prisma, LoginPage.tsx, SettingsView.tsx, shared-ui.tsx, next.config.ts, auth/login/route.ts

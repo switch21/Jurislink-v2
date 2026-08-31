@@ -70,6 +70,8 @@ model User {
   avatarUrl            String?   @map("avatar_url")
   phone                String?
   password             String?
+  mfaEnabled           Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret            String?   @map("mfa_secret")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 

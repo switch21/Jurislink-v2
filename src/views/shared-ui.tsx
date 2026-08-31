@@ -72,7 +72,8 @@ export {
   FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2,
   FileImage, List, LayoutGrid, History,
   Globe, ShieldUser, FileDown, MessageCircleReply, UserCog,
-  Building2 as BuildingIcon, CreditCard as CreditCardIcon, Zap as ZapIcon
+  Building2 as BuildingIcon, CreditCard as CreditCardIcon, Zap as ZapIcon,
+  QrCode, KeyRound as Key
 } from 'lucide-react'
 // ═══ Internal Components ═══
 export { EmptyState } from './EmptyState'

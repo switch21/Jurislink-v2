@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon } from './shared-ui'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, QrCode, Key } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
@@ -13,6 +13,14 @@ export function SettingsView() {
   const [profileForm, setProfileForm] = useState({ fullName: user?.fullName || '', email: user?.email || '', phone: user?.phone || '' })
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [showPwForm, setShowPwForm] = useState(false)
+  // MFA state
+  const [mfaSetupOpen, setMfaSetupOpen] = useState(false)
+  const [mfaDisableOpen, setMfaDisableOpen] = useState(false)
+  const [mfaSetupData, setMfaSetupData] = useState<{ qrDataUrl: string; secretBase32: string; otpauthUri: string } | null>(null)
+  const [mfaSetupCode, setMfaSetupCode] = useState('')
+  const [mfaDisableCode, setMfaDisableCode] = useState('')
+  const [mfaBackupCodes, setMfaBackupCodes] = useState<string[] | null>(null)
+  const [mfaSecretCopied, setMfaSecretCopied] = useState(false)
   const [newUser, setNewUser] = useState({ fullName: '', email: '', role: 'lawyer', password: '' })
   const [newCurrency, setNewCurrency] = useState({ code: '', name: '', symbol: '' })
   const [showNewUser, setShowNewUser] = useState(false)
@@ -117,6 +125,43 @@ export function SettingsView() {
     onSuccess: () => { toast.success('Mot de passe modifié avec succès'); setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setShowPwForm(false) },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  // MFA
+  const { data: mfaStatus, isLoading: mfaStatusLoading } = useQuery({
+    queryKey: ['mfa-status'],
+    queryFn: () => fetch('/api/auth/mfa/status').then(r => r.json()),
+  })
+
+  const mfaSetupMut = useMutation({
+    mutationFn: () => fetch('/api/auth/mfa/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: (data) => { setMfaSetupData({ qrDataUrl: data.qrDataUrl, secretBase32: data.secretBase32, otpauthUri: data.otpauthUri }); setMfaSetupCode(''); setMfaBackupCodes(null) },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const mfaEnableMut = useMutation({
+    mutationFn: (body: { code: string }) => fetch('/api/auth/mfa/enable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: (data) => { setMfaBackupCodes(data.backupCodes || []); toast.success('MFA activé avec succès !'); qc.invalidateQueries({ queryKey: ['mfa-status'] }) },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const mfaDisableMut = useMutation({
+    mutationFn: (body: { code: string }) => fetch('/api/auth/mfa/disable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: () => { toast.success('MFA désactivé'); setMfaDisableOpen(false); setMfaDisableCode(''); qc.invalidateQueries({ queryKey: ['mfa-status'] }) },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const copySecret = useCallback(() => {
+    if (!mfaSetupData) return
+    navigator.clipboard.writeText(mfaSetupData.secretBase32).then(() => { setMfaSecretCopied(true); setTimeout(() => setMfaSecretCopied(false), 2000) })
+  }, [mfaSetupData])
+
+  const closeMfaSetup = useCallback(() => {
+    setMfaSetupOpen(false)
+    setMfaSetupData(null)
+    setMfaSetupCode('')
+    setMfaBackupCodes(null)
+    setMfaSecretCopied(false)
+  }, [])
 
   const createUserMut = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
@@ -223,6 +268,35 @@ export function SettingsView() {
                     Modifier le mot de passe
                   </Button>
                 </div>}
+              </div>
+              <Separator className="my-4" />
+              {/* MFA Section */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-jl-secondary">
+                    <ShieldCheck className="size-4" />
+                    Authentification à deux facteurs
+                  </div>
+                  {mfaStatusLoading ? <Skeleton className="h-5 w-20 rounded" /> : mfaStatus?.mfaEnabled ? (
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[10px]">MFA activé</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] text-jl-muted">Désactivé</Badge>
+                  )}
+                </div>
+                <div className="mt-3">
+                  {!mfaStatusLoading && !mfaStatus?.mfaEnabled && (
+                    <Button size="sm" variant="outline" className="border-jl text-xs" onClick={() => { setMfaSetupOpen(true); mfaSetupMut.mutate() }} disabled={mfaSetupMut.isPending}>
+                      {mfaSetupMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Shield className="size-3.5 mr-1.5" />}
+                      Activer l'authentification à deux facteurs
+                    </Button>
+                  )}
+                  {!mfaStatusLoading && mfaStatus?.mfaEnabled && (
+                    <Button size="sm" variant="outline" className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs" onClick={() => { setMfaDisableOpen(true); setMfaDisableCode('') }}>
+                      <Shield className="size-3.5 mr-1.5" />
+                      Désactiver
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent></Card>
             {tenantInfo && <Card><CardHeader><CardTitle className="text-sm font-semibold">Mon cabinet</CardTitle></CardHeader><CardContent className="space-y-3 text-sm">
@@ -421,6 +495,114 @@ export function SettingsView() {
           </div>
         </CardContent></Card></TabsContent>}
       </Tabs>
+
+      {/* MFA Setup Dialog */}
+      <Dialog open={mfaSetupOpen} onOpenChange={(open) => { if (!open) closeMfaSetup() }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm"><QrCode className="size-4" />Configurer l'authentification à deux facteurs</DialogTitle>
+            <DialogDescription className="text-xs">Scannez ce QR code avec votre application d'authentification (Google Authenticator, Authy, etc.)</DialogDescription>
+          </DialogHeader>
+          {mfaBackupCodes ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <p className="text-xs text-emerald-700 dark:text-emerald-300">MFA activé avec succès !</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-[var(--danger)] mb-2 flex items-center gap-1.5"><AlertTriangle className="size-3.5" />Enregistrez ces codes de récupération</p>
+                <p className="text-[10px] text-jl-secondary mb-3">Stockez-les dans un endroit sûr. Chaque code ne peut être utilisé qu'une seule fois.</p>
+                <div className="grid grid-cols-2 gap-1.5 p-3 bg-jl-page rounded-lg border border-jl max-h-48 overflow-y-auto">
+                  {mfaBackupCodes.map((code, i) => (
+                    <code key={i} className="text-[11px] font-mono px-2 py-1 bg-[var(--bg-card)] rounded border border-jl text-center">{code}</code>
+                  ))}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={closeMfaSetup}>J'ai enregistré mes codes</Button>
+              </DialogFooter>
+            </div>
+          ) : mfaSetupData ? (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                {mfaSetupData.qrDataUrl ? (
+                  <img src={mfaSetupData.qrDataUrl} alt="QR Code MFA" className="size-48 rounded-lg" />
+                ) : (
+                  <div className="size-48 rounded-lg bg-jl-page border border-jl flex items-center justify-center"><QrCode className="size-12 text-jl-muted" /></div>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5"><Key className="size-3" />Clé secrète</Label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs font-mono px-3 py-2 bg-jl-page rounded-lg border border-jl select-all">{mfaSetupData.secretBase32}</code>
+                  <Button type="button" size="sm" variant="outline" className="shrink-0 h-9 w-9 p-0" onClick={copySecret}>
+                    {mfaSecretCopied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Code de vérification</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={mfaSetupCode}
+                  onChange={e => setMfaSetupCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="h-10 text-center text-base tracking-[0.3em] font-mono"
+                  autoFocus
+                />
+                <p className="text-[10px] text-jl-muted">Entrez le code à 6 chiffres de votre application</p>
+              </div>
+              <DialogFooter className="gap-2">
+                <Button size="sm" variant="outline" onClick={closeMfaSetup}>Annuler</Button>
+                <Button size="sm" className="bg-jl-blue hover:bg-jl-blue" disabled={mfaEnableMut.isPending || mfaSetupCode.length !== 6} onClick={() => mfaEnableMut.mutate({ code: mfaSetupCode })}>
+                  {mfaEnableMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <ShieldCheck className="size-3.5 mr-1.5" />}
+                  Vérifier et activer
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8"><Loader2 className="size-6 animate-spin text-jl-muted" /></div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* MFA Disable Dialog */}
+      <Dialog open={mfaDisableOpen} onOpenChange={(open) => { if (!open) { setMfaDisableOpen(false); setMfaDisableCode('') } }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm"><Shield className="size-4 text-red-500" />Désactiver l'authentification à deux facteurs</DialogTitle>
+            <DialogDescription className="text-xs">Cette action réduit la sécurité de votre compte. Entrez un code TOTP pour confirmer.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <p className="text-xs text-amber-700 dark:text-amber-300">Votre compte sera moins sécurisé sans la vérification en deux étapes.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Code de vérification</Label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={mfaDisableCode}
+                onChange={e => setMfaDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="h-10 text-center text-base tracking-[0.3em] font-mono"
+                autoFocus
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button size="sm" variant="outline" onClick={() => { setMfaDisableOpen(false); setMfaDisableCode('') }}>Annuler</Button>
+              <Button size="sm" variant="outline" className="border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30" disabled={mfaDisableMut.isPending || mfaDisableCode.length !== 6} onClick={() => mfaDisableMut.mutate({ code: mfaDisableCode })}>
+                {mfaDisableMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Shield className="size-3.5 mr-1.5" />}
+                Désactiver le MFA
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="pt-4 border-t border-jl"><Button variant="ghost" className="text-[var(--danger)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 text-xs" onClick={logout}><LogOut className="size-3.5 mr-1.5" />Se déconnecter</Button></div>
     </div>
