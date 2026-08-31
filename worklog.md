@@ -1763,3 +1763,31 @@ Stage Summary:
 - 6 notification triggers added across task, invoice, document, case, and note APIs
 - Centralized notification helper (notify.ts) with service fallback
 - Version: v3.8.68 → v3.8.69
+
+---
+Task ID: 10
+Agent: Super Z (main) + 2 sub-agents
+Task: Phase 10 (Documents Avancés) + Phase 12 (Notifications Avancées)
+
+Work Log:
+- Audit complet des deux modules (DocumentsView 589 lignes, Notifications, 4+ API routes)
+- Fix bug critique: selectedDoc→versionsDoc (crash téléchargement version)
+- Fix bug: DELETE cascade versions + fichiers stockage orphelins
+- Fix bug: markAllRead appelait le mauvais endpoint PUT au lieu de POST
+- API GET /documents: pagination serveur + tri multi-colonnes (5 champs)
+- API PUT /documents/[id]: édition complète + audit trail
+- API POST /documents/bulk: opérations en lot (supprimer, dossier, statut, tags)
+- API POST /notifications/read-all, DELETE /[id], POST /cleanup
+- UI Documents: pagination + tri + dialogue édition + sélection multiple + drag & drop
+- UI Notifications: filtres catégorie, deep-linking, temps relatif, bulk delete, pagination
+- Triggers étendus via notify.ts: tâches, factures, documents, statuts dossier, notes
+- Fix lint: 2 commentaires JSX non fermés + dragCounter→dragCounterRef
+- Lint: 0 erreurs
+- Commit: f7beb36 pushed to main
+
+Stage Summary:
+- 21 fichiers modifiés, 1655 insertions, 154 suppressions
+- 4 nouveaux fichiers API (bulk, read-all, cleanup, subscribe) + notify.ts
+- Documents: pagination, tri, édition, bulk, drag & drop, audit trail
+- Notifications: deep-linking, filtres, suppression, cleanup, triggers étendus
+- 3 bugs corrigés (versionsDoc crash, cascade delete, markAllRead endpoint)
