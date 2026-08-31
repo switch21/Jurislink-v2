@@ -924,3 +924,492 @@ Stage Summary:
 - `crypto.randomBytes` → `crypto.getRandomValues` (Web Crypto API)
 - Génération des codes de secours isolée dans son propre try/catch (non-critique)
 - Cron webDevReview configuré (toutes les 15 min, job ID: 349199)
+
+---
+Task ID: 1
+Agent: Audit Agent
+Task: Phase 9 pré-audit — Analyse complète de la fonctionnalité Dossiers (Cases)
+
+═══════════════════════════════════════════════════════════════════════════════
+RAPPORT D'AUDIT — FONCTIONNALITÉ DOSSIERS (CASES) DE JURISLINK
+═══════════════════════════════════════════════════════════════════════════════
+
+A) SCHÉMA BDD ACTUEL POUR LES DOSSIERS
+═══════════════════════════════════════
+
+1. Modèle Case (table « cases ») — 17 champs :
+   - id (UUID, PK)
+   - title (String, requis)
+   - description (String?, optionnel)
+   - caseType (String, défaut « civil ») — valeurs : civil, pénal, commercial, social, administratif
+   - status (String, défaut « nouveau ») — valeurs : nouveau, ouvert, en_cours, en_attente, clos
+   - outcome (String?) — RÉSULTAT FINAL du dossier (ex: gagné, perdu, transaction)
+   - paymentStatus (String?) — STATUT DE PAIEMENT du dossier
+   - priority (String, défaut « normal ») — valeurs : normal, haute, urgente
+   - isSecret (Boolean, défaut false) — dossier confidentiel
+   - reference (String?) — référence métier (ex: REF-001)
+   - adversary (String?) — partie adverse
+   - jurisdiction (String?) — juridiction (ex: TPI de Douala)
+   - amountInDispute (Float?) — montant en litige
+   - billingType (String?) — type de facturation : forfait, horaire, abonnement, success_fee, provision
+   - aiAnalysis (String?) — analyse IA mise en cache (JSON sérialisé)
+   - createdAt, updatedAt (DateTime)
+   - Relations : tenantId→Tenant, clientId→Client
+   - Relations inverses : assignments(CaseAssignment[]), documents(Document[]), events(Event[]), invoices(Invoice[]), notes(CaseNote[]), tasks(Task[]), timeEntries(TimeEntry[]), communications(Communication[])
+
+2. Modèle CaseAssignment (table « case_assignments ») — 4 champs :
+   - id (UUID, PK)
+   - userId → User
+   - caseId → Case
+   - tenantId → Tenant
+   - Contrainte unique : [userId, caseId]
+
+3. Modèle CaseNote (table « case_notes ») — 5 champs :
+   - id (UUID, PK)
+   - content (String, requis)
+   - createdAt (DateTime)
+   - caseId → Case (onDelete: Cascade)
+   - authorId → User (optionnel)
+   - tenantId → Tenant
+   - Index sur caseId
+
+4. Modèles liés sans relation directe « Case » mais avec caseId optionnel :
+   - Document — caseId?, version, folder, tags (String?, CSV), documentType, mimeType
+   - Event — caseId?, eventType, criticality, startTime, endTime
+   - Task — caseId?, eventId?, status, priority, dueDate (aucun userId d'assignation!)
+   - Invoice — caseId?, invoiceNumber, type, amount, status, dueDate, reminderLevel
+   - Communication — caseId?, type (email/sms/whatsapp/lettre), subject, content
+   - TimeEntry — caseId?, userId, description, duration, isBillable, hourlyRate
+
+B) FONCTIONNALITÉS UI EXISTANTES DANS CasesView
+═══════════════════════════════════════════════════════
+
+Vue liste (grille de cartes) :
+  ✅ Affichage en grille responsive (1/2/3 colonnes)
+  ✅ Recherche textuelle (titre, référence, description)
+  ✅ Filtre par statut (tous, nouveau, ouvert, en_cours, en_attente, clos)
+  ✅ Filtre par type (tous, civil, pénal, commercial, social, administratif)
+  ✅ Filtre par priorité (tous, normal, haute, urgente)
+  ✅ Affichage : référence, titre, client, partie adverse, juridiction, montant, type facturation
+  ✅ Badge de confidentialité (Lock icon si isSecret)
+  ✅ Bouton d'édition rapide sur chaque carte
+  ✅ État vide avec EmptyState component
+  ✅ Skeleton loading
+
+Dialogue de création/modification :
+  ✅ Référence, Client (select), Titre, Description
+  ✅ Type, Statut, Priorité (selects)
+  ✅ Partie adverse, Juridiction
+  ✅ Montant en jeu, Type de facturation, Prochaine échéance
+  ✅ Checkbox confidentiel
+  ✅ Sélection de collaborateurs (avatars cliquables)
+  ✅ Détection de conflits (appel /api/conflicts)
+  ✅ Bouton « Nouveau dossier » en header
+
+Dialogue de détail (10 onglets) :
+  ✅ Onglet « Résumé » — grille d'informations : client, type, statut, priorité, partie adverse, juridiction, montant, facturation, description
+  ✅ Onglet « Chronologie » — timeline unifiée serveur avec :
+      - Recherche dans la timeline
+      - Tri ascendant/descendant
+      - Filtres par type (événements, notes, documents, tâches, factures, paiements, communications)
+      - Badges de compteur par type
+      - Regroupement par jour (Aujourd'hui, Hier, date en français)
+      - Suppression inline des notes et événements (double-clic avec confirmation)
+      - Création inline de notes (formulaire animé)
+      - Création inline d'événements (formulaire avec type + datetime)
+      - Animation motion (fade-in, slide)
+  ✅ Onglet « Tâches » — liste des tâches liées + bouton « Générer les tâches » (workflow IA)
+  ✅ Onglet « Événements » — liste des événements liés
+  ✅ Onglet « Équipe » — liste des avocats assignés avec avatar + rôle
+  ✅ Onglet « Factures » — liste des factures liées avec montant + statut
+  ✅ Onglet « Notes » — liste des notes avec auteur + date
+  ✅ Onglet « Documents » — liste des documents liés :
+      - Upload de documents avec barre de progression
+      - Aperçu PDF (iframe) et image
+      - Téléchargement
+      - Affichage version, taille, tags
+      - Génération depuis modèle de document (select + bouton Générer)
+  ✅ Onglet « Workflow » — barre de progression des tâches
+  ✅ Onglet « Analyse IA » (conditionnel, vérifie abonnement) :
+      - Panneau d'analyse IA (résumé, chronologie, parties, questions juridiques, risques, pièces manquantes, échéances, actions recommandées)
+      - Recherche de jurisprudence IA
+      - Résumé des documents IA
+
+Fonctionnalités transversales :
+  ✅ Gestion des collaborateurs (CaseAssignment) via checkboxes dans le formulaire
+  ✅ Vérification de conflits à la création (partie adverse + client)
+  ✅ Invalidation automatique des caches React Query après mutations
+  ✅ Toast notifications pour toutes les actions
+  ✅ Gestion d'erreur silencieuse sur les mutations
+
+C) API ROUTES EXISTANTES POUR LES DOSSIERS
+═══════════════════════════════════════════
+
+7 fichiers de routes, 13 endpoints au total :
+
+1. GET  /api/cases
+   - Auth: case:view | Filtres: tenantId, status, caseType, priority, search
+   - Include: client (id,fullName), assignments→user (id,fullName)
+   - Ordre: createdAt desc | Limite: 100
+
+2. POST /api/cases
+   - Auth: case:create | Crée le dossier + assignments (nested create)
+   - Option: ?generateWorkflow=true → auto-création de tâches depuis template
+   - Retourne le dossier créé + éventuel workflowResult
+
+3. GET  /api/cases/[id]
+   - Auth: case:view | Include: client (full), tenant, assignments→user, notes→author, documents, events→assignments→user
+
+4. PUT  /api/cases/[id]
+   - Auth: case:edit | Met à jour tous les champs modifiables (dont outcome, paymentStatus)
+   - ⚠️ Ne met PAS à jour les assignments (seuls les champs scalaires)
+
+5. DELETE /api/cases/[id]
+   - Auth: case:delete | Suppression cascade via Prisma
+
+6. GET  /api/cases/[id]/timeline
+   - Auth: case:view | Requête parallèle de 6 tables (events, notes, documents, tasks, invoices, communications)
+   - Recherche server-side (insensitive) sur titre/description/contenu
+   - Pagination cursor-based (limit 10-200, défaut 50)
+   - Retourne: items[], counts{}, total, nextCursor
+
+7. GET  /api/cases/[id]/assignments
+   - Auth: case:view | Liste avec user (id,fullName,email,role,avatarUrl)
+
+8. POST /api/cases/[id]/assignments
+   - Auth: case:create | Upsert assignment + notification temps réel via /notify-user
+
+9. DELETE /api/cases/[id]/assignments
+   - Auth: case:delete | Suppression par caseId + userId (body)
+
+10. POST /api/cases/[id]/generate-tasks
+    - Auth: task:create | Génère des tâches depuis template workflow par caseType
+    - Déduplication: vérifie si la 1ère tâche du template existe déjà
+    - Vérification accès tenant (root_admin bypass)
+
+11. GET  /api/cases/[id]/notes
+    - Auth: case:view | Liste avec author (id,fullName), ordre desc, max 100
+
+12. POST /api/cases/[id]/notes
+    - Auth: case:create | Crée note (content, caseId, authorId, tenantId)
+
+13. DELETE /api/cases/[id]/notes/[noteId]
+    - Auth: case:delete | Vérifie caseId correspond avant suppression
+
+D) CE QUI MANQUE POUR UNE GESTION AVANCÉE DE DOSSIERS
+═════════════════════════════════════════════════════════
+
+🔴 CRITIQUE — Manque de fonctionnalités fondamentales :
+
+1. PAS DE SYSTÈME D'ÉTIQUETTES/TAGS
+   - Aucun modèle CaseTag, pas de table de liaison, pas de colonne tags sur Case
+   - Impossible de catégoriser les dossiers par thème, domaine juridique, urgence, etc.
+   - Les documents ont un champ `tags` (String CSV) mais pas les dossiers
+
+2. STATUTS PERSONNALISÉS IMPOSSIBLES
+   - Les statuts sont codés en dur (nouveau, ouvert, en_cours, en_attente, clos + archive dans constants)
+   - Pas de modèle CaseStatusConfig ni de configuration par tenant
+   - Impossible d'ajouter des statuts spécifiques au cabinet (ex: « en expertise », « appel », « exécution »)
+
+3. PAS D'ASSIGNATION DE TÂCHES À DES UTILISATEURS
+   - Le modèle Task n'a PAS de colonne userId ni de table TaskAssignment
+   - Les tâches générées par workflow ne sont assignées à personne
+   - Impossible de savoir qui doit faire quoi dans un dossier
+
+4. PAS DE CHAMP DEADLINE/ÉCHÉANCE SUR LE DOSSIER
+   - Le formulaire a un champ « Prochaine échéance » (nextDueDate) mais il n'est PAS persisté en BDD
+   - Le modèle Case n'a PAS de colonne nextDueDate ni deadline
+   - Impossible de suivre les échéances critiques au niveau dossier
+
+5. CHAMPS EXISTANTS MAIS JAMAIS UTILISÉS EN UI
+   - `outcome` (résultat du dossier) — présent dans PUT API mais jamais affiché ni modifiable en UI
+   - `paymentStatus` — présent dans PUT API mais jamais affiché ni modifiable en UI
+   - Le statut « archive » est défini dans constants mais pas dans le select du formulaire
+
+🟡 IMPORTANT — Fonctionnalités avancées manquantes :
+
+6. AUCUN FILTRE AVANCÉ
+   - Pas de filtre par client
+   - Pas de filtre par utilisateur assigné (« mes dossiers »)
+   - Pas de filtre par plage de dates (création, modification)
+   - Pas de filtre par juridiction
+   - Pas de filtre confidentiel/non confidentiel
+   - Pas de tri (par date, par client, par priorité, par montant)
+
+7. AUCUNE VUE KANBAN / TABLEAU
+   - Uniquement la vue grille de cartes
+   - Pas de vue tableau (colonnnes : ref, client, statut, avocat, échéance, montant)
+   - Pas de vue Kanban (colonnes par statut, drag & drop)
+
+8. PAS D'EXPORT DE DOSSIERS
+   - Aucun endpoint d'export PDF ni Excel
+   - Pas de génération de fiche dossier imprimable
+   - Pas d'export de la liste filtrée
+
+9. PAS DE PARTAGE / COLLABORATION INTER-CABINET
+   - Le modèle est strictement mono-tenant par dossier (tenantId obligatoire)
+   - Aucun mécanisme de partage avec un autre cabinet
+   - Pas de lien de partage temporaire
+
+10. PAS DE GESTION D'HISTORIQUE / VERSIONNING DES MODIFICATIONS
+    - Aucune piste d'audit spécifique aux modifications de dossier
+    - Le modèle AuditLog existe génériquement mais n'est pas utilisé dans les routes /api/cases
+    - Impossible de voir qui a modifié quoi et quand
+
+11. PAS DE TEMPS CONSACRÉ VISIBLE DANS LE DÉTAIL
+    - Le modèle TimeEntry a un caseId mais les timeEntries ne sont PAS inclus dans le GET /api/cases/[id]
+    - L'onglet « Temps » n'existe pas dans le dialogue de détail
+    - Impossible de voir le temps facturable passé sur un dossier
+
+12. PAS DE STATISTIQUES PAR DOSSIER
+    - Pas de récapitulatif : temps total, CA facturé, CA encaissé, nb de tâches terminées/total
+    - Pas de suivi budgétaire (budget prévu vs consommé)
+
+🟢 AMÉLIORATIONS SOUHAITABLES :
+
+13. PAS DE PAGINATION CÔTÉ LISTE
+    - La route GET /api/cases a un take:100 fixe (pas de pagination cursor ni offset)
+    - Un cabinet avec >100 dossiers ne verra pas les plus anciens
+
+14. PAS D'ACTIONS EN LOT (BULK)
+    - Pas de sélection multiple de dossiers
+    - Pas de changement de statut en masse
+    - Pas de suppression en masse
+    - Pas d'assignation en masse
+
+15. PAS DE DUPLICATION DE DOSSIER
+    - Impossible de cloner un dossier (utile pour les dossiers récurrents)
+
+16. MISE À JOUR DES ASSIGNMENTS INCOMPLÈTE
+    - PUT /api/cases/[id] ne met pas à jour les assignments
+    - Seule la création gère les assignments (nested create)
+    - Modifier les collaborateurs d'un dossier existant est impossible via l'API PUT
+
+17. PAS DE NOTIFICATIONS D'ACTIVITÉ DOSSIER
+    - Seule l'assignation déclenche une notification (via /notify-user)
+    - Pas de notification pour : changement de statut, nouvelle note, document ajouté, échéance proche
+
+18. ONGLET « WORKFLOW » VIDE
+    - L'onglet Workflow n'affiche qu'une barre de progression des tâches
+    - Pas de visualisation du workflow type, pas de diagramme, pas d'étapes
+
+19. PAS DE GESTION DES SOUS-DOSSIERS / DOSSIERS LIÉS
+    - Pas de notion de dossier parent ou dossier lié
+    - Utile pour les procédures multi-juridictions ou dossiers connexes
+
+20. NOTES BASIQUES
+    - Les notes sont du texte brut uniquement
+    - Pas de formatage riche (Markdown, mentions @user, pièces jointes)
+    - Pas d'édition de note (seulement création et suppression)
+
+E) RECOMMANDATIONS PRIORITAIRES POUR LA PHASE 9
+═════════════════════════════════════════════════════════
+
+PRIORITÉ P0 (Bloquant pour un MVP juridique) :
+
+  P0-1. Ajouter un champ `nextDueDate` au modèle Case (Date?)
+    → Migration Prisma + ALTER TABLE
+    → Exposer dans GET/PUT + afficher dans Résumé et sur la carte
+
+  P0-2. Système d'assignation de tâches (TaskAssignment)
+    → Nouveau modèle TaskAssignment (userId, taskId) ou ajouter userId au Task
+    → Afficher l'assigné dans la liste des tâches du dossier
+    → Permettre l'assignation inline dans l'onglet Tâches
+
+  P0-3. Mise à jour des assignments dans PUT /api/cases/[id]
+    → Comparer les assignments existants vs nouveaux, supprimer/ajouter en transaction
+    → Actuellement modifier les collaborateurs d'un dossier existant est cassé
+
+  P0-4. Exposer `outcome` et `paymentStatus` dans l'UI
+    → Ajouter au formulaire d'édition (select: gagné/perdu/transaction/abandonné/en_cours)
+    → Afficher dans l'onglet Résumé + sur la carte
+
+PRIORITÉ P1 (Fondamentales pour la productivité) :
+
+  P1-1. Système d'étiquettes (tags) pour les dossiers
+    → Nouveau modèle CaseTag + table de liaison CaseTagging (many-to-many)
+    → UI: select multi-tags dans le formulaire + filtre par tag dans la liste
+    → Tags prédéfinis par tenant + tags personnalisés
+
+  P1-2. Filtres avancés + tri
+    → Ajouter filtres: client, avocat assigné, plage de dates, confidentiel
+    → Ajouter tri: par date, par client, par priorité, par montant
+    → Stocker les préférences de filtre dans localStorage
+
+  P1-3. Vue tableau des dossiers
+    → Toggle grille/tableau
+    → Colonnes: référence, titre, client, avocat, statut, priorité, échéance, montant
+    → Tri par colonne, pagination serveur
+
+  P1-4. Pagination serveur
+    → Remplacer take:100 par pagination cursor-based ou offset/limit
+    → Compteur total + boutons précédent/suivant
+
+  P1-5. Audit trail des modifications de dossier
+    → Logger chaque PUT/DELETE dans la table audit_logs
+    → Onglet « Historique » dans le détail du dossier
+
+PRIORITÉ P2 (Avancées — différenciation) :
+
+  P2-1. Vue Kanban (drag & drop par statut)
+  P2-2. Export PDF de la fiche dossier
+  P2-3. Export Excel de la liste filtrée
+  P2-4. Statistiques par dossier (temps, CA, progression)
+  P2-5. Statuts personnalisés par tenant
+  P2-6. Time tracking intégré dans le détail dossier
+  P2-7. Duplication/clonage de dossier
+  P2-8. Actions en lot (bulk)
+  P2-9. Notifications d'activité dossier
+  P2-10. Notes enrichies (Markdown, mentions)
+  P2-11. Sous-dossiers / dossiers liés
+  P2-12. Workflow visuel (diagramme d'étapes)
+
+ESTIMATION DE L'EFFORT :
+  - P0 (4 items) : ~2-3 jours
+  - P1 (5 items) : ~4-5 jours
+  - P2 (12 items) : ~10-15 jours
+
+FICHIERS ANALYSÉS :
+  - prisma/schema.prisma (643 lignes, 21 modèles)
+  - src/views/CasesView.tsx (1058 lignes)
+  - src/views/types.ts (201 lignes)
+  - src/views/constants.ts (97 lignes)
+  - src/app/api/cases/route.ts (121 lignes)
+  - src/app/api/cases/[id]/route.ts (119 lignes)
+  - src/app/api/cases/[id]/timeline/route.ts (214 lignes)
+  - src/app/api/cases/[id]/assignments/route.ts (102 lignes)
+  - src/app/api/cases/[id]/generate-tasks/route.ts (110 lignes)
+  - src/app/api/cases/[id]/notes/route.ts (61 lignes)
+  - src/app/api/cases/[id]/notes/[noteId]/route.ts (28 lignes)
+
+Stage Summary:
+  - 5 modèles BDD liés aux dossiers (Case, CaseAssignment, CaseNote, + 6 modèles avec caseId optionnel)
+  - 1 composant UI massif (1058 lignes) avec 10 onglets dans le dialogue de détail
+  - 7 fichiers de routes API, 13 endpoints
+  - Fonctionnalités solides existantes : chronologie unifiée, analyse IA, workflow, conflits
+  - 5 blocages critiques identifiés (P0)
+  - 5 améliorations fondamentales identifiées (P1)
+  - 12 améliorations avancées identifiées (P2)
+  - Points forts : timeline serveur, intégration IA, détection conflits, design soigné
+  - Points faibles : pas de tags, pas de filtres avancés, tâches non assignées, nextDueDate non persisté
+
+---
+Task ID: 3
+Agent: Super Z (main)
+Task: Phase 9 — Dossiers Avancés (API Routes)
+
+Work Log:
+- Mis à jour src/app/api/cases/route.ts (GET + POST)
+  - GET : pagination (page/limit), filtres (status, caseType, priority, clientId, assignedTo, tag, outcome, paymentStatus, search)
+  - GET : tri (sortBy/sortOrder) avec validation, défaut createdAt desc
+  - GET : retourne { cases, total, page, totalPages }
+  - GET : inclut tags via case_taggings, nextDueDate, outcome, paymentStatus, _count (tasks/notes/documents/assignments/events/invoices)
+  - POST : accepte nextDueDate, outcome, paymentStatus, tagIds[]
+  - POST : crée le dossier + taggings dans une transaction
+  - Scoping systématique par auth.tenantId
+- Mis à jour src/app/api/cases/[id]/route.ts (GET + PUT + DELETE)
+  - GET : inclut nextDueDate, outcome, paymentStatus, tags (depuis taggings), _count complet
+  - GET : vérification requireTenantAccess
+  - PUT : gère tagIds (delete old + create new dans transaction)
+  - PUT : gère assignmentIds (delete old + create new dans transaction) — CORRECTION bug d'assignation
+  - PUT : accepte tasks[].assignedToId pour mise à jour d'assignation de tâches
+  - DELETE : vérification tenant avant suppression
+- Créé src/app/api/cases/tags/route.ts (GET + POST)
+  - GET : retourne toutes les étiquettes du tenant avec _count.taggings
+  - POST : crée étiquette, vérifie unicité name+tenantId, erreur 409 si doublon
+- Créé src/app/api/cases/tags/[id]/route.ts (PUT + DELETE)
+  - PUT : met à jour nom/couleur, vérifie unicité, vérifie appartenance au tenant
+  - DELETE : supprime étiquette (cascade supprime les taggings automatiquement)
+- Mis à jour src/app/api/cases/[id]/generate-tasks/route.ts
+  - Les tâches générées sont automatiquement assignées au premier utilisateur assigné au dossier
+- Mis à jour src/views/types.ts
+  - Ajouté CaseTag, CaseWithDetails (extends CaseItem), CasesListResponse
+
+Conventions respectées :
+  - getDb() utilisé partout (pas d'import singleton db)
+  - finally { await db.$disconnect().catch(() => {}) } dans toutes les routes
+  - Messages d'erreur en français
+  - isErrorResponse() pour les checks auth
+  - requireTenantAccess() pour la vérification d'accès tenant
+
+Stage Summary:
+  - 4 fichiers modifiés, 2 fichiers créés
+  - 6 endpoints mis à jour, 4 endpoints créés (tags CRUD)
+  - Pagination, filtrage avancé, tri sur la liste des dossiers
+  - Système de tags complet (CRUD avec cascade)
+  - Correction du bug d'assignation de dossiers dans PUT
+  - Assignation automatique des tâches workflow au premier assigné du dossier
+  - 3 nouveaux types TypeScript (CaseTag, CaseWithDetails, CasesListResponse)
+
+---
+Task ID: 4
+Agent: UI Agent
+Task: Phase 9 — Dossiers Avancés (Frontend CasesView)
+
+Work Log:
+- Mis à jour src/views/shared-ui.tsx : ajout des icônes SlidersHorizontal et Table2 depuis lucide-react
+- Mis à jour src/views/CasesView.tsx (1058 → 1244 lignes, +186 lignes)
+  1. Nouvelles variables d'état : viewMode, showFilters, filterStatus/Type/Priority/Client/Search/Tag/Outcome/PaymentStatus, sortBy, sortOrder, page, pageSize, selectedTagIds
+  2. Query caseTags ajoutée (GET /api/cases/tags)
+  3. Query cases mise à jour vers API paginée avec tous les filtres avancés, tri et pagination (params: page, limit, status, caseType, priority, clientId, search, tag, outcome, paymentStatus, sortBy, sortOrder)
+  4. Cases décomposés : cases = casesData?.cases, totalCases, totalPages
+  5. Form state étendu : outcome, paymentStatus ajoutés
+  6. resetForm/openEdit/handleSubmit mis à jour avec les nouveaux champs (nextDueDate, outcome, paymentStatus, tagIds)
+  7. Mutations createMut/updateMut invalident aussi ['case-tags']
+  8. Barre de filtres remplacée : recherche + bouton Filtres (SlidersHorizontal) + toggle grille/tableau
+  9. Panneau de filtres avancés (animé, collapsible) avec 9 sélecteurs + bouton Réinitialiser
+  10. Cartes de dossiers enrichies : tags colorés (max 3 + overflow), échéance (rouge si en retard), badge résultat, badge paiement
+  11. Vue tableau ajoutée : colonnes Réf/Titre/Client/Statut/Priorité/Échéance/Tags/Montant/Actions, sticky header, hover, responsive horizontal scroll
+  12. Pagination ajoutée : affichage X-Y sur Z, boutons Précédent/Suivant, numéros de page avec ellipsis
+  13. Dialogue création/édition enrichi : champs Résultat, Statut paiement, Étiquettes (multi-select avec chips colorés)
+  14. Onglet Résumé du détail enrichi : outcome badge, paymentStatus badge, nextDueDate avec jours restants, tags
+  15. Onglet Tâches enrichi : affichage assignedToUser.fullName, formulaire d'assignation tâche→utilisateur
+
+Conventions respectées :
+  - 'use client' directive
+  - shadcn/ui components (Badge, Select, Button, Input, Dialog, Table, etc.)
+  - Tailwind CSS avec variables CSS (bg-jl-card, text-jl-primary, border-jl, etc.)
+  - Icônes lucide-react
+  - Texte UI en français
+  - Design responsive (mobile-first)
+  - Aucun route/page.tsx créé
+  - Export CasesView conservé
+
+Stage Summary:
+  - 2 fichiers modifiés (shared-ui.tsx, CasesView.tsx)
+  - +186 lignes dans CasesView.tsx
+  - Vue grille + vue tableau + pagination + filtres avancés + tags + outcome + paymentStatus
+  - Types utilisés : CaseTag, CaseWithDetails, CasesListResponse (déjà définis dans types.ts)
+
+---
+Task ID: 9
+Agent: Super Z (main) + 2 sub-agents
+Task: Phase 9 — Dossiers Avancés
+
+Work Log:
+- Audit complet de la gestion des dossiers (5 modèles BDD, 1058 lignes CasesView, 13 endpoints)
+- Identifié 5 bugs critiques P0 et 15 améliorations P1/P2
+- Mise à jour prisma/schema.prisma: nextDueDate (Case), assignedToId (Task), CaseTag, CaseTagging
+- Créé migrations/phase9_dossiers_avances.sql (SQL à exécuter en production)
+- Réécriture API GET /cases: pagination, 8 filtres, tri, tags, _count
+- Fix API PUT /cases/[id]: mise à jour des assignments + gestion des tags en transaction
+- Nouvelles routes: GET/POST /cases/tags, PUT/DELETE /cases/tags/[id]
+- Mise à jour generate-tasks: assignation automatique au premier collaborateur
+- UI CasesView: vue grille + tableau toggle, panneau filtres avancés, pagination
+- UI: tags colorés sur cartes, badges outcome/paiement, échéance avec indicateur
+- UI: formulaire enrichi (résultat, paiement, échéance, étiquettes multi-select)
+- UI: détail dossier enrichi (Résumé + Tâches avec assignation)
+- Types: CaseTag, CaseWithDetails, CasesListResponse ajoutés
+- Lint: 0 erreurs, 1 warning pré-existant
+- Commit: cbc1b8b pushed to main
+
+Stage Summary:
+- 10 fichiers modifiés, 951 insertions, 137 suppressions
+- 2 nouvelles tables (case_tags, case_taggings), 2 nouvelles colonnes
+- Pagination serveur avec filtres avancés et tri multi-colonnes
+- Système de tags/étiquettes complet (CRUD + affichage + filtre)
+- Vue tableau des dossiers (toggle grille/tableau)
+- Champs outcome, paymentStatus, nextDueDate exposés en API et UI
+- Fix critique: mise à jour des assignments de dossier
+- Assignation de tâches à des utilisateurs
+- ATTENTION: SQL migration à exécuter en production avant déploiement
