@@ -28,7 +28,7 @@ export function TimeTrackingView() {
 
   const { data: cases } = useQuery({
     queryKey: ['cases-tt', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&status=open,en_cours,en_attente&limit=200`).then(r => r.json()).then((d: any) => Array.isArray(d) ? d : (d.cases || d.data || [])),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&limit=200`).then(r => r.json()).then((d: any) => Array.isArray(d) ? d : (d.cases || d.data || [])),
   })
 
   const { data: entries, isLoading } = useQuery({
