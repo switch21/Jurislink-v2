@@ -792,3 +792,80 @@ Stage Summary:
 - Etude Ndong Avocats has 2 dossiers
 - Commit: c9bb2be pushed to main
 - Note: .env.local is gitignored and contains sensitive DATABASE_URL
+
+---
+Task ID: 1
+Agent: test-setup-agent
+Task: Setup Vitest + core unit tests
+
+Work Log:
+- Installed Vitest v4.1.11, @vitejs/plugin-react, jsdom, @testing-library/react, @testing-library/jest-dom, @testing-library/user-event
+- Created vitest.config.ts with React plugin, path alias (@ -> ./src), jsdom environment, globals enabled
+- Created src/test/setup.ts importing @testing-library/jest-dom
+- Added "test" and "test:watch" scripts to package.json
+- Created 5 test files with 155 total test cases:
+  - src/test/helpers.test.ts (56 tests): fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel
+  - src/test/constants.test.ts (30 tests): STATUS_COLORS/LABELS, PRIORITY_COLORS/LABELS, CHART_COLORS, ROLE_LABELS, CRIT_COLORS, EVENT_TYPE_LABELS, NAV_ITEMS, cross-consistency checks
+  - src/test/rbac.test.ts (13 tests): hasPermission with mocked DB (root_admin bypass, 0-permission fallback, DB error fallback, action/resource normalization, caching), requirePermission, getUserPermissions
+  - src/test/appStore.test.ts (30 tests): initial state, login/logout, role normalization, setCurrentView, toggleSidebar, hasPermission (root_admin, roleObj check, permission matching), incrementUnread, portalLogin/portalLogout, setPortalSelectedCaseId
+  - src/test/auth-server.test.ts (26 tests): UUID regex validation (15 cases), requireTenantAccess (root_admin bypass, null/undefined/matching/mismatching tenantId), isErrorResponse
+- Fixed 8 initial test failures (Intl locale formatting differences, date-fns v4 behavior, toFixed decimal separator)
+- All 155 tests passing, lint clean (0 errors)
+
+Stage Summary:
+- 5 test files created in src/test/
+- 155 individual test cases, all passing
+- Vitest fully configured with jsdom + globals
+- Test coverage spans: view helpers, constants consistency, RBAC authorization, Zustand store, auth-server utilities
+
+---
+Task ID: 4
+Agent: API Test Agent
+Task: Write API integration tests for all route handlers
+
+Work Log:
+- Read all 8 API route files: auth/login, dashboard, cases, admin/dashboard, tenants, users, invoices, clients
+- Read auth-server.ts, db.ts, rbac.ts to understand auth flow and mocking needs
+- Created src/test/api-helpers.ts shared utility with:
+  - `createMockDb()` — configurable PrismaClient mock factory with top-level ($queryRaw, $transaction) and model-level overrides
+  - `mockRequest()` — builds Request objects with headers, body, searchParams
+  - `callRoute()` — calls route handler directly and returns {status, body, headers}
+  - `TEST_IDS` — standard UUID constants for test data
+- Created 8 test files in src/test/api/:
+  - auth.test.ts (10 tests): valid login, wrong password, non-existent email, missing fields, inactive user, inactive tenant, root admin role normalization, fallback permissions, DB error
+  - dashboard.test.ts (7 tests): 401 no auth, 400 no tenantId, valid dashboard data, all expected fields, null relations, events without assignments, DB error
+  - cases.test.ts (9 tests): GET 401, list cases, tenantId filter, status filter, caseType filter (not 'type'), search by title, POST create, POST 401, POST 500
+  - admin-dashboard.test.ts (6 tests): 401 no auth, 403 non-root, all stats, response shape, signupsByMonth formatting, DB error
+  - tenants.test.ts (7 tests): GET 403, returns tenants with counts, active-only default, includeInactive param, DB error, POST create, POST 403
+  - users.test.ts (7 tests): filtered by tenant, role normalization from roleObj, includeRootAdmin, search OR filter, role filtering via roleObj.name, DB error, POST create
+  - invoices.test.ts (7 tests): GET with client info, status filter, 401, DB error, POST with line items, POST 400 missing fields, POST 401
+  - clients.test.ts (7 tests): GET list, 401, search OR filter, tenant isolation, DB error, POST create, POST 401
+- Fixed 3 issues during development:
+  1. vi.mock hoisting: `mockCompare` referenced before initialization — fixed with `vi.hoisted()`
+  2. `$queryRaw` override not applied by `createMockDb` — added top-level key override support in helper
+  3. `mockResolvedValueOnce` priority over `mockRejectedValue` in 500 error tests — fixed with `mockReset()` before `mockRejectedValue`
+- All tests mock fetch/db/auth-server — no running server or database required
+
+Stage Summary:
+- 8 new test files created in src/test/api/
+- 1 shared helper file: src/test/api-helpers.ts
+- 60 new individual test cases (155 existing → 215 total)
+- All 215 tests passing, lint clean (0 errors)
+- Test coverage: all 8 API route handlers fully tested with auth, validation, filtering, and error scenarios
+---
+Task ID: 4
+Agent: test-integration-agent  
+Task: Phase 18 — Tests d'intégration API (8 routes)
+
+Work Log:
+- Created src/test/api-helpers.ts shared utility (mock DB builder, request builder, route caller)
+- Wrote 8 API integration test files with full mock of Prisma and auth
+- Fixed vi.mock hoisting issue with vi.hoisted() for bcryptjs
+- Fixed mockResolvedValueOnce consuming calls before mockRejectedValue
+- Added $queryRaw override support in mock DB helper
+
+Stage Summary:
+- 8 API test files: auth, dashboard, cases, admin-dashboard, tenants, users, invoices, clients
+- 60 new integration tests covering: auth (10), dashboard (7), cases (9), admin (6), tenants (7), users (7), invoices (7), clients (7)
+- Total: 215 tests, all passing
+- Commit: 6708daa pushed to main
