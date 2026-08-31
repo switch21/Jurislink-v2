@@ -16,7 +16,11 @@ export function InvoicesView() {
   const [showPayForm, setShowPayForm] = useState(false)
   const [payForm, setPayForm] = useState({ amount: '', method: 'virement', reference: '', paidAt: new Date().toISOString().slice(0, 10), notes: '' })
   const [lineItems, setLineItems] = useState<Array<{ description: string; quantity: number; unitPrice: number }>>([{ description: '', quantity: 1, unitPrice: 0 }])
-  const [createForm, setCreateForm] = useState({ type: 'facture', clientId: '', caseId: '', currencyId: '', dueDate: '', billingType: 'forfait', notes: '' })
+  const [createForm, setCreateForm] = useState({ type: 'facture', clientId: '', caseId: '', currencyId: '', dueDate: '', billingType: 'forfait', notes: '', taxRate: '0', discountAmount: '0', terms: '' })
+  const [timeEntryDialog, setTimeEntryDialog] = useState(false)
+  const [selectedTimeEntries, setSelectedTimeEntries] = useState<Set<string>>(new Set())
+  const [teClientId, setTeClientId] = useState('')
+  const [teCaseId, setTeCaseId] = useState('')
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ['invoices', user?.tenantId, typeFilter, statusFilter],
@@ -39,6 +43,38 @@ export function InvoicesView() {
   const { data: cases } = useQuery({ queryKey: ['cases-invoice', user?.tenantId], queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
   const { data: currencies } = useQuery({ queryKey: ['currencies-invoice'], queryFn: () => fetch('/api/currencies').then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
 
+  // Unbilled time entries
+  const { data: unbilledData, isLoading: teLoading } = useQuery({
+    queryKey: ['unbilled-entries', user?.tenantId, teClientId, teCaseId],
+    queryFn: () => { const p = new URLSearchParams({ tenantId: user?.tenantId || '' }); if (teClientId) p.set('clientId', teClientId); if (teCaseId) p.set('caseId', teCaseId); return fetch(`/api/time-entries/unbilled?${p}`).then(r => r.json()) },
+    enabled: timeEntryDialog,
+  })
+  const teEntries = (unbilledData?.allEntries || []) as TimeEntry[]
+  const teGrouped = unbilledData?.grouped || []
+  const toggleTe = (id: string) => { const s = new Set(selectedTimeEntries); if (s.has(id)) s.delete(id); else s.add(id); setSelectedTimeEntries(s) }
+  const toggleTeGroup = (ids: string[]) => { const all = ids.every(id => selectedTimeEntries.has(id)); setSelectedTimeEntries(prev => { const s = new Set(prev); ids.forEach(id => all ? s.delete(id) : s.add(id)); return s }) }
+  const selectedTeEntries = teEntries.filter(e => selectedTimeEntries.has(e.id))
+  const selectedTeTotal = selectedTeEntries.reduce((s, e) => s + (e.totalAmount || 0), 0)
+  const selectedTeSeconds = selectedTeEntries.reduce((s, e) => s + e.duration, 0)
+
+  const createFromTeMut = useMutation({
+    mutationFn: () => fetch('/api/invoices/from-time-entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tenantId: user?.tenantId, clientId: teClientId || selectedTeEntries[0]?.case?.client?.id, caseId: teCaseId || null, timeEntryIds: Array.from(selectedTimeEntries), type: 'facture' }) }).then(r => r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['invoices'] }); qc.invalidateQueries({ queryKey: ['unbilled-entries'] }); toast.success('Facture créée depuis les temps'); setTimeEntryDialog(false); setSelectedTimeEntries(new Set()) },
+    onError: () => toast.error('Erreur lors de la création'),
+  })
+
+  const duplicateMut = useMutation({
+    mutationFn: (id: string) => fetch(`/api/invoices/${id}/duplicate`, { method: 'POST' }).then(r => r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['invoices'] }); toast.success('Facture dupliquée'); setDetailOpen(false) },
+    onError: () => toast.error('Erreur lors de la duplication'),
+  })
+
+  const convertMut = useMutation({
+    mutationFn: (id: string) => fetch(`/api/invoices/${id}/convert`, { method: 'POST' }).then(r => r.json()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['invoices'] }); toast.success('Devis converti en facture'); setDetailOpen(false) },
+    onError: (e: any) => { const msg = e?.info?.error || 'Erreur'; toast.error(msg) },
+  })
+
   const createMut = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, tenantId: user?.tenantId }) }).then(r => r.json()),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['invoices'] }); toast.success('Facture créée'); setCreateOpen(false); resetCreateForm() },
@@ -57,7 +93,7 @@ export function InvoicesView() {
     onError: () => toast.error('Erreur de paiement'),
   })
 
-  const resetCreateForm = () => { setCreateForm({ type: 'facture', clientId: '', caseId: '', currencyId: '', dueDate: '', billingType: 'forfait', notes: '' }); setLineItems([{ description: '', quantity: 1, unitPrice: 0 }]) }
+  const resetCreateForm = () => { setCreateForm({ type: 'facture', clientId: '', caseId: '', currencyId: '', dueDate: '', billingType: 'forfait', notes: '', taxRate: '0', discountAmount: '0', terms: '' }); setLineItems([{ description: '', quantity: 1, unitPrice: 0 }]) }
   const subtotal = lineItems.reduce((s, li) => s + (li.quantity * li.unitPrice), 0)
   const addLine = () => setLineItems([...lineItems, { description: '', quantity: 1, unitPrice: 0 }])
   const removeLine = (i: number) => { if (lineItems.length <= 1) return; setLineItems(lineItems.filter((_, idx) => idx !== i)) }
@@ -66,7 +102,8 @@ export function InvoicesView() {
   const handleCreate = () => {
     if (!createForm.clientId || lineItems.every(li => !li.description.trim())) return
     createMut.mutate({
-      ...createForm, caseId: createForm.caseId || null, currencyId: createForm.currencyId || null,
+      ...createForm, taxRate: parseFloat(createForm.taxRate) || 0, discountAmount: parseFloat(createForm.discountAmount) || 0,
+      caseId: createForm.caseId || null, currencyId: createForm.currencyId || null,
       lineItems: lineItems.filter(li => li.description.trim()).map((li, i) => ({ description: li.description, quantity: li.quantity, unitPrice: li.unitPrice, total: li.quantity * li.unitPrice, sortOrder: i })),
     })
   }
@@ -92,7 +129,10 @@ export function InvoicesView() {
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-lg font-semibold">Factures</h2>
-        <Button onClick={() => { resetCreateForm(); setCreateOpen(true) }} size="sm" className="bg-jl-blue hover:bg-jl-blue"><Plus className="size-4 mr-1" />Nouvelle facture</Button>
+        <div className="flex gap-2">
+          <Button onClick={() => { resetCreateForm(); setCreateOpen(true) }} size="sm" className="bg-jl-blue hover:bg-jl-blue"><Plus className="size-4 mr-1" />Nouvelle facture</Button>
+          <Button onClick={() => { setSelectedTimeEntries(new Set()); setTeClientId(''); setTeCaseId(''); setTimeEntryDialog(true) }} size="sm" variant="outline"><Timer className="size-4 mr-1" />Depuis les temps</Button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Type" /></SelectTrigger><SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="devis">Devis</SelectItem><SelectItem value="facture">Facture</SelectItem><SelectItem value="avoir">Avoir</SelectItem><SelectItem value="recu">Reçu</SelectItem></SelectContent></Select>
@@ -153,11 +193,52 @@ export function InvoicesView() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-end p-3 bg-jl-page rounded-lg"><span className="text-sm text-jl-secondary">Sous-total :</span><span className="text-sm font-bold ml-2">{fmtMoney(subtotal)}</span></div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-[10px]">TVA (%)</Label><Input type="number" min={0} max={100} step={0.5} value={createForm.taxRate} onChange={e => setCreateForm(f => ({ ...f, taxRate: e.target.value }))} className="h-9 text-xs" /></div>
+                <div><Label className="text-[10px]">Remise</Label><Input type="number" min={0} step={0.01} value={createForm.discountAmount} onChange={e => setCreateForm(f => ({ ...f, discountAmount: e.target.value }))} className="h-9 text-xs" /></div>
+                <div className="flex items-end"><div className="w-full p-3 bg-jl-page rounded-lg text-right"><p className="text-[10px] text-jl-muted">Total TTC</p><p className="text-sm font-bold">{fmtMoney(subtotal + (subtotal * (parseFloat(createForm.taxRate) || 0)) / 100 - (parseFloat(createForm.discountAmount) || 0))}</p></div></div>
+              </div>
             </div>
+            <div><Label>Conditions</Label><Textarea value={createForm.terms} onChange={e => setCreateForm(f => ({ ...f, terms: e.target.value }))} rows={2} placeholder="Conditions de paiement..." /></div>
             <div><Label>Notes</Label><Textarea value={createForm.notes} onChange={e => setCreateForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setCreateOpen(false)}>Annuler</Button><Button onClick={handleCreate} disabled={!createForm.clientId || createMut.isPending || lineItems.every(li => !li.description.trim())}>{createMut.isPending ? <RefreshCw className="size-4 mr-1 animate-spin" /> : 'Créer'}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* TIME ENTRY BILLING DIALOG */}
+      <Dialog open={timeEntryDialog} onOpenChange={o => { setTimeEntryDialog(o); if (!o) setSelectedTimeEntries(new Set()) }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Facturer depuis les temps</DialogTitle><DialogDescription>Sélectionnez les entrées de temps non facturées</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Client</Label><Select value={teClientId} onValueChange={v => { setTeClientId(v); setTeCaseId(''); setSelectedTimeEntries(new Set()) }}><SelectTrigger><SelectValue placeholder="Tous" /></SelectTrigger><SelectContent><SelectItem value="">Tous</SelectItem>{(clients || []).map((c: Client) => <SelectItem key={c.id} value={c.id}>{c.fullName}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>Dossier</Label><Select value={teCaseId} onValueChange={v => { setTeCaseId(v); setSelectedTimeEntries(new Set()) }}><SelectTrigger><SelectValue placeholder="Tous" /></SelectTrigger><SelectContent><SelectItem value="">Tous</SelectItem>{(cases || []).map((c: CaseItem) => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
+            </div>
+            {teLoading ? <div className="flex justify-center py-12"><Loader2 className="size-6 animate-spin" /></div> : teGrouped.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucun temps non facturé</p> : <div className="space-y-3 max-h-80 overflow-y-auto">
+              {teGrouped.map((g: any) => {
+                const gIds = Object.values(g.byCase).flatMap((c: any) => (c.entries || []).map((e: any) => e.id))
+                const allSelected = gIds.every((id: string) => selectedTimeEntries.has(id))
+                return <Card key={g.clientId}><CardHeader className="pb-2 py-2"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><Checkbox checked={allSelected} onCheckedChange={() => toggleTeGroup(gIds)} /><CardTitle className="text-sm font-semibold">{g.clientName}{g.company ? ` (${g.company})` : ''}</CardTitle></div><span className="text-xs text-jl-secondary">{fmtDuration(g.totalSeconds)} — {fmtMoney(g.totalAmount)}</span></div></CardHeader><CardContent className="p-3 pt-0"><div className="space-y-1">
+                  {Object.values(g.byCase).map((c: any) => (
+                    <div key={c.caseId} className="ml-6 border-l-2 border-jl pl-3 py-1">
+                      <div className="flex items-center gap-2 text-xs font-medium text-jl-secondary mb-1"><span className="font-mono">{c.reference}</span><span>{c.title}</span><span className="ml-auto">{fmtDuration(c.totalSeconds)} — {fmtMoney(c.totalAmount)}</span></div>
+                      {(c.entries || []).map((e: any) => (
+                        <div key={e.id} className="flex items-center gap-2 py-1 hover:bg-jl-page rounded px-1 cursor-pointer" onClick={() => toggleTe(e.id)}>
+                          <Checkbox checked={selectedTimeEntries.has(e.id)} onCheckedChange={() => toggleTe(e.id)} onClick={ev => ev.stopPropagation()} />
+                          <span className="text-xs text-jl-secondary w-16 shrink-0">{e.user?.fullName?.split(' ')[0] || ''}</span>
+                          <span className="text-xs flex-1 truncate">{e.description}</span>
+                          <span className="text-xs text-jl-muted shrink-0">{fmtDuration(e.duration)}</span>
+                          <span className="text-xs font-medium shrink-0 w-24 text-right">{fmtMoney(e.totalAmount || 0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div></CardContent></Card>
+              })}
+            </div>}
+            {selectedTimeEntries.size > 0 && <div className="border-t pt-3 flex items-center justify-between"><div className="text-sm"><span className="text-jl-secondary">{selectedTimeEntries.size} entrées sélectionnées</span> — <span className="font-medium">{fmtDuration(selectedTeSeconds)}</span> — <span className="font-bold">{fmtMoney(selectedTeTotal)}</span></div><Button onClick={() => createFromTeMut.mutate()} disabled={createFromTeMut.isPending || selectedTimeEntries.size === 0}>{createFromTeMut.isPending ? <Loader2 className="size-4 mr-1 animate-spin" /> : null}Créer la facture</Button></div>}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -237,16 +318,22 @@ export function InvoicesView() {
                 </Table>
                 {/* TOTALS FOOTER */}
                 <div className="border-t border-jl bg-jl-page px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-jl-secondary">Montant total</span>
-                    <span className="text-xl font-bold text-jl-primary font-mono">{fmtMoney(total, curCode)}</span>
-                  </div>
-                  {paid > 0 && (
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-jl-muted">Payé / Reste</span>
-                      <span className="text-xs font-medium"><span className="text-[var(--success)]">{fmtMoney(paid, curCode)}</span> / <span className={remaining > 0 ? 'text-[var(--danger)]' : 'text-[var(--success)]'}>{fmtMoney(remaining, curCode)}</span></span>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between"><span className="text-sm text-jl-secondary">Sous-total</span><span className="text-sm font-medium font-mono">{fmtMoney(total, curCode)}</span></div>
+                    {(invoiceDetail?.taxRate || 0) > 0 && <div className="flex items-center justify-between"><span className="text-xs text-jl-muted">TVA ({invoiceDetail.taxRate}%)</span><span className="text-xs font-mono">{fmtMoney(total * ((invoiceDetail.taxRate || 0) / 100), curCode)}</span></div>}
+                    {(invoiceDetail?.discountAmount || 0) > 0 && <div className="flex items-center justify-between"><span className="text-xs text-jl-muted">Remise</span><span className="text-xs font-mono text-[var(--danger)]">-{fmtMoney(invoiceDetail.discountAmount || 0, curCode)}</span></div>}
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-jl-secondary">Montant total</span>
+                      <span className="text-xl font-bold text-jl-primary font-mono">{fmtMoney(total, curCode)}</span>
                     </div>
-                  )}
+                    {paid > 0 && (
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-jl-muted">Payé / Reste</span>
+                        <span className="text-xs font-medium"><span className="text-[var(--success)]">{fmtMoney(paid, curCode)}</span> / <span className={remaining > 0 ? 'text-[var(--danger)]' : 'text-[var(--success)]'}>{fmtMoney(remaining, curCode)}</span></span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -277,6 +364,10 @@ export function InvoicesView() {
                 <div className="flex gap-2">
                   {(invoiceDetail?.status === 'non_paye' || invoiceDetail?.status === 'partiel') && <Button size="sm" variant="outline" className="text-xs" onClick={() => { setPayForm({ amount: remaining.toString(), method: 'virement', reference: '', paidAt: new Date().toISOString().slice(0, 10), notes: '' }); setShowPayForm(!showPayForm) }}><CreditCard className="size-3.5 mr-1" />Enregistrer un paiement</Button>}
                   <Button size="sm" variant="outline" className="text-xs" onClick={handlePrint}><Printer className="size-3.5 mr-1" />Imprimer PDF</Button>
+                  <DropdownMenu><DropdownMenuTrigger asChild><Button size="sm" variant="outline" className="text-xs"><MoreHorizontal className="size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => selectedInvoice && duplicateMut.mutate(selectedInvoice.id)}><Copy className="size-3.5 mr-2" />Dupliquer</DropdownMenuItem>
+                    {invoiceDetail?.type === 'devis' && invoiceDetail.status !== 'annule' && <DropdownMenuItem onClick={() => selectedInvoice && convertMut.mutate(selectedInvoice.id)}><FileCheck className="size-3.5 mr-2" />Convertir en facture</DropdownMenuItem>}
+                  </DropdownMenuContent></DropdownMenu>
                 </div>
               </div>
               {showPayForm && (
@@ -307,6 +398,7 @@ export function InvoicesView() {
                 </div>
               )}
             </div>
+            {invoiceDetail?.terms && <><Separator /><div><p className="text-xs font-semibold text-jl-secondary mb-1">Conditions de paiement</p><p className="text-sm text-jl-secondary whitespace-pre-wrap">{invoiceDetail.terms}</p></div></>}
             {invoiceDetail?.notes && <><Separator /><div><p className="text-xs font-semibold text-jl-secondary mb-1">Notes</p><p className="text-sm text-jl-secondary whitespace-pre-wrap">{invoiceDetail.notes}</p></div></>}
           </div>
 

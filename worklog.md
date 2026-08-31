@@ -1791,3 +1791,77 @@ Stage Summary:
 - Documents: pagination, tri, édition, bulk, drag & drop, audit trail
 - Notifications: deep-linking, filtres, suppression, cleanup, triggers étendus
 - 3 bugs corrigés (versionsDoc crash, cascade delete, markAllRead endpoint)
+---
+Task ID: 1
+Agent: Super Z (main)
+Task: Phase 14 (Rapports Avancés) + Phase 15 (Facturation Avancée)
+
+Work Log:
+- Audit complet du schéma existant (Invoice, TimeEntry, Payment, Currency)
+- Analyse des vues ReportsView (204 lignes basiques) et InvoicesView (323 lignes)
+- Création SQL migration: migrations/phase14_15_rapports_facturation.sql
+  - ALTER time_entries ADD billed, invoice_id
+  - ALTER invoices ADD tax_rate, discount_amount, terms, paid_at
+- Mise à jour schema.prisma: TimeEntry.billed, TimeEntry.invoiceId, Invoice.taxRate/discountAmount/terms/paidAt
+- Mise à jour types.ts: Invoice (taxRate, discountAmount, terms, paidAt), TimeEntry (billed, invoiceId, case.client)
+- Phase 14 Backend — 5 nouvelles routes API:
+  - GET /api/reports/financial (CA, paiements, aging, par type/statut/méthode/client, comparaison période)
+  - GET /api/reports/cases (par statut/type/priorité/outcome/avocat, temps résolution, détail 50 dossiers)
+  - GET /api/reports/time-billing (temps facturable/non facturé, par utilisateur/dossier/mois, efficacité)
+  - GET /api/reports/clients (top clients, impayés, par risque/source)
+  - GET /api/reports/activity (tâches, documents, événements, temps, par utilisateur/mois)
+- Phase 15 Backend — 4 nouvelles routes API:
+  - GET /api/time-entries/unbilled (temps non facturé, groupé par client/dossier)
+  - POST /api/invoices/from-time-entries (créer facture depuis entrées de temps sélectionnées)
+  - POST /api/invoices/[id]/duplicate (dupliquer une facture)
+  - POST /api/invoices/[id]/convert (convertir devis en facture)
+- Phase 15 Backend — Mises à jour:
+  - POST /api/invoices: ajout taxRate, discountAmount, terms
+  - PUT /api/invoices/[id]: ajout taxRate, discountAmount, terms, auto-paidAt sur status=paye
+- Phase 14 Frontend — ReportsView complète réécriture (204→364 lignes):
+  - 5 onglets: Financier, Dossiers, Temps & Facturation, Clients, Activité
+  - Filtres de période (ce mois, dernier mois, trimestre, année, personnalisé)
+  - 6 KPIs par onglet avec icônes
+  - Graphiques barres verticales (CA mensuel) et horizontaux (par type/statut/méthode/risque)
+  - Balance âgée (0-30j, 31-60j, 61-90j, 90j+)
+  - Top 20 clients par revenus
+  - Détail dossiers avec table complète
+  - Temps par collaborateur/dossier, taux horaire distribution
+  - Productivité par collaborateur
+  - Export CSV par onglet
+- Phase 15 Frontend — InvoicesView enrichie (323→430 lignes):
+  - Bouton "Depuis les temps" pour facturer les entrées de temps
+  - Dialogue de sélection des temps non facturés (par client/dossier)
+  - TVA et remise dans le formulaire de création
+  - Conditions de paiement dans le formulaire
+  - Actions Dupliquer et Convertir devis→facture dans le détail
+  - Affichage TVA/remise dans les totaux du détail
+  - Affichage conditions de paiement dans le détail
+- Lint: 0 erreurs (1 warning pré-existant)
+
+Files Created:
+- migrations/phase14_15_rapports_facturation.sql
+- src/app/api/reports/financial/route.ts
+- src/app/api/reports/cases/route.ts
+- src/app/api/reports/time-billing/route.ts
+- src/app/api/reports/clients/route.ts
+- src/app/api/reports/activity/route.ts
+- src/app/api/time-entries/unbilled/route.ts
+- src/app/api/invoices/from-time-entries/route.ts
+- src/app/api/invoices/[id]/duplicate/route.ts
+- src/app/api/invoices/[id]/convert/route.ts
+
+Files Modified:
+- prisma/schema.prisma (TimeEntry.billed/invoiceId, Invoice.taxRate/discountAmount/terms/paidAt)
+- src/views/types.ts (Invoice, TimeEntry)
+- src/views/ReportsView.tsx (réécriture complète)
+- src/views/InvoicesView.tsx (enrichissements)
+- src/app/api/invoices/route.ts (taxRate, discountAmount, terms)
+- src/app/api/invoices/[id]/route.ts (taxRate, discountAmount, terms, paidAt)
+
+Stage Summary:
+- Phase 14 (Rapports): 5 onglets, 5 routes API, graphiques, filtres, exports
+- Phase 15 (Facturation): facturation depuis temps, TVA/remise, duplication, conversion devis
+- 9 nouveaux fichiers, 6 fichiers modifiés
+- SQL migration à exécuter sur Supabase par l'utilisateur
+- Version: v3.8.68 → v3.8.70

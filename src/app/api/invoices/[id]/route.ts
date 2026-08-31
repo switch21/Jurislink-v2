@@ -111,8 +111,12 @@ export async function PUT(
             : {}),
           ...(body.notes !== undefined ? { notes: body.notes } : {}),
           ...(body.billingType !== undefined ? { billingType: body.billingType } : {}),
+          ...(body.taxRate !== undefined ? { taxRate: body.taxRate } : {}),
+          ...(body.discountAmount !== undefined ? { discountAmount: body.discountAmount } : {}),
+          ...(body.terms !== undefined ? { terms: body.terms } : {}),
           ...(body.currencyId ? { currencyId: body.currencyId } : {}),
           ...(body.type ? { type: body.type } : {}),
+          ...(body.status === 'paye' ? { paidAt: new Date() } : {}),
           ...(lineItemsData
             ? {
                 lineItems: { create: lineItemsData },

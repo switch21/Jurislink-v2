@@ -88,6 +88,9 @@ export async function POST(request: Request) {
       dueDate,
       notes,
       billingType,
+      taxRate,
+      discountAmount,
+      terms,
       lineItems: rawLineItems,
     } = body
 
@@ -142,6 +145,9 @@ export async function POST(request: Request) {
           dueDate: dueDate ? new Date(dueDate) : null,
           notes: notes || null,
           billingType: billingType || null,
+          taxRate: taxRate || 0,
+          discountAmount: discountAmount || 0,
+          terms: terms || null,
           tenantId,
           clientId,
           caseId: caseId || null,

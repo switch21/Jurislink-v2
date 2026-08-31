@@ -382,6 +382,10 @@ model Invoice {
   billingType   String?   @map("billing_type")
   reminderLevel Int      @default(0) @map("reminder_level") // 0=none, 1=1re relance, 2=2e, 3=3e, 4=mise en demeure
   lastReminderAt DateTime? @map("last_reminder_at")
+  taxRate       Float    @default(0) @map("tax_rate")
+  discountAmount Float   @default(0) @map("discount_amount")
+  terms         String?
+  paidAt        DateTime? @map("paid_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
@@ -397,6 +401,7 @@ model Invoice {
   lineItems     InvoiceLineItem[]
   payments      Payment[]
   reminders     ReminderLog[]
+  timeEntries   TimeEntry[]
 
   @@map("invoices")
 }
@@ -529,6 +534,7 @@ model TimeEntry {
   isBillable  Boolean   @default(true) @map("is_billable")
   hourlyRate  Float?    @map("hourly_rate")
   totalAmount Float?
+  billed      Boolean   @default(false)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -538,6 +544,8 @@ model TimeEntry {
   user     User   @relation(fields: [userId], references: [id])
   caseId   String? @map("case_id") @db.Uuid
   case     Case?  @relation(fields: [caseId], references: [id])
+  invoiceId String? @map("invoice_id") @db.Uuid
+  invoice  Invoice? @relation(fields: [invoiceId], references: [id])
 
   @@index([tenantId, userId])
   @@index([caseId])

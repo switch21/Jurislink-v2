@@ -45,6 +45,7 @@ export interface Invoice {
   id: string; invoiceNumber?: string | null; type: string; amount: number; paidAmount: number; status: string; dueDate?: string | null;
   notes?: string | null; billingType?: string | null; createdAt: string; issuedAt?: string | null;
   reminderLevel?: number; lastReminderAt?: string | null;
+  taxRate?: number; discountAmount?: number; terms?: string | null; paidAt?: string | null;
   tenantId: string; clientId: string; client?: Client; caseId?: string | null; case?: CaseItem;
   currencyId?: string | null; currency?: CurrencyItem;
   lineItems?: InvoiceLineItem[]; payments?: Payment[];
@@ -121,9 +122,11 @@ export interface CurrencyItem { id: string; code: string; name: string; symbol: 
 export interface TimeEntry {
   id: string; description: string; startTime: string; endTime?: string | null; duration: number;
   isBillable: boolean; hourlyRate?: number | null; totalAmount?: number | null;
+  billed: boolean;
   createdAt: string; tenantId: string; userId: string; caseId?: string | null;
+  invoiceId?: string | null;
   user?: { id: string; fullName: string };
-  case?: { id: string; reference: string; title: string } | null;
+  case?: { id: string; reference: string; title: string; client?: { id: string; fullName: string; company?: string | null } } | null;
 }
 export interface DocTemplate {
   id: string; name: string; category: string; description?: string | null;
