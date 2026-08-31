@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import { useDraftSave } from '@/hooks/useDraftSave'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== CALENDAR VIEW ====================
 export function CalendarView() {
@@ -13,6 +14,7 @@ export function CalendarView() {
   const [editing, setEditing] = useState<EventItem | null>(null)
   const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '' as string, location: '' })
   const [generateTasks, setGenerateTasks] = useState(false)
+  const { hasDraft: eventHasDraft, clearDraft: clearEventDraft } = useDraftSave('event-form', form, { enabled: dialogOpen })
   const monthStr = format(currentMonth, 'yyyy-MM')
 
   // Fetch connected calendars (sync status)
@@ -43,6 +45,7 @@ export function CalendarView() {
     mutationFn: (body: Record<string, unknown>) => fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, tenantId: user?.tenantId }) }).then(r => r.json()),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['events'] }); toast.success('Événement créé'); setDialogOpen(false)
+      clearEventDraft()
       if (generateTasks && data?.id) {
         fetch('/api/workflow/generate-tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.id, tenantId: user?.tenantId }) }).then(r => r.json()).then(res => {
           if (res.createdCount > 0) toast.success(`${res.createdCount} tâches générées automatiquement`)
@@ -69,7 +72,8 @@ export function CalendarView() {
 
   const resetForm = () => { setForm({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '', location: '' }); setEditing(null); setGenerateTasks(false) }
   const openCreate = (day?: Date) => {
-    resetForm()
+    const draft = (typeof window !== 'undefined') ? (() => { try { const s = localStorage.getItem('jurislink_draft_event-form'); return s ? JSON.parse(s) : null } catch { return null } })() : null
+    if (draft && draft.title) { setForm(draft); toast.info('Brouillon restauré') } else { resetForm() }
     if (day) {
       const start = day.getHours() === 0 ? '09:00' : format(day, 'HH:mm')
       setForm(f => ({ ...f, startTime: `${format(day, 'yyyy-MM-dd')}T${start}`, endTime: `${format(day, 'yyyy-MM-dd')}T${String(parseInt(start) + 1).padStart(2, '0')}:00` }))

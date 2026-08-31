@@ -177,17 +177,35 @@ const loadPortalUser = (): PortalUserInfo | null => {
   return null
 }
 
+const loadSavedView = (): ViewName => {
+  if (typeof window === 'undefined') return 'login'
+  try {
+    const stored = localStorage.getItem('jurislink_current_view')
+    if (stored) return stored as ViewName
+  } catch { /* ignore */ }
+  return 'login'
+}
+
+const loadSavedPortalView = (): PortalViewName => {
+  if (typeof window === 'undefined') return 'portal-dashboard'
+  try {
+    const stored = localStorage.getItem('jurislink_portal_view')
+    if (stored) return stored as PortalViewName
+  } catch { /* ignore */ }
+  return 'portal-dashboard'
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
   user: loadUser(),
   isAuthenticated: !!loadUser(),
-  currentView: loadUser()?.role === 'root_admin' ? 'admin-dashboard' : (loadUser() ? 'dashboard' : 'login'),
+  currentView: loadSavedView(),
   sidebarOpen: false,
   unreadCount: 0,
   lastNotification: null,
   pendingResourceOpen: null,
   portalUser: loadPortalUser(),
   isPortalAuthenticated: !!loadPortalUser(),
-  portalCurrentView: 'portal-dashboard',
+  portalCurrentView: loadSavedPortalView(),
   portalSelectedCaseId: null,
   portalUnreadCount: loadPortalUnread(),
   login: (user) => {
@@ -201,10 +219,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('jurislink_user')
+      localStorage.removeItem('jurislink_current_view')
     }
     set({ user: null, isAuthenticated: false, currentView: 'login' })
   },
-  setCurrentView: (view) => set({ currentView: view }),
+  setCurrentView: (view) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jurislink_current_view', view)
+    }
+    set({ currentView: view })
+  },
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   hasPermission: (resource, action) => {
@@ -229,10 +253,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   portalLogout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('jurislink_portal_user')
+      localStorage.removeItem('jurislink_portal_view')
     }
     set({ portalUser: null, isPortalAuthenticated: false, portalCurrentView: 'portal-dashboard', portalSelectedCaseId: null })
   },
-  setPortalView: (view) => set({ portalCurrentView: view }),
+  setPortalView: (view) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jurislink_portal_view', view)
+    }
+    set({ portalCurrentView: view })
+  },
   setPortalSelectedCaseId: (id) => set({ portalSelectedCaseId: id }),
   setPortalUnreadCount: (n) => {
     if (typeof window !== 'undefined') {
