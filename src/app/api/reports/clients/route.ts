@@ -13,15 +13,18 @@ export async function GET(request: Request) {
 
     const fromDate = searchParams.get('from') || undefined
     const toDate = searchParams.get('to') || undefined
-    const dateFilter: any = {}
-    if (fromDate) dateFilter.gte = new Date(fromDate)
-    if (toDate) dateFilter.lte = new Date(toDate)
+    const invoiceDateFilter: any = {}
+    if (fromDate || toDate) {
+      invoiceDateFilter.createdAt = {}
+      if (fromDate) invoiceDateFilter.createdAt.gte = new Date(fromDate)
+      if (toDate) invoiceDateFilter.createdAt.lte = new Date(toDate)
+    }
 
     const clients = await db.client.findMany({
       where: { tenantId },
       include: {
         cases: { include: { invoices: true, timeEntries: true, tasks: true } },
-        invoices: { where: { ...dateFilter } },
+        invoices: invoiceDateFilter.createdAt ? { where: invoiceDateFilter } : true,
         _count: { select: { cases: true } },
       },
     })

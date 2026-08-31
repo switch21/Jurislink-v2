@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, subMonths, isBefore, fr, toast, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, ScrollArea, Separator, Skeleton, Switch, BarChart3, TrendingUp, Users, Clock, Briefcase, Activity, Download, Printer, ArrowUpRight, ArrowDownRight, Minus, DollarSign, FileText, CheckCircle2, AlertCircle, Loader2, ChevronUp, ChevronDown } from './shared-ui'
-import { queryClient, CHART_COLORS, STATUS_LABELS, TYPE_LABELS, INVOICE_TYPE_LABELS, INVOICE_STATUS_LABELS, PAYMENT_METHOD_LABELS, PRIORITY_LABELS, RISK_COLORS, BILLING_LABELS } from './constants'
+import { queryClient, CHART_COLORS, STATUS_COLORS, STATUS_LABELS, TYPE_LABELS, INVOICE_TYPE_LABELS, INVOICE_STATUS_LABELS, PAYMENT_METHOD_LABELS, PRIORITY_LABELS, RISK_COLORS, BILLING_LABELS } from './constants'
 import { fmtDate, fmtMoney, fmtDuration } from './helpers'
 
 // ==================== HELPER COMPONENTS ====================
