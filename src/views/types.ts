@@ -33,6 +33,7 @@ export interface EventItem {
   id: string; title: string; description?: string | null; startTime: string; endTime?: string | null;
   eventType: string; criticality: string; createdAt: string;
   tenantId: string; caseId?: string | null; case?: CaseItem; assignments?: EventAssignment[];
+  location?: string | null; allDay?: boolean | null; externalEventId?: string | null;
 }
 export interface EventAssignment { id: string; userId: string; eventId: string; user?: UserItem }
 export interface InvoiceLineItem { id: string; description: string; quantity: number; unitPrice: number; total: number; sortOrder: number; invoiceId: string }
@@ -158,7 +159,7 @@ export interface PortalCaseItem {
 }
 export interface PortalCaseDetail extends PortalCaseItem {
   client: { id: string; fullName: string };
-  documents?: Array<{ id: string; fileName: string; fileSize: number; mimeType?: string | null; version: number; createdAt: string; uploadedBy?: { id: string; fullName: string } | null }>;
+  documents?: Array<{ id: string; fileName: string; fileSize: number; mimeType?: string | null; version: number; createdAt: string; status?: string | null; uploadedByPortalId?: string | null; uploadedBy?: { id: string; fullName: string } | null }>;
   events?: Array<{ id: string; title: string; description?: string | null; startTime: string; endTime?: string | null; eventType: string; criticality: string }>;
   notes?: Array<{ id: string; content: string; createdAt: string; author?: { id: string; fullName: string } | null }>;
   tasks?: Array<{ id: string; title: string; status: string; priority: string; dueDate?: string | null; createdAt: string }>;
@@ -183,6 +184,7 @@ export interface PortalDocItem {
   id: string; fileName: string; fileSize: number; filePath: string; version: number;
   folder?: string | null; tags?: string | null; documentType?: string | null; mimeType?: string | null;
   description?: string | null; createdAt: string; updatedAt?: string | null;
+  status?: string | null; uploadedByPortalId?: string | null;
   tenantId: string; caseId?: string | null;
   case?: { id: string; reference: string | null; title: string } | null;
   uploadedBy?: { id: string; fullName: string } | null;

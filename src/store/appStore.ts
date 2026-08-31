@@ -94,6 +94,7 @@ export type PortalViewName =
   | 'portal-invoices'
   | 'portal-documents'
   | 'portal-messages'
+  | 'portal-notifications'
   | 'portal-profile'
 
 interface AppState {
@@ -111,6 +112,8 @@ interface AppState {
   isPortalAuthenticated: boolean
   portalCurrentView: PortalViewName
   portalSelectedCaseId: string | null
+  // Portal notification state
+  portalUnreadCount: number
   // Actions
   login: (user: UserInfo) => void
   logout: () => void
@@ -129,6 +132,9 @@ interface AppState {
   portalLogout: () => void
   setPortalView: (view: PortalViewName) => void
   setPortalSelectedCaseId: (id: string | null) => void
+  // Portal notification actions
+  setPortalUnreadCount: (n: number) => void
+  incrementPortalUnread: () => void
 }
 
 const loadUser = (): UserInfo | null => {
@@ -147,6 +153,17 @@ const loadUser = (): UserInfo | null => {
     // ignore
   }
   return null
+}
+
+const loadPortalUnread = (): number => {
+  if (typeof window === 'undefined') return 0
+  try {
+    const stored = localStorage.getItem('jurislink_portal_unread')
+    if (stored) return JSON.parse(stored)
+  } catch {
+    // ignore
+  }
+  return 0
 }
 
 const loadPortalUser = (): PortalUserInfo | null => {
@@ -172,6 +189,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isPortalAuthenticated: !!loadPortalUser(),
   portalCurrentView: 'portal-dashboard',
   portalSelectedCaseId: null,
+  portalUnreadCount: loadPortalUnread(),
   login: (user) => {
     // Normalize role: use roleObj.name if available (Prisma @default('lawyer') overrides the real role)
     const normalized = { ...user, role: user.roleObj?.name || user.role }
@@ -216,4 +234,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setPortalView: (view) => set({ portalCurrentView: view }),
   setPortalSelectedCaseId: (id) => set({ portalSelectedCaseId: id }),
+  setPortalUnreadCount: (n) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jurislink_portal_unread', JSON.stringify(n))
+    }
+    set({ portalUnreadCount: n })
+  },
+  incrementPortalUnread: () => {
+    const next = get().portalUnreadCount + 1
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jurislink_portal_unread', JSON.stringify(next))
+    }
+    set({ portalUnreadCount: next })
+  },
 }))

@@ -11,9 +11,18 @@ export function CalendarView() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<EventItem | null>(null)
-  const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '' as string })
+  const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '' as string, location: '' })
   const [generateTasks, setGenerateTasks] = useState(false)
   const monthStr = format(currentMonth, 'yyyy-MM')
+
+  // Fetch connected calendars (sync status)
+  const { data: syncConnections } = useQuery({
+    queryKey: ['calendar-sync', user?.tenantId],
+    queryFn: () => fetch(`/api/calendar/sync?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    enabled: !!user?.tenantId,
+  })
+  const googleConnected = (Array.isArray(syncConnections) ? syncConnections : []).some((c: { provider: string }) => c.provider === 'google')
+  const outlookConnected = (Array.isArray(syncConnections) ? syncConnections : []).some((c: { provider: string }) => c.provider === 'outlook')
 
   const { data: events, isLoading } = useQuery({
     queryKey: ['events', user?.tenantId, monthStr],
@@ -58,7 +67,7 @@ export function CalendarView() {
     onError: () => toast.error('Erreur lors de la suppression'),
   })
 
-  const resetForm = () => { setForm({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '' }); setEditing(null); setGenerateTasks(false) }
+  const resetForm = () => { setForm({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '', location: '' }); setEditing(null); setGenerateTasks(false) }
   const openCreate = (day?: Date) => {
     resetForm()
     if (day) {
@@ -76,13 +85,14 @@ export function CalendarView() {
       eventType: e.eventType || 'rdv', criticality: e.criticality || 'normale',
       caseId: e.caseId || '',
       assignments: (e.assignments || []).map((a: EventAssignment) => a.userId).join(','),
+      location: e.location || '',
     })
     setDialogOpen(true)
   }
   const handleSubmit = () => {
     if (!form.title.trim() || !form.startTime) return
     const assignments = form.assignments ? form.assignments.split(',').filter(Boolean) : []
-    const payload = { title: form.title, description: form.description || null, startTime: form.startTime, endTime: form.endTime || null, eventType: form.eventType, criticality: form.criticality, caseId: form.caseId || null, assignments }
+    const payload = { title: form.title, description: form.description || null, startTime: form.startTime, endTime: form.endTime || null, eventType: form.eventType, criticality: form.criticality, caseId: form.caseId || null, assignments, location: form.location || null }
     if (editing) { updateMut.mutate({ id: editing.id, ...payload }) } else { createMut.mutate(payload) }
   }
 
@@ -103,9 +113,16 @@ export function CalendarView() {
 
   return (
     <div className="p-4 md:p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Calendrier</h2>
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Calendrier</h2>
+          {googleConnected && <Badge className="bg-blue-500 text-white text-[10px] px-1.5 py-0">Google Calendar</Badge>}
+          {outlookConnected && <Badge className="bg-blue-600 text-white text-[10px] px-1.5 py-0">Outlook</Badge>}
+        </div>
+        <div className="flex items-center gap-2">
+          <TooltipProvider><Tooltip><TooltipTrigger asChild>
+            <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => { const a = document.createElement('a'); a.href = `/api/calendar/ical?tenantId=${user?.tenantId}`; a.download = 'calendrier.ics'; a.click() }}><Download className="size-3.5 mr-1" />Exporter iCal</Button>
+          </TooltipTrigger><TooltipContent><p className="text-xs">Exporter le calendrier au format iCal (.ics)</p></TooltipContent></Tooltip></TooltipProvider>
           <Button variant="outline" size="icon" className="size-8" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}><ChevronLeft className="size-4" /></Button>
           <span className="text-sm font-medium min-w-[140px] text-center">{format(currentMonth, 'MMMM yyyy', { locale: fr })}</span>
           <Button variant="outline" size="icon" className="size-8" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}><ChevronRight className="size-4" /></Button>
@@ -125,6 +142,7 @@ export function CalendarView() {
                   <div className="space-y-0.5">
                     {dayEvents.slice(0, 3).map(e => (
                       <div key={e.id} onClick={ev => { ev.stopPropagation(); openEdit(e) }} className={cn('text-[10px] px-1 py-0.5 rounded truncate text-white flex items-center gap-1', CRIT_EVENT_COLORS[e.criticality] || CRIT_EVENT_COLORS.normale)} title={e.title}>
+                        {e.externalEventId && <span title="Synchronisé depuis un calendrier externe"><ExternalLink className="size-2.5 shrink-0 opacity-80" /></span>}
                         {e.title}
                         {(e.assignments || []).length > 0 && <span className="ml-auto shrink-0">{(e.assignments || []).slice(0, 2).map((a: EventAssignment) => <span key={a.userId} className="inline-block size-3 rounded-full bg-jl-card/30 ml-0.5" title={a.user?.fullName || ''}><span className="text-[6px] leading-3 block text-center">{a.user?.fullName?.[0] || ''}</span></span>)}</span>}
                       </div>
@@ -144,6 +162,7 @@ export function CalendarView() {
           <div className="space-y-3">
             <div><Label>Titre *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Titre de l'événement" /></div>
             <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+            <div><Label className="flex items-center gap-1.5"><MapPin className="size-3.5" />Lieu</Label><Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Salle d'audience, bureau, lien visio…" /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Début *</Label><Input type="datetime-local" value={form.startTime} onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} /></div>
               <div><Label>Fin</Label><Input type="datetime-local" value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} /></div>

@@ -8,14 +8,25 @@ const db = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['error'] : [],
 })
 
-// ── In-memory socket → user/tenant mapping ──
-interface SocketUser {
+// ── In-memory socket → user/portal mapping ──
+interface SocketUserEntry {
+  type: 'user'
   userId: string
   tenantId: string
 }
-const socketUserMap = new Map<string, SocketUser>()
 
-// ── Helpers ──
+interface SocketPortalEntry {
+  type: 'portal'
+  portalId: string
+  tenantId: string
+  clientId: string
+}
+
+type SocketEntry = SocketUserEntry | SocketPortalEntry
+
+const socketMap = new Map<string, SocketEntry>()
+
+// ── Helpers: user notifications ──
 async function getUnreadCount(tenantId: string, userId?: string) {
   const where: Record<string, unknown> = { tenantId, read: false }
   if (userId) where.userId = userId
@@ -23,10 +34,24 @@ async function getUnreadCount(tenantId: string, userId?: string) {
 }
 
 async function broadcastUnreadCount(tenantId: string) {
-  for (const [socketId, info] of socketUserMap.entries()) {
-    if (info.tenantId === tenantId) {
+  for (const [socketId, info] of socketMap.entries()) {
+    if (info.tenantId === tenantId && info.type === 'user') {
       const count = await getUnreadCount(tenantId, info.userId)
       io.to(socketId).emit('unread-count', count)
+    }
+  }
+}
+
+// ── Helpers: portal notifications ──
+async function getPortalUnreadCount(portalId: string) {
+  return db.portalNotification.count({ where: { portalId, read: false } })
+}
+
+async function broadcastPortalUnreadCount(portalId: string) {
+  for (const [socketId, info] of socketMap.entries()) {
+    if (info.type === 'portal' && info.portalId === portalId) {
+      const count = await getPortalUnreadCount(portalId)
+      io.to(socketId).emit('portal-unread-count', count)
     }
   }
 }
@@ -41,7 +66,7 @@ function readBody(req: import('http').IncomingMessage): Promise<string> {
   })
 }
 
-// ── Shared notification logic ──
+// ── Shared notification logic (User) ──
 async function handleNotify(body: Record<string, unknown>) {
   const { tenantId, type, title, message, resourceType, resourceId, userId } = body
   if (!tenantId || !title || !message) {
@@ -73,16 +98,56 @@ async function handleNotify(body: Record<string, unknown>) {
     createdAt: notification.createdAt,
   }
 
-  for (const [socketId, info] of socketUserMap.entries()) {
-    if (info.tenantId === tenantId) {
+  for (const [socketId, info] of socketMap.entries()) {
+    if (info.tenantId === tenantId && info.type === 'user') {
       if (!userId || info.userId === userId) {
         io.to(socketId).emit('notification', payload)
       }
     }
   }
 
-  await broadcastUnreadCount(tenantId)
+  await broadcastUnreadCount(tenantId as string)
   return { status: 200, body: { ok: true, id: notification.id } }
+}
+
+// ── Portal notification logic ──
+async function handleNotifyPortal(body: Record<string, unknown>) {
+  const { portalId, tenantId, title, message, category, resourceType, resourceId } = body
+  if (!portalId || !tenantId || !title || !message) {
+    return { status: 400, body: { error: 'portalId, tenantId, title, message requis' } }
+  }
+
+  const portalNotification = await db.portalNotification.create({
+    data: {
+      title: title as string,
+      message: message as string,
+      category: (category as string) || 'dossier',
+      resourceType: (resourceType as string) || null,
+      resourceId: (resourceId as string) || null,
+      portalId: portalId as string,
+      tenantId: tenantId as string,
+    },
+  })
+
+  const payload = {
+    id: portalNotification.id,
+    title: portalNotification.title,
+    message: portalNotification.message,
+    category: portalNotification.category,
+    resourceType: portalNotification.resourceType,
+    resourceId: portalNotification.resourceId,
+    createdAt: portalNotification.createdAt,
+  }
+
+  // Broadcast to all portal sockets matching this portalId + tenantId
+  for (const [socketId, info] of socketMap.entries()) {
+    if (info.type === 'portal' && info.portalId === portalId && info.tenantId === tenantId) {
+      io.to(socketId).emit('portal-notification', payload)
+    }
+  }
+
+  await broadcastPortalUnreadCount(portalId as string)
+  return { status: 200, body: { ok: true, id: portalNotification.id } }
 }
 
 // ════════════════════════════════════════════════════════
@@ -110,6 +175,8 @@ const apiServer = createServer(async (req, res) => {
         return
       }
       result = await handleNotify(body)
+    } else if (url === '/notify-portal') {
+      result = await handleNotifyPortal(body)
     } else {
       res.writeHead(404, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'Not found' }))
@@ -144,6 +211,7 @@ const io = new Server(wsServer, {
 io.on('connection', (socket) => {
   console.log(`[notif-service] Socket connected: ${socket.id}`)
 
+  // ── User auth (existing) ──
   socket.on('auth', async (data: { userId: string; tenantId: string }) => {
     try {
       const { userId, tenantId } = data
@@ -167,7 +235,7 @@ io.on('connection', (socket) => {
         return
       }
 
-      socketUserMap.set(socket.id, { userId, tenantId })
+      socketMap.set(socket.id, { type: 'user', userId, tenantId })
 
       const unreadCount = await getUnreadCount(tenantId, userId)
       socket.emit('unread-count', unreadCount)
@@ -179,10 +247,52 @@ io.on('connection', (socket) => {
     }
   })
 
+  // ── Portal auth (new) ──
+  socket.on('portal-auth', async (data: { portalId: string; tenantId: string }) => {
+    try {
+      const { portalId, tenantId } = data
+      if (!portalId || !tenantId) {
+        socket.emit('portal-auth-error', { message: 'portalId et tenantId requis' })
+        return
+      }
+
+      const portal = await db.clientPortal.findUnique({
+        where: { id: portalId },
+        select: { id: true, tenantId: true, clientId: true, isActive: true },
+      })
+
+      if (!portal || !portal.isActive) {
+        socket.emit('portal-auth-error', { message: 'Portal introuvable ou inactif' })
+        return
+      }
+
+      if (portal.tenantId !== tenantId) {
+        socket.emit('portal-auth-error', { message: 'Cabinet non correspondant' })
+        return
+      }
+
+      socketMap.set(socket.id, {
+        type: 'portal',
+        portalId: portal.id,
+        tenantId: portal.tenantId,
+        clientId: portal.clientId,
+      })
+
+      const unreadCount = await getPortalUnreadCount(portalId)
+      socket.emit('portal-unread-count', unreadCount)
+
+      console.log(`[notif-service] Portal ${portalId} authenticated (tenant: ${tenantId}, client: ${portal.clientId}), unread: ${unreadCount}`)
+    } catch (err) {
+      console.error('[notif-service] Portal auth error:', err)
+      socket.emit('portal-auth-error', { message: "Erreur d'authentification portal" })
+    }
+  })
+
+  // ── User mark-read (existing) ──
   socket.on('mark-read', async (notificationId: string) => {
     try {
-      const info = socketUserMap.get(socket.id)
-      if (!info) return
+      const info = socketMap.get(socket.id)
+      if (!info || info.type !== 'user') return
 
       await db.notification.updateMany({
         where: { id: notificationId, tenantId: info.tenantId, userId: info.userId },
@@ -196,12 +306,48 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('disconnect', () => {
-    const info = socketUserMap.get(socket.id)
-    if (info) {
-      console.log(`[notif-service] User ${info.userId} disconnected from tenant ${info.tenantId}`)
+  // ── Portal mark-read (new) ──
+  socket.on('portal-mark-read', async (notificationId: string) => {
+    try {
+      const info = socketMap.get(socket.id)
+      if (!info || info.type !== 'portal') return
+
+      await db.portalNotification.updateMany({
+        where: { id: notificationId, portalId: info.portalId, tenantId: info.tenantId },
+        data: { read: true },
+      })
+
+      const unreadCount = await getPortalUnreadCount(info.portalId)
+      socket.emit('portal-unread-count', unreadCount)
+    } catch (err) {
+      console.error('[notif-service] Portal mark-read error:', err)
     }
-    socketUserMap.delete(socket.id)
+  })
+
+  // ── Portal unread-count request (new) ──
+  socket.on('portal-unread-count', async () => {
+    try {
+      const info = socketMap.get(socket.id)
+      if (!info || info.type !== 'portal') return
+
+      const count = await getPortalUnreadCount(info.portalId)
+      socket.emit('portal-unread-count', count)
+    } catch (err) {
+      console.error('[notif-service] Portal unread-count error:', err)
+    }
+  })
+
+  // ── Disconnect (handles both user + portal) ──
+  socket.on('disconnect', () => {
+    const info = socketMap.get(socket.id)
+    if (info) {
+      if (info.type === 'user') {
+        console.log(`[notif-service] User ${info.userId} disconnected from tenant ${info.tenantId}`)
+      } else {
+        console.log(`[notif-service] Portal ${info.portalId} disconnected from tenant ${info.tenantId}`)
+      }
+    }
+    socketMap.delete(socket.id)
   })
 
   socket.on('error', (err) => {

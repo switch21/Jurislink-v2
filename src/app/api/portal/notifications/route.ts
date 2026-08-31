@@ -18,23 +18,63 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    // Return communications for this client as notifications
-    const communications = await db.communication.findMany({
+    const notifications = await db.portalNotification.findMany({
       where: {
-        clientId: portalAccount.clientId,
+        portalId: portalUserId,
         tenantId: portalAccount.tenantId,
-      },
-      include: {
-        sentBy: { select: { id: true, fullName: true } },
-        case: { select: { id: true, reference: true, title: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(communications)
+    return NextResponse.json(notifications)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue'
     console.error('Portal notifications error:', message)
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
+  } finally {
+    await db.$disconnect().catch(() => {})
+  }
+}
+
+export async function PATCH(request: Request) {
+  const db = getDb()
+  try {
+    const portalUserId = request.headers.get('X-Portal-User-Id')
+    if (!portalUserId || !UUID_REGEX.test(portalUserId)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const portalAccount = await db.clientPortal.findUnique({
+      where: { id: portalUserId },
+    })
+    if (!portalAccount || !portalAccount.isActive) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
+    const body = await request.json()
+
+    // Mark single notification as read
+    if (body.id) {
+      const updated = await db.portalNotification.updateMany({
+        where: { id: body.id, portalId: portalUserId, tenantId: portalAccount.tenantId },
+        data: { read: true },
+      })
+      return NextResponse.json({ success: true, updated: updated.count })
+    }
+
+    // Mark all as read
+    if (body.all) {
+      const result = await db.portalNotification.updateMany({
+        where: { portalId: portalUserId, tenantId: portalAccount.tenantId, read: false },
+        data: { read: true },
+      })
+      return NextResponse.json({ success: true, updated: result.count })
+    }
+
+    return NextResponse.json({ error: 'Paramètre manquant' }, { status: 400 })
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erreur inconnue'
+    console.error('Portal notification mark-read error:', message)
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 })
   } finally {
     await db.$disconnect().catch(() => {})

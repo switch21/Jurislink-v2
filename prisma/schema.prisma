@@ -49,8 +49,10 @@ model Tenant {
   documentTemplates DocumentTemplate[]
   communications    Communication[]
   reminderLogs     ReminderLog[]
-  clientPortals    ClientPortal[]
-  currencies       Currency[]
+  clientPortals       ClientPortal[]
+  portalNotifications  PortalNotification[]
+  externalCalendars     ExternalCalendar[]
+  currencies           Currency[]
 
   @@map("tenants")
 }
@@ -94,6 +96,7 @@ model User {
   uploadedVersions      DocumentVersion[] @relation("VersionUploader")
   sentReminders         ReminderLog[]  @relation("ReminderSender")
   assignedTasks         Task[]     @relation("TaskAssignee")
+  externalCalendars     ExternalCalendar[]
 
   @@map("users")
 }
@@ -302,6 +305,8 @@ model Document {
   status      String  @default("actif")
   uploadedById String? @map("uploaded_by_id") @db.Uuid
   uploadedBy  User?   @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  uploadedByPortalId String? @map("uploaded_by_portal_id") @db.Uuid
+  uploadedByPortal ClientPortal? @relation("PortalDocumentUpload", fields: [uploadedByPortalId], references: [id])
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -343,6 +348,9 @@ model Event {
   endTime     DateTime? @map("end_time")
   eventType   String    @default("audience") @map("event_type")
   criticality String    @default("normal")
+  location        String?
+  externalEventId String? @map("external_event_id")
+  allDay          Boolean @default(false) @map("all_day")
   createdAt   DateTime @default(now()) @map("created_at")
 
   tenantId    String    @map("tenant_id") @db.Uuid
@@ -637,7 +645,55 @@ model ClientPortal {
   tenantId String @map("tenant_id") @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
+  portalNotifications PortalNotification[]
+  documents           Document[] @relation("PortalDocumentUpload")
+
   @@map("client_portals")
+}
+
+// ==================== PORTAL NOTIFICATION ====================
+model PortalNotification {
+  id           String   @id @default(uuid()) @db.Uuid
+  title        String
+  message      String
+  category     String   @default("dossier")
+  read         Boolean  @default(false)
+  resourceType String?  @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  portalId String @map("portal_id") @db.Uuid
+  portal   ClientPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([portalId])
+  @@index([tenantId])
+  @@map("portal_notifications")
+}
+
+// ==================== EXTERNAL CALENDAR ====================
+model ExternalCalendar {
+  id             String    @id @default(uuid()) @db.Uuid
+  provider       String // google, outlook
+  accessToken    String    @map("access_token")
+  refreshToken   String?   @map("refresh_token")
+  tokenExpiry    DateTime? @map("token_expiry")
+  calendarId     String?   @map("calendar_id")
+  calendarEmail  String?   @map("calendar_email")
+  syncEnabled    Boolean   @default(true) @map("sync_enabled")
+  lastSyncAt     DateTime? @map("last_sync_at")
+  syncDirection  String    @default("bidirectional") @map("sync_direction") // oneway_out, oneway_in, bidirectional
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  userId   String @map("user_id") @db.Uuid
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId String @map("tenant_id") @db.Uuid
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([userId, tenantId, provider])
+  @@map("external_calendars")
 }
 
 // ==================== CASE TAG ====================

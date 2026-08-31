@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, QrCode, Key } from './shared-ui'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, QrCode, Key, Unplug, Info } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
@@ -25,7 +25,7 @@ export function SettingsView() {
   const [newCurrency, setNewCurrency] = useState({ code: '', name: '', symbol: '' })
   const [showNewUser, setShowNewUser] = useState(false)
   const [showNewCurrency, setShowNewCurrency] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<'profil'|'cabinet'|'equipe'|'permissions'|'abonnement'|'devises'>('profil')
+  const [settingsTab, setSettingsTab] = useState<'profil'|'cabinet'|'equipe'|'permissions'|'abonnement'|'devises'|'integrations'>('profil')
 
   const { data: tenantData } = useQuery({
     queryKey: ['tenant', user?.tenantId],
@@ -196,6 +196,48 @@ export function SettingsView() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  // --- Calendar sync (Integrations) ---
+  const { data: syncConnections, isLoading: syncLoading } = useQuery({
+    queryKey: ['calendar-sync-settings', user?.tenantId],
+    queryFn: () => fetch(`/api/calendar/sync?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    enabled: !!user?.tenantId,
+  })
+  const googleConn = (Array.isArray(syncConnections) ? syncConnections : []).find((c: { provider: string }) => c.provider === 'google')
+  const outlookConn = (Array.isArray(syncConnections) ? syncConnections : []).find((c: { provider: string }) => c.provider === 'outlook')
+
+  const connectCalendarMut = useMutation({
+    mutationFn: (provider: string) => fetch('/api/calendar/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider, tenantId: user?.tenantId }) }).then(r => r.json()),
+    onSuccess: (data) => { if (data.authUrl) window.location.href = data.authUrl },
+    onError: (e: Error) => toast.error('Erreur lors de la connexion'),
+  })
+
+  const disconnectCalendarMut = useMutation({
+    mutationFn: (provider: string) => fetch(`/api/calendar/sync?tenantId=${user?.tenantId}&provider=${provider}`, { method: 'DELETE' }).then(r => r.json()),
+    onSuccess: () => { toast.success('Calendrier déconnecté'); qc.invalidateQueries({ queryKey: ['calendar-sync-settings'] }) },
+    onError: () => toast.error('Erreur lors de la déconnexion'),
+  })
+
+  // Handle ?sync=success|error URL params
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const syncStatus = params.get('sync')
+    if (syncStatus === 'success') {
+      toast.success('Calendrier connecté et synchronisé avec succès')
+      qc.invalidateQueries({ queryKey: ['calendar-sync-settings'] })
+      const url = new URL(window.location.href)
+      url.searchParams.delete('sync')
+      window.history.replaceState({}, '', url.pathname + url.search)
+    } else if (syncStatus === 'error') {
+      toast.error('Erreur lors de la connexion du calendrier')
+      const url = new URL(window.location.href)
+      url.searchParams.delete('sync')
+      window.history.replaceState({}, '', url.pathname + url.search)
+    }
+    const tab = params.get('tab')
+    if (tab === 'integrations') setSettingsTab('integrations')
+  }, [])
+
   // Build permission matrix for selected role
   const selectedRolePerms = useMemo(() => {
     if (!permData || !selectedRoleId) return {}
@@ -254,6 +296,7 @@ export function SettingsView() {
           {canManagePerms && <TabsTrigger value="permissions" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Permissions RBAC</TabsTrigger>}
           {isAdmin && <TabsTrigger value="abonnement" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Abonnement</TabsTrigger>}
           {user?.tenantId && <TabsTrigger value="devises" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Devises</TabsTrigger>}
+          {user?.tenantId && <TabsTrigger value="integrations" className="data-[state=active]:bg-jl-card data-[state=active]:text-jl-blue data-[state=active]:shadow-sm text-xs">Intégrations</TabsTrigger>}
         </TabsList>
 
         {/* PROFIL */}
@@ -548,6 +591,103 @@ export function SettingsView() {
             {(!currencies || currencies.length === 0) && <p className="col-span-full text-center text-xs text-jl-muted py-8">Aucune devise disponible</p>}
           </div>
         </CardContent></Card></TabsContent>}
+
+        {/* INTEGRATIONS */}
+        {user?.tenantId && <TabsContent value="integrations">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Calendar className="size-4 text-jl-blue" />Calendrier externe</h3>
+              <p className="text-xs text-jl-secondary mt-1">Connectez votre Google Calendar ou Outlook pour synchroniser automatiquement vos événements. La synchronisation est bidirectionnelle et couvre une fenêtre de 30 jours.</p>
+            </div>
+
+            {syncLoading ? <div className="flex justify-center py-8"><Skeleton className="h-24 w-full max-w-lg rounded-lg" /></div> : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Google Calendar Card */}
+                <Card className={googleConn ? 'border-emerald-200 dark:border-emerald-800' : ''}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="size-9 rounded-lg bg-blue-500 flex items-center justify-center"><span className="text-white font-bold text-sm">G</span></div>
+                        <div>
+                          <CardTitle className="text-sm font-semibold">Google Calendar</CardTitle>
+                          <CardDescription className="text-[10px]">Synchronisation avec Google</CardDescription>
+                        </div>
+                      </div>
+                      {googleConn ? <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[10px]">Connecté</Badge> : <Badge variant="outline" className="text-[10px] text-jl-muted">Non connecté</Badge>}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {googleConn ? (
+                      <div className="space-y-3">
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex justify-between"><span className="text-jl-secondary">Compte</span><span className="font-medium truncate ml-2 max-w-[200px]">{googleConn.calendarEmail || '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-jl-secondary">Dernière sync</span><span className="font-medium">{googleConn.lastSyncAt ? fmtDateTime(googleConn.lastSyncAt) : '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-jl-secondary">Sens</span><span className="font-medium">Bidirectionnel</span></div>
+                        </div>
+                        <Button size="sm" variant="outline" className="w-full text-xs border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30" disabled={disconnectCalendarMut.isPending} onClick={() => disconnectCalendarMut.mutate('google')}>
+                          {disconnectCalendarMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Unplug className="size-3.5 mr-1.5" />}
+                          Déconnecter Google Calendar
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white" disabled={connectCalendarMut.isPending} onClick={() => connectCalendarMut.mutate('google')}>
+                        {connectCalendarMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <ExternalLink className="size-3.5 mr-1.5" />}
+                        Connecter Google Calendar
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Outlook Card */}
+                <Card className={outlookConn ? 'border-emerald-200 dark:border-emerald-800' : ''}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="size-9 rounded-lg bg-blue-600 flex items-center justify-center"><span className="text-white font-bold text-sm">O</span></div>
+                        <div>
+                          <CardTitle className="text-sm font-semibold">Outlook</CardTitle>
+                          <CardDescription className="text-[10px]">Synchronisation avec Microsoft 365</CardDescription>
+                        </div>
+                      </div>
+                      {outlookConn ? <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[10px]">Connecté</Badge> : <Badge variant="outline" className="text-[10px] text-jl-muted">Non connecté</Badge>}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {outlookConn ? (
+                      <div className="space-y-3">
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex justify-between"><span className="text-jl-secondary">Compte</span><span className="font-medium truncate ml-2 max-w-[200px]">{outlookConn.calendarEmail || '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-jl-secondary">Dernière sync</span><span className="font-medium">{outlookConn.lastSyncAt ? fmtDateTime(outlookConn.lastSyncAt) : '—'}</span></div>
+                          <div className="flex justify-between"><span className="text-jl-secondary">Sens</span><span className="font-medium">Bidirectionnel</span></div>
+                        </div>
+                        <Button size="sm" variant="outline" className="w-full text-xs border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30" disabled={disconnectCalendarMut.isPending} onClick={() => disconnectCalendarMut.mutate('outlook')}>
+                          {disconnectCalendarMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Unplug className="size-3.5 mr-1.5" />}
+                          Déconnecter Outlook
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={connectCalendarMut.isPending} onClick={() => connectCalendarMut.mutate('outlook')}>
+                        {connectCalendarMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <ExternalLink className="size-3.5 mr-1.5" />}
+                        Connecter Outlook
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            <div className="p-3 bg-jl-page rounded-lg border border-jl">
+              <div className="flex items-start gap-2">
+                <Info className="size-4 text-jl-blue shrink-0 mt-0.5" />
+                <div className="text-xs text-jl-secondary space-y-1">
+                  <p><span className="font-medium text-jl-primary">Synchronisation bidirectionnelle :</span> les événements créés ou modifiés dans JurisLink sont reflétés dans votre calendrier externe, et inversement.</p>
+                  <p><span className="font-medium text-jl-primary">Fenêtre de 30 jours :</span> seuls les événements dans les 30 jours passés et à venir sont synchronisés.</p>
+                  <p><span className="font-medium text-jl-primary">Export iCal :</span> vous pouvez également exporter votre calendrier au format .ics depuis la page Calendrier.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>}
       </Tabs>
 
       {/* MFA Setup Dialog */}

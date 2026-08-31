@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, CASE_STATUS_LABELS, INVOICE_STATUS_LABELS } from './constants'
-import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
+import { usePortalSocket } from '@/hooks/usePortalSocket'
 
 // ==================== PORTAL NAV ITEMS ====================
 const PORTAL_NAV_ITEMS: { view: PortalViewName; label: string; icon: React.ElementType }[] = [
@@ -11,12 +12,13 @@ const PORTAL_NAV_ITEMS: { view: PortalViewName; label: string; icon: React.Eleme
   { view: 'portal-invoices', label: 'Mes factures', icon: Receipt },
   { view: 'portal-documents', label: 'Documents', icon: FileText },
   { view: 'portal-messages', label: 'Messagerie', icon: MessageSquare },
+  { view: 'portal-notifications', label: 'Notifications', icon: Bell },
   { view: 'portal-profile', label: 'Mon profil', icon: User },
 ]
 
 // ==================== PORTAL SIDEBAR ====================
 export function PortalSidebar() {
-  const { portalUser, portalCurrentView, setPortalView, sidebarOpen, setSidebarOpen } = useAppStore()
+  const { portalUser, portalCurrentView, setPortalView, sidebarOpen, setSidebarOpen, portalUnreadCount } = useAppStore()
   const tenantName = portalUser?.tenant?.name || 'JurisLink'
   const clientName = portalUser?.client?.fullName || ''
   const navContent = (
@@ -24,11 +26,13 @@ export function PortalSidebar() {
       {PORTAL_NAV_ITEMS.map(item => {
         const Icon = item.icon
         const active = portalCurrentView === item.view
+        const badge = item.view === 'portal-notifications' && portalUnreadCount > 0 ? portalUnreadCount : null
         return (
           <button key={item.view} onClick={() => { setPortalView(item.view); setSidebarOpen(false) }}
             className={cn('w-full flex items-center h-11 px-3 rounded-lg text-sm font-medium transition-all duration-200',
               active ? 'bg-jl-blue-light text-jl-blue border-l-[3px] border-jl-gold' : 'text-jl-secondary hover:bg-jl-page border-l-[3px] border-transparent')}>
             <Icon className='size-5 shrink-0 mr-3' /><span className='whitespace-nowrap'>{item.label}</span>
+            {badge && <span className='ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--danger)] text-white text-[10px] flex items-center justify-center font-bold leading-none'>{badge > 9 ? '9+' : badge}</span>}
           </button>
         )
       })}
@@ -61,7 +65,7 @@ export function PortalSidebar() {
 
 // ==================== PORTAL HEADER ====================
 export function PortalHeader() {
-  const { portalUser, portalLogout, setSidebarOpen } = useAppStore()
+  const { portalUser, portalLogout, setSidebarOpen, portalUnreadCount, setPortalView } = useAppStore()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const clientName = portalUser?.client?.fullName || ''
   return (
@@ -72,7 +76,7 @@ export function PortalHeader() {
         <p className='text-xs text-jl-muted truncate -mt-0.5'>{portalUser?.tenant?.name}</p>
       </div>
       <div className='flex items-center gap-2'>
-        <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant='ghost' size='icon' className='relative text-jl-secondary hover:text-jl-primary'><Bell className='size-5' /></Button></TooltipTrigger><TooltipContent>Notifications</TooltipContent></Tooltip></TooltipProvider>
+        <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant='ghost' size='icon' className='relative text-jl-secondary hover:text-jl-primary' onClick={() => setPortalView('portal-notifications')} aria-label={`Notifications${portalUnreadCount ? ` (${portalUnreadCount} non lues)` : ''}`}><Bell className={cn('size-5', portalUnreadCount > 0 && 'text-jl-blue')} />{portalUnreadCount > 0 && <span className='absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-[var(--danger)] text-white text-[10px] flex items-center justify-center font-bold leading-none'>{portalUnreadCount > 9 ? '9+' : portalUnreadCount}</span>}</Button></TooltipTrigger><TooltipContent>Notifications {portalUnreadCount > 0 && `(${portalUnreadCount})`}</TooltipContent></Tooltip></TooltipProvider>
         <div className='relative'>
           <Button variant='ghost' className='flex items-center gap-2 h-9 px-2' onClick={() => setDropdownOpen(!dropdownOpen)}>
             <Avatar className='size-7'><AvatarFallback className='bg-jl-gold text-white text-[10px]'>{initials(clientName) || 'C'}</AvatarFallback></Avatar>
@@ -228,10 +232,190 @@ export function PortalCasesView() {
   )
 }
 
+// ==================== PORTAL DOCUMENT UPLOAD CONSTANTS ====================
+const PORTAL_FOLDER_OPTIONS = ['Général', 'Procédure', 'Contrats', 'Pièces client', 'Correspondances', 'Décisions', 'Factures', 'Archives']
+const PORTAL_DOC_TYPE_OPTIONS = [
+  { value: 'contrat', label: 'Contrat' },
+  { value: 'conclusion', label: 'Conclusion' },
+  { value: 'assignation', label: 'Assignation' },
+  { value: 'jugement', label: 'Jugement' },
+  { value: 'correspondance', label: 'Correspondance' },
+  { value: 'autre', label: 'Autre' },
+]
+const PORTAL_ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'rar', 'txt', 'csv', 'odt', 'ods']
+const PORTAL_MAX_SIZE = 10 * 1024 * 1024 // 10MB
+
+const DOC_STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  en_attente: { label: 'En attente de validation', className: 'bg-[#FEF3C7] text-[#92400E]' },
+  valide: { label: 'Validé', className: 'bg-[#D1FAE5] text-[#065F46]' },
+  actif: { label: 'Actif', className: 'bg-jl-page text-jl-secondary' },
+  rejete: { label: 'Rejeté', className: 'bg-[#FEE2E2] text-[#991B1B]' },
+  archive: { label: 'Archivé', className: 'bg-[#F3F4F6] text-[#6B7280]' },
+}
+
+// ==================== PORTAL DOCUMENT UPLOAD DIALOG ====================
+function PortalUploadDialog({ open, onOpenChange, prefillCaseId, onSuccess }: {
+  open: boolean; onOpenChange: (v: boolean) => void; prefillCaseId?: string | null; onSuccess: () => void
+}) {
+  const qc = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [form, setForm] = useState({ caseId: prefillCaseId || '', folder: '', documentType: '', description: '' })
+  const [dragOver, setDragOver] = useState(false)
+
+  // Fetch user's cases for the case selector
+  const { data: cases } = useQuery({
+    queryKey: ['portal-cases-upload'],
+    queryFn: () => fetch('/api/portal/cases').then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    enabled: open,
+  })
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedFile(null); setUploading(false); setProgress(0)
+      setForm({ caseId: prefillCaseId || '', folder: '', documentType: '', description: '' })
+    }
+  }, [open, prefillCaseId])
+
+  const validateFile = (file: File): string | null => {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (!ext || !PORTAL_ALLOWED_EXTENSIONS.includes(ext)) {
+      return `Type de fichier non autorisé. Formats acceptés : ${PORTAL_ALLOWED_EXTENSIONS.join(', ').toUpperCase()}`
+    }
+    if (file.size > PORTAL_MAX_SIZE) {
+      return `Fichier trop volumineux (${(file.size / 1024 / 1024).toFixed(1)} Mo). Maximum : 10 Mo.`
+    }
+    return null
+  }
+
+  const handleFileSelect = (file: File | null) => {
+    if (!file) { setSelectedFile(null); return }
+    const error = validateFile(file)
+    if (error) { toast.error(error); return }
+    setSelectedFile(file)
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile) { toast.error('Veuillez sélectionner un fichier'); return }
+    if (!form.caseId) { toast.error('Veuillez sélectionner un dossier'); return }
+    setUploading(true); setProgress(0)
+    try {
+      const fd = new FormData()
+      fd.append('file', selectedFile)
+      fd.append('caseId', form.caseId)
+      if (form.folder) fd.append('folder', form.folder)
+      if (form.documentType) fd.append('documentType', form.documentType)
+      if (form.description) fd.append('description', form.description)
+      await uploadWithProgress('/api/portal/documents', fd, setProgress, true)
+      toast.success('Document téléversé avec succès')
+      onOpenChange(false)
+      onSuccess()
+    } catch (err: any) { toast.error(err?.message || 'Erreur lors du téléversement') } finally { setUploading(false); setProgress(0) }
+  }
+
+  const docIcon = (mimeType?: string | null) => {
+    if (mimeType?.includes('pdf')) return <FileText className='size-5 text-[var(--danger)]' />
+    if (mimeType?.includes('image')) return <FileImage className='size-5 text-[var(--success)]' />
+    if (mimeType?.includes('word') || mimeType?.includes('document')) return <FileText className='size-5 text-jl-blue' />
+    return <FileText className='size-5 text-jl-blue' />
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!uploading) onOpenChange(v) }}>
+      <DialogContent className='max-w-md'>
+        <DialogHeader><DialogTitle className='text-base'>Téléverser un document</DialogTitle><DialogDescription>Déposez un fichier ou sélectionnez-le depuis votre appareil</DialogDescription></DialogHeader>
+        <div className='space-y-4'>
+          {/* Drag and drop zone */}
+          <div
+            className={cn('relative border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer',
+              dragOver ? 'border-jl-blue bg-jl-blue-light/30' : selectedFile ? 'border-[var(--success)] bg-[#D1FAE5]/30' : 'border-jl hover:border-jl-blue/50 hover:bg-jl-page')}
+            onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setDragOver(true) }}
+            onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setDragOver(false) }}
+            onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
+            onDrop={e => { e.preventDefault(); e.stopPropagation(); setDragOver(false); if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]) }}
+            onClick={() => !uploading && fileInputRef.current?.click()}
+          >
+            <input ref={fileInputRef} type='file' accept={PORTAL_ALLOWED_EXTENSIONS.map(e => `.${e}`).join(',')} className='hidden' onChange={e => { if (e.target.files?.length) handleFileSelect(e.target.files[0]); e.target.value = '' }} />
+            {selectedFile ? (
+              <div className='flex items-center gap-3 text-left'>
+                <div className='p-2 rounded-lg bg-white/80 shrink-0'>{docIcon(selectedFile.type)}</div>
+                <div className='min-w-0 flex-1'>
+                  <p className='text-sm font-medium text-jl-primary truncate'>{selectedFile.name}</p>
+                  <p className='text-[10px] text-jl-muted'>{fmtFileSize(selectedFile.size)}</p>
+                </div>
+                {!uploading && <button onClick={e => { e.stopPropagation(); setSelectedFile(null) }} className='p-1 rounded hover:bg-white/80 text-jl-muted hover:text-[var(--danger)]'><X className='size-4' /></button>}
+              </div>
+            ) : (
+              <div className='space-y-2'>
+                <FileUp className='size-8 mx-auto text-jl-muted' />
+                <p className='text-sm text-jl-secondary'>Glissez-déposez un fichier ici</p>
+                <p className='text-[10px] text-jl-muted'>ou cliquez pour sélectionner · Max 10 Mo</p>
+                <p className='text-[10px] text-jl-muted'>PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, ZIP, RAR, TXT, CSV, ODT, ODS</p>
+              </div>
+            )}
+          </div>
+
+          {/* Case selector (required) */}
+          <div>
+            <Label className='text-xs'>Dossier <span className='text-[var(--danger)]'>*</span></Label>
+            <Select value={form.caseId} onValueChange={v => setForm(f => ({ ...f, caseId: v }))} disabled={!!prefillCaseId}>
+              <SelectTrigger className='mt-1 h-9 rounded-lg text-sm'><SelectValue placeholder='Sélectionner un dossier' /></SelectTrigger>
+              <SelectContent>{(Array.isArray(cases) ? cases : []).map((c: PortalCaseItem) => <SelectItem key={c.id} value={c.id}>{c.reference ? `${c.reference} — ${c.title}` : c.title}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          {/* Folder selector (optional) */}
+          <div>
+            <Label className='text-xs'>Répertoire</Label>
+            <Select value={form.folder} onValueChange={v => setForm(f => ({ ...f, folder: v }))}>
+              <SelectTrigger className='mt-1 h-9 rounded-lg text-sm'><SelectValue placeholder='Aucun' /></SelectTrigger>
+              <SelectContent>{PORTAL_FOLDER_OPTIONS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          {/* Document type (optional) */}
+          <div>
+            <Label className='text-xs'>Type de document</Label>
+            <Select value={form.documentType} onValueChange={v => setForm(f => ({ ...f, documentType: v }))}>
+              <SelectTrigger className='mt-1 h-9 rounded-lg text-sm'><SelectValue placeholder='Aucun' /></SelectTrigger>
+              <SelectContent>{PORTAL_DOC_TYPE_OPTIONS.map(dt => <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          {/* Description */}
+          <div>
+            <Label className='text-xs'>Description</Label>
+            <Textarea placeholder='Description optionnelle...' value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className='mt-1 min-h-[60px] text-sm rounded-lg resize-none' />
+          </div>
+
+          {/* Progress bar */}
+          {uploading && (
+            <div className='space-y-1.5'>
+              <div className='flex items-center justify-between text-xs'><span className='text-jl-secondary'>Téléversement en cours...</span><span className='font-medium text-jl-primary'>{progress}%</span></div>
+              <Progress value={progress} className='h-2' />
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant='outline' onClick={() => onOpenChange(false)} disabled={uploading}>Annuler</Button>
+          <Button onClick={handleUpload} disabled={uploading || !selectedFile || !form.caseId} className='bg-jl-blue hover:bg-jl-blue'>
+            {uploading ? <><Loader2 className='size-4 mr-1.5 animate-spin' />{progress < 100 ? 'Téléversement...' : 'Finalisation...'}</> : <><Upload className='size-4 mr-1.5' />Téléverser</>}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ==================== PORTAL CASE DETAIL VIEW ====================
 export function PortalCaseDetailView() {
   const { portalSelectedCaseId, setPortalView } = useAppStore()
+  const qc = useQueryClient()
   const [tab, setTab] = useState('resume')
+  const [docUploadOpen, setDocUploadOpen] = useState(false)
   const { data: caseDetail, isLoading } = useQuery({
     queryKey: ['portal-case-detail', portalSelectedCaseId],
     queryFn: () => fetch(`/api/portal/cases/${portalSelectedCaseId}`).then(r => { if (!r.ok) throw new Error('Not found'); return r.json() }),
@@ -320,16 +504,31 @@ export function PortalCaseDetailView() {
       )}
       {tab === 'documents' && (
         <div className='space-y-2'>
-          {(!caseDetail.documents || caseDetail.documents.length === 0) && <EmptyState icon={FileText} title='Aucun document' />}
-          {caseDetail.documents?.map(doc => (
-            <div key={doc.id} className='flex items-center gap-3 p-3 rounded-lg bg-jl-card border border-jl hover:shadow-sm transition-shadow'>
-              <div className={cn('size-9 rounded-lg flex items-center justify-center shrink-0', doc.mimeType?.includes('pdf') ? 'bg-[#FEE2E2]' : doc.mimeType?.includes('image') ? 'bg-[#D1FAE5]' : 'bg-jl-blue-light')}>
-                {doc.mimeType?.includes('pdf') ? <FileText className='size-4 text-[var(--danger)]' /> : doc.mimeType?.includes('image') ? <FileImage className='size-4 text-[var(--success)]' /> : <FileText className='size-4 text-jl-blue' />}
+          <div className='flex items-center justify-between'>
+            <p className='text-sm text-jl-secondary'>{(caseDetail.documents?.length || 0)} document{(caseDetail.documents?.length || 0) > 1 ? 's' : ''}</p>
+            <Button size='sm' variant='outline' className='text-jl-blue border-jl-blue/30 hover:bg-jl-blue-light' onClick={() => setDocUploadOpen(true)}><Plus className='size-3.5 mr-1.5' />Ajouter un document</Button>
+          </div>
+          {(!caseDetail.documents || caseDetail.documents.length === 0) && <EmptyState icon={FileText} title='Aucun document' description='Ajoutez un document à ce dossier' />}
+          {caseDetail.documents?.map(doc => {
+            const docStatus = doc.status || (doc.uploadedByPortalId ? 'en_attente' : null)
+            const badgeInfo = docStatus ? (DOC_STATUS_BADGE[docStatus] || null) : null
+            return (
+              <div key={doc.id} className='flex items-center gap-3 p-3 rounded-lg bg-jl-card border border-jl hover:shadow-sm transition-shadow'>
+                <div className={cn('size-9 rounded-lg flex items-center justify-center shrink-0', doc.mimeType?.includes('pdf') ? 'bg-[#FEE2E2]' : doc.mimeType?.includes('image') ? 'bg-[#D1FAE5]' : 'bg-jl-blue-light')}>
+                  {doc.mimeType?.includes('pdf') ? <FileText className='size-4 text-[var(--danger)]' /> : doc.mimeType?.includes('image') ? <FileImage className='size-4 text-[var(--success)]' /> : <FileText className='size-4 text-jl-blue' />}
+                </div>
+                <div className='flex-1 min-w-0'>
+                  <div className='flex items-center gap-2 min-w-0'>
+                    <p className='text-sm font-medium text-jl-primary truncate'>{doc.fileName}</p>
+                    {badgeInfo && <Badge className={cn('text-[10px] px-2 py-0.5 rounded-full border-0 shrink-0', badgeInfo.className)}>{badgeInfo.label}</Badge>}
+                  </div>
+                  <p className='text-[10px] text-jl-muted'>{fmtFileSize(doc.fileSize)} · v{doc.version} · {fmtDate(doc.createdAt)}{doc.uploadedBy && ` · ${doc.uploadedBy.fullName}`}</p>
+                </div>
+                <a href={`/api/portal/documents/${doc.id}/download`} target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg hover:bg-jl-blue-light text-jl-secondary hover:text-jl-blue transition-colors'><Download className='size-4' /></a>
               </div>
-              <div className='flex-1 min-w-0'><p className='text-sm font-medium text-jl-primary truncate'>{doc.fileName}</p><p className='text-[10px] text-jl-muted'>{fmtFileSize(doc.fileSize)} · v{doc.version} · {fmtDate(doc.createdAt)}{doc.uploadedBy && ` · ${doc.uploadedBy.fullName}`}</p></div>
-              <a href={`/api/portal/documents/${doc.id}/download`} target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg hover:bg-jl-blue-light text-jl-secondary hover:text-jl-blue transition-colors'><Download className='size-4' /></a>
-            </div>
-          ))}
+            )
+          })}
+          <PortalUploadDialog open={docUploadOpen} onOpenChange={setDocUploadOpen} prefillCaseId={portalSelectedCaseId} onSuccess={() => { qc.invalidateQueries({ queryKey: ['portal-case-detail', portalSelectedCaseId] }) }} />
         </div>
       )}
       {tab === 'invoices' && (
@@ -451,35 +650,89 @@ export function PortalInvoicesView() {
 
 // ==================== PORTAL DOCUMENTS VIEW ====================
 export function PortalDocumentsView() {
+  const qc = useQueryClient()
   const [search, setSearch] = useState('')
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+
   const { data: docs, isLoading } = useQuery({
-    queryKey: ['portal-documents', search],
-    queryFn: () => fetch(`/api/portal/documents${search ? `?search=${encodeURIComponent(search)}` : ''}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    queryKey: ['portal-documents', search, statusFilter],
+    queryFn: () => {
+      const p = new URLSearchParams()
+      if (search) p.set('search', search)
+      return fetch(`/api/portal/documents?${p}`).then(r => r.json()).then(d => Array.isArray(d) ? d : [])
+    },
   })
+
+  const handleUploadSuccess = () => { qc.invalidateQueries({ queryKey: ['portal-documents'] }) }
+
   if (isLoading) return <div className='p-6 space-y-3'>{[1,2,3].map(i=><Skeleton key={i} className='h-16 rounded-xl' />)}</div>
+
+  const allDocs = Array.isArray(docs) ? docs as PortalDocItem[] : []
+  const filtered = statusFilter === 'all' ? allDocs : allDocs.filter(d => {
+    if (statusFilter === 'en_attente') return d.status === 'en_attente'
+    if (statusFilter === 'rejete') return d.status === 'rejete'
+    return true
+  })
+
+  const docIcon = (mimeType?: string | null) => {
+    if (mimeType?.includes('pdf')) return <FileText className='size-5 text-[var(--danger)]' />
+    if (mimeType?.includes('image')) return <FileImage className='size-5 text-[var(--success)]' />
+    if (mimeType?.includes('word') || mimeType?.includes('document')) return <FileText className='size-5 text-jl-blue' />
+    return <FileText className='size-5 text-jl-blue' />
+  }
+
+  const statusBadge = (doc: PortalDocItem) => {
+    if (!doc.uploadedByPortalId && !doc.status) return null
+    const s = doc.status || 'actif'
+    const info = DOC_STATUS_BADGE[s] || DOC_STATUS_BADGE.actif
+    return <Badge className={cn('text-[10px] px-2 py-0.5 rounded-full border-0 shrink-0', info.className)}>{info.label}</Badge>
+  }
+
   return (
     <div className='p-4 lg:p-6 space-y-4'>
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
-        <div><h2 className='text-xl font-bold text-jl-primary'>Documents</h2><p className='text-sm text-jl-secondary'>{(Array.isArray(docs) ? docs : []).length} document{(Array.isArray(docs) ? docs : []).length > 1 ? 's' : ''}</p></div>
-        <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' /><Input placeholder='Rechercher un document...' value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-jl' /></div>
+        <div><h2 className='text-xl font-bold text-jl-primary'>Documents</h2><p className='text-sm text-jl-secondary'>{filtered.length} document{filtered.length > 1 ? 's' : ''}</p></div>
+        <div className='flex items-center gap-2'>
+          <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' /><Input placeholder='Rechercher un document...' value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-jl' /></div>
+          <Button size='sm' className='bg-jl-blue hover:bg-jl-blue shrink-0' onClick={() => setUploadOpen(true)}><Upload className='size-4 mr-1.5' />Téléverser un document</Button>
+        </div>
       </div>
-      {(Array.isArray(docs) && docs.length === 0) ? <EmptyState icon={FileText} title='Aucun document' description={search ? 'Aucun résultat' : 'Aucun document disponible'} /> : (
+
+      {/* Status filter pills */}
+      <div className='flex gap-2 overflow-x-auto pb-1'>
+        {['all', 'en_attente', 'rejete'].map(s => (
+          <button key={s} onClick={() => setStatusFilter(s)} className={cn('px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+            statusFilter === s ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary hover:bg-jl-page')}>
+            {s === 'all' ? 'Tous' : s === 'en_attente' ? 'En attente' : 'Rejetés'}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? <EmptyState icon={FileText} title='Aucun document' description={search ? 'Aucun résultat' : 'Aucun document disponible'} /> : (
         <div className='space-y-2'>
-          {(Array.isArray(docs) ? docs : []).map((doc: PortalDocItem) => (
-            <div key={doc.id} className='flex items-center gap-3 p-3 rounded-lg bg-jl-card border border-jl hover:shadow-sm transition-shadow'>
-              <div className={cn('size-10 rounded-lg flex items-center justify-center shrink-0', doc.mimeType?.includes('pdf') ? 'bg-[#FEE2E2]' : doc.mimeType?.includes('image') ? 'bg-[#D1FAE5]' : doc.mimeType?.includes('word') || doc.mimeType?.includes('document') ? 'bg-jl-blue-light' : 'bg-jl-blue-light')}>
-                {doc.mimeType?.includes('pdf') ? <FileText className='size-5 text-[var(--danger)]' /> : doc.mimeType?.includes('image') ? <FileImage className='size-5 text-[var(--success)]' /> : <FileText className='size-5 text-jl-blue' />}
+          {filtered.map(doc => (
+            <motion.div key={doc.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className='flex items-center gap-3 p-3 rounded-lg bg-jl-card border border-jl hover:shadow-sm transition-shadow'>
+                <div className={cn('size-10 rounded-lg flex items-center justify-center shrink-0', doc.mimeType?.includes('pdf') ? 'bg-[#FEE2E2]' : doc.mimeType?.includes('image') ? 'bg-[#D1FAE5]' : 'bg-jl-blue-light')}>
+                  {docIcon(doc.mimeType)}
+                </div>
+                <div className='flex-1 min-w-0'>
+                  <div className='flex items-center gap-2 min-w-0'>
+                    <p className='text-sm font-medium text-jl-primary truncate'>{doc.fileName}</p>
+                    {statusBadge(doc)}
+                  </div>
+                  <p className='text-[10px] text-jl-muted mt-0.5'>{fmtFileSize(doc.fileSize)} · v{doc.version}{doc.documentType && <span> · {PORTAL_DOC_TYPE_OPTIONS.find(dt => dt.value === doc.documentType)?.label || doc.documentType}</span>}{doc.case && <span> · {doc.case.reference} — {doc.case.title}</span>}{doc.uploadedBy && <span> · {doc.uploadedBy.fullName}</span>}</p>
+                </div>
+                <span className='text-[10px] text-jl-muted shrink-0 hidden sm:block'>{fmtDate(doc.createdAt)}</span>
+                <a href={`/api/portal/documents/${doc.id}/download`} target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg hover:bg-jl-blue-light text-jl-secondary hover:text-jl-blue transition-colors shrink-0'><Download className='size-4' /></a>
               </div>
-              <div className='flex-1 min-w-0'>
-                <p className='text-sm font-medium text-jl-primary truncate'>{doc.fileName}</p>
-                <p className='text-[10px] text-jl-muted'>{fmtFileSize(doc.fileSize)} · v{doc.version}{doc.case && <span> · {doc.case.reference} — {doc.case.title}</span>}{doc.uploadedBy && <span> · {doc.uploadedBy.fullName}</span>}</p>
-              </div>
-              <span className='text-[10px] text-jl-muted shrink-0 hidden sm:block'>{fmtDate(doc.createdAt)}</span>
-              <a href={`/api/portal/documents/${doc.id}/download`} target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg hover:bg-jl-blue-light text-jl-secondary hover:text-jl-blue transition-colors shrink-0'><Download className='size-4' /></a>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
+
+      <PortalUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} onSuccess={handleUploadSuccess} />
     </div>
   )
 }
@@ -624,9 +877,90 @@ export function InfoRow({ label, value }: { label: string; value?: string | null
   return <div className='flex items-start gap-2'><span className='text-xs text-jl-muted w-20 shrink-0 pt-0.5'>{label}</span><span className='text-sm text-jl-primary'>{value}</span></div>
 }
 
+// ==================== PORTAL NOTIFICATIONS VIEW ====================
+interface PortalNotifItem {
+  id: string
+  title: string
+  message: string
+  category: string
+  read: boolean
+  resourceType?: string | null
+  resourceId?: string | null
+  createdAt: string
+}
+
+export function PortalNotificationsView() {
+  const { portalUnreadCount, setPortalUnreadCount } = useAppStore()
+  const { data: notifications, isLoading, refetch } = useQuery<PortalNotifItem[]>({
+    queryKey: ['portal-notifications'],
+    queryFn: () => fetch('/api/portal/notifications').then(r => r.json()),
+  })
+  const markReadMutation = useMutation({
+    mutationFn: (payload: { id?: string; all?: boolean }) =>
+      fetch('/api/portal/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r => r.json()),
+    onSuccess: () => refetch(),
+  })
+  const handleMarkAllRead = () => {
+    markReadMutation.mutate({ all: true }, {
+      onSuccess: () => { setPortalUnreadCount(0); toast.success('Tout marqué comme lu') },
+    })
+  }
+  const handleMarkOneRead = (notif: PortalNotifItem) => {
+    if (notif.read) return
+    markReadMutation.mutate({ id: notif.id }, {
+      onSuccess: (data) => {
+        if (data.updated > 0) {
+          const next = Math.max(0, portalUnreadCount - 1)
+          setPortalUnreadCount(next)
+        }
+      },
+    })
+  }
+  const categoryIcon = (cat: string) => {
+    switch (cat) {
+      case 'facture': return Receipt
+      case 'document': return FileText
+      case 'message': return MessageSquare
+      case 'dossier': return Briefcase
+      default: return Bell
+    }
+  }
+  if (isLoading) return <div className='p-6 space-y-3'>{[1,2,3].map(i => <Skeleton key={i} className='h-20 rounded-xl' />)}</div>
+  return (
+    <div className='p-4 lg:p-6 space-y-4'>
+      <div className='flex items-center justify-between'>
+        <div><h2 className='text-xl font-bold text-jl-primary'>Notifications</h2><p className='text-sm text-jl-secondary'>{portalUnreadCount > 0 ? `${portalUnreadCount} non lue${portalUnreadCount > 1 ? 's' : ''}` : 'Tout est lu'}</p></div>
+        {portalUnreadCount > 0 && <Button variant='outline' size='sm' className='text-jl-blue border-jl-blue/30 hover:bg-jl-blue-light' onClick={handleMarkAllRead} disabled={markReadMutation.isPending}><CheckCheck className='size-4 mr-2' />Tout marquer comme lu</Button>}
+      </div>
+      {(!notifications || notifications.length === 0) && <EmptyState icon={Bell} title='Aucune notification' description={"Vous n'avez pas encore de notifications"} />}
+      <ScrollArea className='max-h-[calc(100vh-16rem)]'>
+        <div className='space-y-2'>
+          {notifications?.map(n => {
+            const Icon = categoryIcon(n.category)
+            return (
+              <Card key={n.id} className={cn('rounded-xl border transition-colors cursor-pointer hover:shadow-sm', n.read ? 'border-jl bg-jl-card' : 'border-jl-blue/20 bg-jl-blue-light/30')} onClick={() => handleMarkOneRead(n)}>
+                <CardContent className='flex items-start gap-3 p-4'>
+                  <div className={cn('size-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5', n.read ? 'bg-jl-page' : 'bg-jl-blue-light')}><Icon className={cn('size-4', n.read ? 'text-jl-muted' : 'text-jl-blue')} /></div>
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-center gap-2'><p className={cn('text-sm font-medium truncate', n.read ? 'text-jl-secondary' : 'text-jl-primary')}>{n.title}</p>{!n.read && <span className='size-2 rounded-full bg-jl-blue shrink-0' />}</div>
+                    <p className='text-xs text-jl-secondary mt-0.5 line-clamp-2'>{n.message}</p>
+                    <p className='text-[10px] text-jl-muted mt-1'>{relativeTime(n.createdAt)}</p>
+                  </div>
+                  {n.category && <Badge className='text-[10px] px-2 py-0.5 rounded-full border-0 bg-jl-page text-jl-muted shrink-0'>{n.category}</Badge>}
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </ScrollArea>
+    </div>
+  )
+}
+
 // ==================== PORTAL ROUTER ====================
 export function PortalRouter() {
   const { portalCurrentView } = useAppStore()
+  usePortalSocket()
   switch (portalCurrentView) {
     case 'portal-dashboard': return <PortalDashboardView />
     case 'portal-cases': return <PortalCasesView />
@@ -634,6 +968,7 @@ export function PortalRouter() {
     case 'portal-invoices': return <PortalInvoicesView />
     case 'portal-documents': return <PortalDocumentsView />
     case 'portal-messages': return <PortalMessagesView />
+    case 'portal-notifications': return <PortalNotificationsView />
     case 'portal-profile': return <PortalProfileView />
     default: return <PortalDashboardView />
   }

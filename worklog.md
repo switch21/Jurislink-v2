@@ -1,4 +1,144 @@
 ---
+Task ID: 10
+Agent: Sub-agent (calendar integration frontend)
+Task: CalendarView sync UI + Settings Integrations tab
+
+Work Log:
+- Updated EventItem type in src/views/types.ts: added `location?: string | null`, `allDay?: boolean | null`, `externalEventId?: string | null` fields
+- Added `Unplug` and `Info` icons to src/views/shared-ui.tsx exports
+- Edited src/views/CalendarView.tsx:
+  - Added `location` field to form state, resetForm, openEdit, and handleSubmit
+  - Added useQuery to fetch connected calendars from GET /api/calendar/sync?tenantId=... on mount
+  - Added computed booleans `googleConnected` and `outlookConnected` from sync connections
+  - Added sync status badges next to title: blue 'Google Calendar' and 'Outlook' badges (hidden when not connected)
+  - Added 'Exporter iCal' button with Download icon and Tooltip, triggers window.location.href to /api/calendar/ical?tenantId=...
+  - Added 'Lieu' (Location) input field in event create/edit dialog with MapPin icon
+  - Added ExternalLink icon on calendar events that have externalEventId (indicates synced from external calendar)
+  - Kept all existing functionality intact
+- Edited src/views/SettingsView.tsx:
+  - Extended settingsTab union type to include 'integrations'
+  - Added 'Intégrations' TabsTrigger (visible when user has tenantId)
+  - Added calendar sync queries: useQuery for GET /api/calendar/sync, useMutation for POST (connect) and DELETE (disconnect)
+  - Added useEffect to handle ?sync=success and ?sync=error URL params with toast notifications and URL cleanup
+  - Added useEffect to handle ?tab=integrations URL param to auto-switch tab (used by OAuth callback redirect)
+  - Added full Integrations TabsContent with:
+    - Section title 'Calendrier externe' with description
+    - Google Calendar card: connected status badge, email/lastSync/direction display, disconnect button (red), or connect button (blue)
+    - Outlook card: same pattern with 'O' icon and blue-600 branding
+    - Info box explaining: bidirectional sync, 30-day window, iCal export
+  - All text in French, matching existing SettingsView style patterns
+
+Stage Summary:
+- 1 type updated: EventItem (location, allDay, externalEventId)
+- 1 shared-ui file updated: added Unplug, Info icon exports
+- 1 view edited: CalendarView (sync badges, iCal button, location field, external sync icon)
+- 1 view edited: SettingsView (Integrations tab with Google/Outlook cards, URL param handling)
+- No new TypeScript errors introduced (all remaining errors are pre-existing)
+
+---
+Task ID: 9
+Agent: Sub-agent (calendar integration)
+Task: Calendar sync API + OAuth callback + iCal export
+
+Work Log:
+- Created src/app/api/calendar/sync/route.ts
+  - GET: lists connected ExternalCalendar records for authenticated user (scoped to userId + tenantId)
+  - POST { provider }: initiates OAuth flow, returns authorization URL
+    - Google: uses accounts.google.com/oauth2/v2/auth with calendar.readonly + calendar.events scopes, offline access + consent prompt, state = base64url({ userId, tenantId })
+    - Outlook: uses login.microsoftonline.com/common/oauth2/v2.0/authorize with Calendars.ReadWrite scope, same state pattern
+    - Returns 400 with French error message if provider env vars (CLIENT_ID/SECRET) are missing
+- Created src/app/api/calendar/callback/[provider]/route.ts
+  - GET handler for OAuth callbacks (both Google and Outlook)
+  - Decodes base64url state to recover userId + tenantId
+  - Exchanges authorization code for tokens:
+    - Google: POST oauth2.googleapis.com/token → access_token, refresh_token, expires_in
+    - Outlook: POST login.microsoftonline.com/common/oauth2/v2.0/token → same
+  - Fetches calendar info (calendarId, calendarEmail) via provider APIs
+  - Performs initial sync: fetches next 30 days of events from external calendar
+    - Google: Calendar v3 API, primary calendar, singleEvents=true
+    - Outlook: Microsoft Graph v1.0 calendarView
+  - Syncs events to local Event model: upsert by externalEventId, sets allDay/location/externalEventId, creates EventAssignment for user
+  - Upserts ExternalCalendar record with tokens (unique on userId+tenantId+provider)
+  - Redirects to /settings?tab=integrations&sync=success|error with created/updated counts
+- Created src/app/api/calendar/ical/route.ts
+  - GET: exports events as .ics (iCal) file
+  - Requires ?tenantId, optional ?caseId filter
+  - Tenant access check (user.tenantId must match)
+  - Generates VCALENDAR with VEVENT entries including: UID, DTSTAMP, DTSTART/DTEND (with TZID=Europe/Paris for timed events, VALUE=DATE for allDay), SUMMARY (prefixed with case reference if linked), DESCRIPTION, LOCATION, STATUS, ATTENDEE
+  - Returns Content-Type: text/calendar; charset=utf-8, Content-Disposition: attachment
+  - All text properly ICS-escaped (backslash, semicolon, comma, newline)
+- Added @@unique([userId, tenantId, provider]) to ExternalCalendar model in schema.prisma (required for upsert)
+- Prisma client regenerated successfully
+
+Stage Summary:
+- 3 new route files: calendar/sync, calendar/callback/[provider], calendar/ical
+- 1 schema change: @@unique on ExternalCalendar
+- OAuth flow: POST /api/calendar/sync → external auth → GET /api/calendar/callback/{provider} → redirect to /settings
+- iCal export: GET /api/calendar/ical?tenantId=...&caseId=...
+- French locale timezone (Europe/Paris) for iCal output
+- Graceful error handling: missing env vars return clear French error messages
+
+---
+Task ID: 8
+Agent: Sub-agent (notification service portal)
+Task: Extend notification mini-service for portal (client) users
+
+Work Log:
+- Unified socket map: replaced `socketUserMap` (Map<string, SocketUser>) with `socketMap` (Map<string, SocketEntry>) using discriminated union type (`SocketUserEntry | SocketPortalEntry`) with `type` field to coexist user + portal connections
+- Added portal helpers: `getPortalUnreadCount(portalId)` and `broadcastPortalUnreadCount(portalId)` for PortalNotification model
+- Updated `broadcastUnreadCount` to filter on `info.type === 'user'` (no-op for portal sockets)
+- Added `handleNotifyPortal(body)` function:
+  - Accepts `{ portalId, tenantId, title, message, category?, resourceType?, resourceId? }`
+  - Creates PortalNotification record via `db.portalNotification.create()`
+  - Broadcasts `portal-notification` event to all connected portal sockets matching portalId+tenantId
+  - Calls `broadcastPortalUnreadCount` after create
+- Added HTTP route `POST /notify-portal` on port 3005, routed to `handleNotifyPortal`
+- Added socket events:
+  - `portal-auth`: validates ClientPortal record (checks isActive, tenantId match), stores `{ type:'portal', portalId, tenantId, clientId }` in socketMap, emits initial `portal-unread-count`
+  - `portal-mark-read`: marks PortalNotification as read (scoped to portalId+tenantId), re-emits unread count
+  - `portal-unread-count`: request/reply pattern for current unread portal notification count
+- Updated `disconnect` handler: logs type-appropriate message (user vs portal), cleans up from unified socketMap
+- Updated user `mark-read` and `broadcastUnreadCount` to check `info.type === 'user'` before acting
+- Existing user auth/notification flow unchanged and fully compatible
+
+Stage Summary:
+- 1 file edited: mini-services/notification-service/index.ts
+- Portal sockets and user sockets coexist on same socket.io server (port 3004)
+- HTTP API (port 3005) now has 3 routes: /notify, /notify-user, /notify-portal
+- Socket events: auth, portal-auth, mark-read, portal-mark-read, portal-unread-count, disconnect, error
+- Emitted events: notification, unread-count, portal-notification, portal-unread-count, auth-error, portal-auth-error
+
+---
+
+Task ID: 7
+Agent: Sub-agent (portal upload API)
+Task: Portal document upload API with validation + bulk validate endpoint
+
+Work Log:
+- Added POST handler to src/app/api/portal/documents/route.ts
+  - Portal auth via X-Portal-User-Id header (same pattern as GET)
+  - Multipart form data: file (required), caseId (required), folder/description/documentType (optional)
+  - File validation: 10MB max, 16 allowed MIME types (PDF, DOC/DOCX, XLS/XLSX, JPG/PNG/GIF, ZIP/RAR, TXT/CSV, ODT/ODS)
+  - Case ownership check: verifies case belongs to portal user's client and isSecret=false
+  - Upload via uploadFile() from @/lib/storage with tenant prefix
+  - Document created with status='en_attente', uploadedByPortalId set
+  - fireNotification() to tenant users about pending document
+- Created src/app/api/portal/documents/bulk-validate/route.ts
+  - PUT handler for admin validation/rejection
+  - Auth via authenticate(request, 'document', 'update')
+  - Accepts { documentIds: string[], action: 'valider' | 'rejeter', reason?: string }
+  - Updates status to 'actif' (valider) or 'rejete' (rejeter) for en_attente documents only
+  - On rejection: creates PortalNotification per document for the uploading portal user
+  - Returns { updated: count }
+- Both files: zero TypeScript errors, db.$disconnect() in finally blocks
+
+Stage Summary:
+- 1 file edited: src/app/api/portal/documents/route.ts (added POST)
+- 1 file created: src/app/api/portal/documents/bulk-validate/route.ts (PUT)
+- Upload flow: client portal → multipart → validate → storage → DB (en_attente) → notify tenant
+- Validation flow: admin → PUT bulk-validate → status change → (rejection) portal notification
+
+---
 Task ID: 5
 Agent: Super Z (main)
 Task: Phase 5 — Stabilisation & Performance
@@ -1879,3 +2019,109 @@ Stage Summary:
 - Files modified: `src/views/TimeTrackingView.tsx`, `src/views/CommunicationsView.tsx`, `src/views/constants.ts`
 - TimeTracking case dropdown now properly shows cases from paginated API
 - Communications page no longer crashes with "COMM_TYPE_LABELS is not defined"
+
+---
+Task ID: portal-socket-notifications
+Agent: Sub-agent (portal real-time notifications)
+Task: usePortalSocket hook + PortalHeader badge + PortalNotificationsView
+
+Work Log:
+- Created `src/hooks/usePortalSocket.ts`
+  - React hook for portal (client) real-time notifications, based on useNotificationSocket.ts pattern
+  - Connects via socket.io-client to `/?XTransformPort=3004` with websocket transport
+  - On connect, emits 'portal-auth' with `{ portalId, tenantId, clientId }` from store's portalUser
+  - Listens for 'portal-notification': shows toast with title+message, increments portal unread count
+  - Listens for 'portal-unread-count': updates portalUnreadCount in store
+  - Listens for 'portal-auth-error': disconnects and logs warning
+  - On disconnect, reconnects with same auth (re-calls authenticate on reconnect)
+  - Only connects when `isPortalAuthenticated && portalUser?.id`
+- Modified `src/store/appStore.ts`
+  - Added `portal-notifications` to `PortalViewName` type union
+  - Added `portalUnreadCount: number` (default 0) to store state
+  - Added `setPortalUnreadCount(n: number)` action with localStorage persistence (key: 'jurislink_portal_unread')
+  - Added `incrementPortalUnread()` action with localStorage persistence
+  - Added `loadPortalUnread()` helper for hydration from localStorage
+- Rewrote `src/app/api/portal/notifications/route.ts`
+  - GET: returns PortalNotification records for authenticated portal user (scoped by portalId + tenantId)
+  - PATCH: mark single notification as read (body: { id }) or mark all as read (body: { all: true })
+  - Both operations update PortalNotification.read field via updateMany
+- Modified `src/views/PortalViews.tsx`
+  - Added `usePortalSocket` import from `@/hooks/usePortalSocket`
+  - Added 'portal-notifications' nav item to `PORTAL_NAV_ITEMS` (Bell icon, before Mon profil)
+  - PortalSidebar: shows red badge count on Notifications nav item when unread > 0
+  - PortalHeader: Bell icon now shows red unread count badge, clicks to switch to portal-notifications view
+  - PortalHeader: Bell turns blue when unread > 0 (matching main app pattern)
+  - Created `PortalNotificationsView` component:
+    - Fetches notifications from GET /api/portal/notifications
+    - Unread/read styling: unread have blue-tinted background + blue dot, read are muted
+    - Click notification to mark as read (single PATCH)
+    - "Tout marquer comme lu" button when unread > 0 (marks all read, resets count)
+    - Category-based icons (dossier→Briefcase, facture→Receipt, document→FileText, message→MessageSquare, default→Bell)
+    - Uses Card, Badge, Button, ScrollArea, EmptyState from shared-ui
+    - All labels in French
+  - PortalRouter: added usePortalSocket() call at component level
+  - PortalRouter: added 'portal-notifications' case returning PortalNotificationsView
+
+Stage Summary:
+- Files created: `src/hooks/usePortalSocket.ts`
+- Files modified: `src/store/appStore.ts`, `src/app/api/portal/notifications/route.ts`, `src/views/PortalViews.tsx`
+- Portal users now receive real-time WebSocket notifications with toast + badge
+- Portal unread count persisted to localStorage across sessions
+- Portal notifications view with mark-as-read (single + bulk) functionality
+
+---
+Task ID: portal-doc-upload-ui
+Agent: Sub-agent (portal document upload)
+Task: Portal document upload UI — PortalDocumentsView + PortalCaseDetailView
+
+Work Log:
+- Updated `src/views/types.ts`:
+  - Added `status?: string | null` and `uploadedByPortalId?: string | null` fields to `PortalDocItem` interface
+  - Added `status` and `uploadedByPortalId` fields to `PortalCaseDetail.documents` inline type
+- Updated `src/views/PortalViews.tsx`:
+  - Added `uploadWithProgress` to imports from `./helpers`
+  - Added portal document upload constants before PortalCaseDetailView:
+    - `PORTAL_FOLDER_OPTIONS`: Général, Procédure, Contrats, Pièces client, Correspondances, Décisions, Factures, Archives
+    - `PORTAL_DOC_TYPE_OPTIONS`: contrat, conclusion, assignation, jugement, correspondance, autre
+    - `PORTAL_ALLOWED_EXTENSIONS`: pdf, doc, docx, xls, xlsx, jpg, jpeg, png, gif, zip, rar, txt, csv, odt, ods
+    - `PORTAL_MAX_SIZE`: 10MB
+    - `DOC_STATUS_BADGE`: color-coded badges for en_attente (amber), valide (green), actif (default), rejete (red), archive (gray)
+  - Created `PortalUploadDialog` component (shared between views):
+    - Drag-and-drop file zone with visual feedback (border color changes on drag)
+    - Click-to-select file input with accept filter
+    - Shows selected file name, size, and type icon after selection
+    - Client-side file validation before upload: extension check + 10MB size check → toast error
+    - Case selector (required, fetched from `/api/portal/cases`)
+    - Folder selector (optional, from PORTAL_FOLDER_OPTIONS)
+    - Document type selector (optional, from PORTAL_DOC_TYPE_OPTIONS)
+    - Description textarea (optional)
+    - XHR upload via `uploadWithProgress('/api/portal/documents', fd, setProgress, true)` with isPortal flag
+    - Progress bar during upload using Progress component
+    - On success: toast, close dialog, invalidate queries
+    - Supports `prefillCaseId` prop to pre-select case (used from case detail view)
+    - Dialog locked during upload (cannot close)
+  - Replaced `PortalDocumentsView` (read-only list → full upload-capable):
+    - Upload button (Upload icon + 'Téléverser un document') at top right
+    - Search input (existing, preserved)
+    - Status filter pills: Tous, En attente, Rejetés
+    - Document list with status badges for portal-uploaded docs
+    - Each doc shows: file icon (color by MIME), name + status badge, size/version/type/case/uploader, date, download link
+    - Motion animation on document items
+    - PortalUploadDialog integration
+  - Updated `PortalCaseDetailView` Documents tab:
+    - Added `docUploadOpen` state and `useQueryClient()`
+    - Added 'Ajouter un document' button (Plus icon, outline style)
+    - Document count display
+    - Status badges on documents (en_attente, valide, rejete, etc.)
+    - PortalUploadDialog with `prefillCaseId={portalSelectedCaseId}` — case selector disabled
+    - On upload success: invalidates portal-case-detail query to refresh document list
+
+Stage Summary:
+- Files modified: `src/views/types.ts`, `src/views/PortalViews.tsx`
+- Portal clients can now upload documents via drag-and-drop or file picker
+- Files validated client-side (type + size) before upload
+- Upload progress tracked via XHR with visual progress bar
+- Documents uploaded by clients have status='en_attente' (shown with amber badge)
+- Status filter pills on documents view (All / Pending / Rejected)
+- Case detail view documents tab has upload button with pre-filled case
+- All labels in French
