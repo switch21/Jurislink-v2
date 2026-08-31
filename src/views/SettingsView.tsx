@@ -140,13 +140,20 @@ export function SettingsView() {
 
   const mfaEnableMut = useMutation({
     mutationFn: (body: { code: string }) => fetch('/api/auth/mfa/enable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
-    onSuccess: (data) => { setMfaBackupCodes(data.backupCodes || []); toast.success('MFA activé avec succès !'); qc.invalidateQueries({ queryKey: ['mfa-status'] }) },
+    onSuccess: (data) => {
+      if (data.alreadyEnabled) {
+        toast.success('MFA est déjà activé'); closeMfaSetup(); qc.invalidateQueries({ queryKey: ['mfa-status'] }); return
+      }
+      setMfaBackupCodes(data.backupCodes || []); toast.success('MFA activé avec succès !'); qc.invalidateQueries({ queryKey: ['mfa-status'] })
+    },
     onError: (e: Error) => toast.error(e.message),
   })
 
   const mfaDisableMut = useMutation({
     mutationFn: (body: { code: string }) => fetch('/api/auth/mfa/disable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
-    onSuccess: () => { toast.success('MFA désactivé'); setMfaDisableOpen(false); setMfaDisableCode(''); qc.invalidateQueries({ queryKey: ['mfa-status'] }) },
+    onSuccess: (data) => {
+      toast.success(data.alreadyDisabled ? 'MFA est déjà désactivé' : 'MFA désactivé'); setMfaDisableOpen(false); setMfaDisableCode(''); qc.invalidateQueries({ queryKey: ['mfa-status'] })
+    },
     onError: (e: Error) => toast.error(e.message),
   })
 

@@ -5,7 +5,8 @@ import { getAuthUser } from '@/lib/auth-server'
 
 /**
  * POST /api/auth/mfa/disable
- * Disables MFA for the user. Requires a valid TOTP code as confirmation.
+ * Disables MFA. Requires a valid TOTP code.
+ * Idempotent: if MFA is already disabled, returns success.
  */
 export async function POST(request: Request) {
   const user = await getAuthUser(request)
@@ -13,20 +14,26 @@ export async function POST(request: Request) {
 
   const db = getDb()
   try {
+    const dbUser = await db.user.findUnique({
+      where: { id: user.id },
+      select: { mfaSecret: true, mfaEnabled: true },
+    })
+
+    // Idempotent: already disabled
+    if (!dbUser?.mfaEnabled) {
+      return NextResponse.json({ enabled: false, message: 'MFA est déjà désactivé', alreadyDisabled: true })
+    }
+
+    if (!dbUser.mfaSecret) {
+      return NextResponse.json({ error: 'Aucun secret MFA trouvé' }, { status: 400 })
+    }
+
     const { code } = await request.json()
     if (!code || typeof code !== 'string' || !/^\d{6}$/.test(code)) {
       return NextResponse.json({ error: 'Code invalide — 6 chiffres requis' }, { status: 400 })
     }
 
-    const dbUser = await db.user.findUnique({
-      where: { id: user.id },
-      select: { mfaSecret: true, mfaEnabled: true },
-    })
-    if (!dbUser?.mfaSecret || !dbUser.mfaEnabled) {
-      return NextResponse.json({ error: 'MFA n\'est pas activé' }, { status: 400 })
-    }
-
-    // Verify the TOTP code before disabling
+    // Verify TOTP before disabling
     const totp = new OTPAuth.TOTP({
       issuer: 'JurisLink',
       label: user.email,
@@ -47,10 +54,7 @@ export async function POST(request: Request) {
       data: { mfaEnabled: false, mfaSecret: null },
     })
 
-    return NextResponse.json({
-      enabled: false,
-      message: 'MFA désactivé avec succès',
-    })
+    return NextResponse.json({ enabled: false, message: 'MFA désactivé avec succès' })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue'
     console.error('MFA disable error:', message)

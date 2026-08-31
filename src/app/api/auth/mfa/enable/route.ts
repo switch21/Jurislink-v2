@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth-server'
 /**
  * POST /api/auth/mfa/enable
  * Verifies a TOTP code and enables MFA for the user.
- * The secret must already be stored on the user (from /setup).
+ * Idempotent: if MFA is already enabled, returns success without requiring a code.
  */
 export async function POST(request: Request) {
   const user = await getAuthUser(request)
@@ -14,20 +14,28 @@ export async function POST(request: Request) {
 
   const db = getDb()
   try {
-    const { code } = await request.json()
-    if (!code || typeof code !== 'string' || !/^\d{6}$/.test(code)) {
-      return NextResponse.json({ error: 'Code invalide — 6 chiffres requis' }, { status: 400 })
-    }
-
     const dbUser = await db.user.findUnique({
       where: { id: user.id },
       select: { mfaSecret: true, mfaEnabled: true },
     })
+
     if (!dbUser?.mfaSecret) {
       return NextResponse.json({ error: 'Aucun secret MFA trouvé. Veuillez d\'abord générer un secret.' }, { status: 400 })
     }
+
+    // Idempotent: if already enabled, return success immediately
     if (dbUser.mfaEnabled) {
-      return NextResponse.json({ error: 'MFA est déjà activé' }, { status: 400 })
+      return NextResponse.json({
+        enabled: true,
+        message: 'MFA est déjà activé',
+        alreadyEnabled: true,
+        backupCodes: [],
+      })
+    }
+
+    const { code } = await request.json()
+    if (!code || typeof code !== 'string' || !/^\d{6}$/.test(code)) {
+      return NextResponse.json({ error: 'Code invalide — 6 chiffres requis' }, { status: 400 })
     }
 
     // Verify the TOTP code
