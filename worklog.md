@@ -904,3 +904,23 @@ Stage Summary:
 - Known limitations (documented for future): in-memory challenge store (use Redis in production), backup codes shown once and not persisted, no rate limiting on challenge endpoint
 - Files created: 5 API route files
 - Files modified: prisma/schema.prisma, LoginPage.tsx, SettingsView.tsx, shared-ui.tsx, next.config.ts, auth/login/route.ts
+
+---
+Task ID: 13b
+Agent: Super Z (main)
+Task: Hotfix — Bug MFA enable: erreur 500 après activation réussie
+
+Work Log:
+- Analysé le bug rapporté: "Erreur de l'activation du MFA" affiché mais MFA activé en base
+- Identifié la cause: `crypto.randomBytes(4)` (API Node.js) lève une erreur dans le runtime API route après que `db.user.update({ mfaEnabled: true })` a réussi
+- Le catch global renvoyait 500 au client, masquant le succès de l'activation
+- Corrigé: remplacé `crypto.randomBytes()` par `crypto.getRandomValues()` (Web Crypto API, universellement disponible)
+- Ajouté un try/catch séparé pour la génération des codes de secours: si elle échoue, l'activation reste réussie avec un tableau vide
+- Lint: 0 erreurs
+- Commit: 5f1853f pushed to main
+
+Stage Summary:
+- Bug corrigé: la 1ère tentative active maintenant correctement le MFA sans erreur
+- `crypto.randomBytes` → `crypto.getRandomValues` (Web Crypto API)
+- Génération des codes de secours isolée dans son propre try/catch (non-critique)
+- Cron webDevReview configuré (toutes les 15 min, job ID: 349199)
