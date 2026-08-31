@@ -198,3 +198,35 @@ export interface PortalDashboardData {
   recentCases: PortalCaseItem[]; recentInvoices: PortalInvoiceItem[];
   recentCommunications: PortalCommunication[];
 }
+
+// ==================== Phase 9 — Advanced Cases ====================
+export interface CaseTag {
+  id: string
+  name: string
+  color: string
+  _count?: { taggings: number }
+}
+
+export interface CaseWithDetails extends CaseItem {
+  nextDueDate?: string | null
+  outcome?: string | null
+  paymentStatus?: string | null
+  tags: CaseTag[]
+  _count: {
+    tasks: number
+    notes: number
+    documents: number
+    assignments: number
+    events: number
+    invoices: number
+  }
+  client?: { id: string; fullName: string; company?: string | null }
+  assignments?: { userId: string; user: { id: string; fullName: string; email: string } }[]
+}
+
+export interface CasesListResponse {
+  cases: CaseWithDetails[]
+  total: number
+  page: number
+  totalPages: number
+}

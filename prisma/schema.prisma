@@ -41,6 +41,8 @@ model Tenant {
   tasks           Task[]
   caseNotes       CaseNote[]
   caseAssignments CaseAssignment[]
+  caseTags       CaseTag[]
+  caseTaggings   CaseTagging[]
   subscription    Subscription?
   payments          Payment[]
   timeEntries       TimeEntry[]
@@ -91,6 +93,7 @@ model User {
   uploadedDocuments     Document[]      @relation("DocumentUploader")
   uploadedVersions      DocumentVersion[] @relation("VersionUploader")
   sentReminders         ReminderLog[]  @relation("ReminderSender")
+  assignedTasks         Task[]     @relation("TaskAssignee")
 
   @@map("users")
 }
@@ -218,23 +221,24 @@ model Client {
 
 // ==================== CASE ====================
 model Case {
-  id              String   @id @default(uuid()) @db.Uuid
+  id              String    @id @default(uuid()) @db.Uuid
   title           String
   description     String?
-  caseType        String   @default("civil") @map("case_type")
-  status          String   @default("nouveau")
+  caseType        String    @default("civil") @map("case_type")
+  status          String    @default("nouveau")
   outcome         String?
-  paymentStatus   String?  @map("payment_status")
-  priority        String   @default("normal")
-  isSecret        Boolean  @default(false) @map("is_secret")
+  paymentStatus   String?   @map("payment_status")
+  priority        String    @default("normal")
+  isSecret        Boolean   @default(false) @map("is_secret")
   reference       String?
   adversary       String?
   jurisdiction    String?
-  amountInDispute Float?   @map("amount_in_dispute")
-  billingType     String?  @map("billing_type")
-  aiAnalysis      String?  @map("ai_analysis")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  amountInDispute Float?    @map("amount_in_dispute")
+  billingType     String?   @map("billing_type")
+  nextDueDate     DateTime? @map("next_due_date")
+  aiAnalysis      String?   @map("ai_analysis")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   tenantId        String   @map("tenant_id") @db.Uuid
   tenant          Tenant   @relation(fields: [tenantId], references: [id])
@@ -242,6 +246,7 @@ model Case {
   client          Client   @relation(fields: [clientId], references: [id])
 
   assignments     CaseAssignment[]
+  taggings        CaseTagging[]
   documents       Document[]
   events          Event[]
   invoices        Invoice[]
@@ -480,15 +485,18 @@ model Task {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  tenantId    String    @map("tenant_id") @db.Uuid
-  tenant      Tenant    @relation(fields: [tenantId], references: [id])
-  caseId      String?   @map("case_id") @db.Uuid
-  case        Case?     @relation(fields: [caseId], references: [id])
-  eventId     String?   @map("event_id") @db.Uuid
-  event       Event?    @relation(fields: [eventId], references: [id])
+  tenantId     String    @map("tenant_id") @db.Uuid
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+  caseId       String?   @map("case_id") @db.Uuid
+  case         Case?     @relation(fields: [caseId], references: [id])
+  eventId      String?   @map("event_id") @db.Uuid
+  event        Event?    @relation(fields: [eventId], references: [id])
+  assignedToId String?   @map("assigned_to_id") @db.Uuid
+  assignedTo   User?     @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
 
   @@index([caseId])
   @@index([status])
+  @@index([assignedToId])
   @@map("tasks")
 }
 
@@ -622,6 +630,35 @@ model ClientPortal {
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   @@map("client_portals")
+}
+
+// ==================== CASE TAG ====================
+model CaseTag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  color     String   @default("#6B7280")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenantId  String   @map("tenant_id") @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  taggings  CaseTagging[]
+
+  @@unique([name, tenantId])
+  @@map("case_tags")
+}
+
+model CaseTagging {
+  caseId   String   @map("case_id") @db.Uuid
+  tagId    String   @map("tag_id") @db.Uuid
+  tenantId String   @map("tenant_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  case     Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  tag      CaseTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([caseId, tagId])
+  @@map("case_taggings")
 }
 
 // ==================== CURRENCY ====================

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, SlidersHorizontal, Table2, EmptyState } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS, BILLING_LABELS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
-import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
+import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData, CaseTag, CaseWithDetails, CasesListResponse } from './types'
 import ReactMarkdown from 'react-markdown'
 
 // ==================== AI ANALYSIS PANEL ====================
@@ -210,7 +210,7 @@ export function CasesView() {
   const [editing, setEditing] = useState<CaseItem | null>(null)
   const [selectedCase, setSelectedCase] = useState<CaseItem | null>(null)
   const [conflicts, setConflicts] = useState<ConflictResult[]>([])
-  const [form, setForm] = useState({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', isSecret: false })
+  const [form, setForm] = useState({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', outcome: '', paymentStatus: '', isSecret: false })
   const [selectedCollabs, setSelectedCollabs] = useState<string[]>([])
   const [timelineFilter, setTimelineFilter] = useState<Set<string>>(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication']))
   const [showInlineNote, setShowInlineNote] = useState(false)
@@ -240,6 +240,22 @@ export function CasesView() {
   const [genTemplateLoading, setGenTemplateLoading] = useState(false)
   const [caseTplId, setCaseTplId] = useState('')
   const [caseTplGenerating, setCaseTplGenerating] = useState(false)
+  // Advanced filters & view
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
+  const [showFilters, setShowFilters] = useState(false)
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterType, setFilterType] = useState('')
+  const [filterPriority, setFilterPriority] = useState('')
+  const [filterClient, setFilterClient] = useState('')
+  const [filterSearch, setFilterSearch] = useState('')
+  const [filterTag, setFilterTag] = useState('')
+  const [filterOutcome, setFilterOutcome] = useState('')
+  const [filterPaymentStatus, setFilterPaymentStatus] = useState('')
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [page, setPage] = useState(1)
+  const pageSize = 12
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
 
   // Check subscription for AI access
   const hasAI = useQuery({
@@ -391,22 +407,38 @@ export function CasesView() {
     } catch (err: any) { toast.error(err?.message || 'Erreur lors du résumé') } finally { setAiSummaryLoading(false) }
   }
 
-  const { data: cases, isLoading } = useQuery({
-    queryKey: ['cases', user?.tenantId, statusFilter, typeFilter, priorityFilter, search],
+  const { data: casesData, isLoading } = useQuery({
+    queryKey: ['cases', page, filterStatus, filterType, filterPriority, filterClient, filterSearch, filterTag, filterOutcome, filterPaymentStatus, sortBy, sortOrder],
     queryFn: () => {
-      const p = new URLSearchParams()
-      if (user?.tenantId) p.set('tenantId', user.tenantId)
-      if (statusFilter !== 'all') p.set('status', statusFilter)
-      if (typeFilter !== 'all') p.set('caseType', typeFilter)
-      if (priorityFilter !== 'all') p.set('priority', priorityFilter)
-      if (search) p.set('search', search)
-      return fetch(`/api/cases?${p}`).then(r => r.json()).then(d => Array.isArray(d) ? d : [])
+      const params = new URLSearchParams()
+      if (user?.tenantId) params.set('tenantId', user.tenantId)
+      if (page) params.set('page', String(page))
+      params.set('limit', String(pageSize))
+      if (filterStatus) params.set('status', filterStatus)
+      if (filterType) params.set('caseType', filterType)
+      if (filterPriority) params.set('priority', filterPriority)
+      if (filterClient) params.set('clientId', filterClient)
+      if (filterSearch) params.set('search', filterSearch)
+      if (filterTag) params.set('tag', filterTag)
+      if (filterOutcome) params.set('outcome', filterOutcome)
+      if (filterPaymentStatus) params.set('paymentStatus', filterPaymentStatus)
+      if (sortBy) params.set('sortBy', sortBy)
+      if (sortOrder) params.set('sortOrder', sortOrder)
+      return fetch(`/api/cases?${params.toString()}`).then(r => r.json())
     },
   })
+  const cases = (casesData as CasesListResponse)?.cases || []
+  const totalCases = (casesData as CasesListResponse)?.total || 0
+  const totalPages = (casesData as CasesListResponse)?.totalPages || 1
 
   const { data: clients } = useQuery({
     queryKey: ['clients-mini', user?.tenantId],
     queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+  })
+
+  const { data: caseTags } = useQuery({
+    queryKey: ['case-tags'],
+    queryFn: () => fetch('/api/cases/tags').then(r => r.json()).then(d => Array.isArray(d) ? d : []),
   })
 
   const { data: users } = useQuery({
@@ -449,13 +481,13 @@ export function CasesView() {
       }
       return fetch('/api/cases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json())
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); toast.success('Dossier créé'); setDialogOpen(false); resetForm() },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-tags'] }); toast.success('Dossier créé'); setDialogOpen(false); resetForm() },
     onError: () => toast.error('Erreur lors de la création'),
   })
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...body }: Record<string, unknown>) => fetch(`/api/cases/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Dossier mis à jour') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-tags'] }); toast.success('Dossier mis à jour') },
     onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
@@ -497,16 +529,18 @@ export function CasesView() {
     else if (id.startsWith('event-')) deleteEventMut.mutate(id.replace('event-', ''))
   }
 
-  const resetForm = () => { setForm({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', isSecret: false }); setEditing(null); setConflicts([]); setSelectedCollabs([]) }
+  const resetForm = () => { setForm({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', outcome: '', paymentStatus: '', isSecret: false }); setEditing(null); setConflicts([]); setSelectedCollabs([]); setSelectedTagIds([]) }
   const openEdit = (c: CaseItem) => {
+    const wc = c as CaseWithDetails
     setEditing(c)
-    setForm({ title: c.title, description: c.description || '', caseType: c.caseType, status: c.status, priority: c.priority, clientId: c.clientId, reference: c.reference, adversary: c.adversary || '', jurisdiction: c.jurisdiction || '', amountInDispute: c.amountInDispute?.toString() || '', billingType: c.billingType || '', nextDueDate: '', isSecret: c.isSecret || false })
+    setForm({ title: c.title, description: c.description || '', caseType: c.caseType, status: c.status, priority: c.priority, clientId: c.clientId, reference: c.reference, adversary: c.adversary || '', jurisdiction: c.jurisdiction || '', amountInDispute: c.amountInDispute?.toString() || '', billingType: c.billingType || '', nextDueDate: wc.nextDueDate?.slice(0, 10) || '', outcome: wc.outcome || '', paymentStatus: wc.paymentStatus || '', isSecret: c.isSecret || false })
     setSelectedCollabs(c.assignments?.map(a => a.userId) || [])
+    setSelectedTagIds((wc.tags || []).map((t: CaseTag) => t.id))
     setDialogOpen(true)
   }
   const handleSubmit = () => {
     if (!form.title.trim() || !form.clientId) return
-    const payload = { title: form.title, description: form.description || null, caseType: form.caseType, status: form.status, priority: form.priority, clientId: form.clientId, reference: form.reference, tenantId: user?.tenantId, adversary: form.adversary || null, jurisdiction: form.jurisdiction || null, amountInDispute: form.amountInDispute ? parseFloat(form.amountInDispute) : null, billingType: form.billingType || null, isSecret: form.isSecret || false, assignments: selectedCollabs }
+    const payload = { title: form.title, description: form.description || null, caseType: form.caseType, status: form.status, priority: form.priority, clientId: form.clientId, reference: form.reference, tenantId: user?.tenantId, adversary: form.adversary || null, jurisdiction: form.jurisdiction || null, amountInDispute: form.amountInDispute ? parseFloat(form.amountInDispute) : null, billingType: form.billingType || null, isSecret: form.isSecret || false, assignments: selectedCollabs, nextDueDate: form.nextDueDate || null, outcome: form.outcome || null, paymentStatus: form.paymentStatus || null, tagIds: selectedTagIds }
     if (editing) { updateMut.mutate({ id: editing.id, ...payload }) } else { createMut.mutate(payload) }
   }
 
@@ -578,35 +612,153 @@ export function CasesView() {
         <Button onClick={() => { resetForm(); setDialogOpen(true) }} size="sm"><Plus className="size-4 mr-1" />Nouveau dossier</Button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-[200px] max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-xs" /></div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Statut" /></SelectTrigger><SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="nouveau">Nouveau</SelectItem><SelectItem value="ouvert">Ouvert</SelectItem><SelectItem value="en_cours">En cours</SelectItem><SelectItem value="en_attente">En attente</SelectItem><SelectItem value="clos">Clos</SelectItem></SelectContent></Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Type" /></SelectTrigger><SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="civil">Civil</SelectItem><SelectItem value="penal">Pénal</SelectItem><SelectItem value="commercial">Commercial</SelectItem><SelectItem value="social">Social</SelectItem><SelectItem value="administratif">Administratif</SelectItem></SelectContent></Select>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}><SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Priorité" /></SelectTrigger><SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="normal">Normal</SelectItem><SelectItem value="haute">Haute</SelectItem><SelectItem value="urgente">Urgente</SelectItem></SelectContent></Select>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div className="relative flex-1 min-w-[200px] max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder="Rechercher..." value={filterSearch} onChange={e => { setFilterSearch(e.target.value); setPage(1) }} className="pl-8 h-9 text-xs" /></div>
+        <div className="flex items-center gap-2">
+          <Button variant={showFilters ? 'default' : 'outline'} size="sm" className="h-9 text-xs gap-1.5" onClick={() => setShowFilters(f => !f)}>
+            <SlidersHorizontal className="size-3.5" />Filtres
+            {(filterStatus || filterType || filterPriority || filterClient || filterTag || filterOutcome || filterPaymentStatus) && <span className="size-2 rounded-full bg-white/40" />}
+          </Button>
+          <div className="flex items-center border border-jl rounded-lg overflow-hidden">
+            <button className={cn('p-2 transition-colors', viewMode === 'grid' ? 'bg-jl-blue text-white' : 'bg-jl-card text-jl-muted hover:text-jl-secondary')} onClick={() => setViewMode('grid')} title="Vue grille"><LayoutGrid className="size-4" /></button>
+            <button className={cn('p-2 transition-colors', viewMode === 'table' ? 'bg-jl-blue text-white' : 'bg-jl-card text-jl-muted hover:text-jl-secondary')} onClick={() => setViewMode('table')} title="Vue tableau"><Table2 className="size-4" /></button>
+          </div>
+        </div>
       </div>
+      {/* Collapsible filter panel */}
+      <AnimatePresence>
+      {showFilters && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+          <div className="border border-jl rounded-lg bg-jl-card p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-jl-secondary">Filtres avancés</span>
+              <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={() => { setFilterStatus(''); setFilterType(''); setFilterPriority(''); setFilterClient(''); setFilterTag(''); setFilterOutcome(''); setFilterPaymentStatus(''); setSortBy('createdAt'); setSortOrder('desc'); setPage(1) }}>
+                <RefreshCw className="size-3" />Réinitialiser
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div><Label className="text-[11px] text-jl-muted">Statut</Label><Select value={filterStatus} onValueChange={v => { setFilterStatus(v === '_all' ? '' : v); setPage(1) }}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Tous" /></SelectTrigger><SelectContent><SelectItem value="_all">Tous</SelectItem><SelectItem value="nouveau">Nouveau</SelectItem><SelectItem value="ouvert">Ouvert</SelectItem><SelectItem value="en_cours">En cours</SelectItem><SelectItem value="en_attente">En attente</SelectItem><SelectItem value="clos">Clos</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-[11px] text-jl-muted">Type</Label><Select value={filterType} onValueChange={v => { setFilterType(v === '_all' ? '' : v); setPage(1) }}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Tous" /></SelectTrigger><SelectContent><SelectItem value="_all">Tous</SelectItem><SelectItem value="civil">Civil</SelectItem><SelectItem value="penal">Pénal</SelectItem><SelectItem value="commercial">Commercial</SelectItem><SelectItem value="social">Social</SelectItem><SelectItem value="administratif">Administratif</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-[11px] text-jl-muted">Priorité</Label><Select value={filterPriority} onValueChange={v => { setFilterPriority(v === '_all' ? '' : v); setPage(1) }}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Tous" /></SelectTrigger><SelectContent><SelectItem value="_all">Tous</SelectItem><SelectItem value="normal">Normal</SelectItem><SelectItem value="haute">Haute</SelectItem><SelectItem value="urgente">Urgente</SelectItem><SelectItem value="basse">Basse</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-[11px] text-jl-muted">Client</Label><Select value={filterClient} onValueChange={v => { setFilterClient(v === '_all' ? '' : v); setPage(1) }}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Tous" /></SelectTrigger><SelectContent><SelectItem value="_all">Tous</SelectItem>{(Array.isArray(clients) ? clients : []).map(cl => <SelectItem key={cl.id} value={cl.id}>{cl.fullName}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-[11px] text-jl-muted">Étiquette</Label><Select value={filterTag} onValueChange={v => { setFilterTag(v === '_all' ? '' : v); setPage(1) }}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Toutes" /></SelectTrigger><SelectContent><SelectItem value="_all">Toutes</SelectItem>{(Array.isArray(caseTags) ? caseTags : []).map((t: CaseTag) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-[11px] text-jl-muted">Résultat</Label><Select value={filterOutcome} onValueChange={v => { setFilterOutcome(v === '_all' ? '' : v); setPage(1) }}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Tous" /></SelectTrigger><SelectContent><SelectItem value="_all">Tous</SelectItem><SelectItem value="gagné">Gagné</SelectItem><SelectItem value="perdu">Perdu</SelectItem><SelectItem value="transaction">Transaction</SelectItem><SelectItem value="abandonné">Abandonné</SelectItem><SelectItem value="en_cours">En cours</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-[11px] text-jl-muted">Paiement</Label><Select value={filterPaymentStatus} onValueChange={v => { setFilterPaymentStatus(v === '_all' ? '' : v); setPage(1) }}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue placeholder="Tous" /></SelectTrigger><SelectContent><SelectItem value="_all">Tous</SelectItem><SelectItem value="paye">Payé</SelectItem><SelectItem value="partiel">Partiel</SelectItem><SelectItem value="non_paye">Non payé</SelectItem></SelectContent></Select></div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div><Label className="text-[11px] text-jl-muted">Trier par</Label><Select value={sortBy} onValueChange={v => setSortBy(v)}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="createdAt">Date de création</SelectItem><SelectItem value="updatedAt">Date de mise à jour</SelectItem><SelectItem value="title">Titre</SelectItem><SelectItem value="nextDueDate">Prochaine échéance</SelectItem><SelectItem value="amountInDispute">Montant en jeu</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-[11px] text-jl-muted">Ordre</Label><Select value={sortOrder} onValueChange={v => setSortOrder(v)}><SelectTrigger className="h-8 text-xs mt-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="desc">Décroissant</SelectItem><SelectItem value="asc">Croissant</SelectItem></SelectContent></Select></div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+      </AnimatePresence>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (Array.isArray(cases) && cases.length === 0) ? <EmptyState icon={Briefcase} title="Aucun dossier" description="Créez votre premier dossier" /> :
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
-          {(Array.isArray(cases) ? cases : []).map(c => (
+        (!Array.isArray(cases) || cases.length === 0) ? <EmptyState icon={Briefcase} title="Aucun dossier" description="Créez votre premier dossier" /> :
+        viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {cases.map(c => {
+            const wc = c as CaseWithDetails
+            const visibleTags = (wc.tags || []).slice(0, 3)
+            const overflowTags = (wc.tags || []).length - 3
+            const isPastDue = wc.nextDueDate && isBefore(parseISO(wc.nextDueDate), new Date())
+            const outcomeColorMap: Record<string, string> = { gagné: 'bg-[#D1FAE5] text-[#065F46]', perdu: 'bg-[#FEE2E2] text-[#991B1B]', transaction: 'bg-[#FEF3C7] text-[#92400E]', abandonné: 'bg-[#F3F4F6] text-[#6B7280]', en_cours: 'bg-[#E8F0F8] text-[#1E5A8A]' }
+            const outcomeLabelMap: Record<string, string> = { gagné: 'Gagné', perdu: 'Perdu', transaction: 'Transaction', abandonné: 'Abandonné', en_cours: 'En cours' }
+            const payColorMap: Record<string, string> = { paye: 'bg-[#D1FAE5] text-[#065F46]', partiel: 'bg-[#FEF3C7] text-[#92400E]', non_paye: 'bg-[#FEE2E2] text-[#991B1B]' }
+            const payLabelMap: Record<string, string> = { paye: 'Payé', partiel: 'Partiel', non_paye: 'Non payé' }
+            return (
             <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication'])); setShowInlineNote(false); setShowInlineEvent(false); setTimelineSearch('') }}>
               <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[var(--accent)]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-2">
                 <p className="text-xs text-jl-secondary"><Users className="size-3 inline mr-1" />{getClientName(c)}</p>
                 {c.adversary && <p className="text-xs text-jl-secondary"><Scale className="size-3 inline mr-1" />Contre : {c.adversary}</p>}
                 {c.jurisdiction && <p className="text-xs text-jl-secondary"><MapPin className="size-3 inline mr-1" />{c.jurisdiction}</p>}
+                {wc.nextDueDate && <p className={cn('text-xs flex items-center gap-1', isPastDue ? 'text-[var(--danger)] font-medium' : 'text-jl-secondary')}><Calendar className="size-3" />Échéance : {fmtDate(wc.nextDueDate)}</p>}
                 {c.amountInDispute != null && c.amountInDispute > 0 && <p className="text-xs font-medium text-jl-gold"><Banknote className="size-3 inline mr-1" />{fmtMoney(c.amountInDispute)}</p>}
-                {c.billingType && <Badge variant="secondary" className="text-[10px]">{BILLING_LABELS[c.billingType] || c.billingType}</Badge>}
-                <div className="flex items-center justify-between pt-2">
+                {visibleTags.length > 0 && (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {visibleTags.map((t: CaseTag) => (
+                      <span key={t.id} className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: t.color + '18', color: t.color }}><span className="size-1.5 rounded-full" style={{ backgroundColor: t.color }} />{t.name}</span>
+                    ))}
+                    {overflowTags > 0 && <span className="text-[10px] text-jl-muted">+{overflowTags}</span>}
+                  </div>
+                )}
+                <div className="flex items-center flex-wrap gap-1">
                   <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[c.caseType] || c.caseType}</Badge>
+                  {c.billingType && <Badge variant="secondary" className="text-[10px]">{BILLING_LABELS[c.billingType] || c.billingType}</Badge>}
+                  {wc.outcome && <Badge variant="outline" className={cn('text-[10px]', outcomeColorMap[wc.outcome])}>{outcomeLabelMap[wc.outcome] || wc.outcome}</Badge>}
+                  {wc.paymentStatus && <Badge variant="outline" className={cn('text-[10px]', payColorMap[wc.paymentStatus])}>{payLabelMap[wc.paymentStatus] || wc.paymentStatus}</Badge>}
+                </div>
+                <div className="flex items-center justify-end pt-1">
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" className="size-7" onClick={() => openEdit(c)}><Edit className="size-3.5" /></Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>}
+            )
+          })}
+        </div>
+        ) : (
+        /* TABLE VIEW */
+        <div className="border border-jl rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+          <Table>
+            <TableHeader><TableRow className="sticky top-0 bg-jl-card z-10 hover:bg-jl-card">
+              <TableHead className="text-xs">Réf</TableHead>
+              <TableHead className="text-xs">Titre</TableHead>
+              <TableHead className="text-xs hidden sm:table-cell">Client</TableHead>
+              <TableHead className="text-xs">Statut</TableHead>
+              <TableHead className="text-xs hidden md:table-cell">Priorité</TableHead>
+              <TableHead className="text-xs hidden lg:table-cell">Échéance</TableHead>
+              <TableHead className="text-xs hidden xl:table-cell">Tags</TableHead>
+              <TableHead className="text-xs hidden md:table-cell text-right">Montant</TableHead>
+              <TableHead className="text-xs text-right">Actions</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {cases.map(c => {
+                const wc = c as CaseWithDetails
+                const isPastDue = wc.nextDueDate && isBefore(parseISO(wc.nextDueDate), new Date())
+                return (
+                <TableRow key={c.id} className="cursor-pointer hover:bg-jl-page/50" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication'])); setShowInlineNote(false); setShowInlineEvent(false); setTimelineSearch('') }}>
+                  <TableCell className="text-xs font-mono whitespace-nowrap">{c.reference || c.id.slice(0, 8)}</TableCell>
+                  <TableCell className="text-xs max-w-[180px] truncate"><div className="flex items-center gap-1.5">{c.isSecret && <Lock className="size-3 text-[var(--accent)] shrink-0" />}<span className="truncate">{c.title}</span></div></TableCell>
+                  <TableCell className="text-xs hidden sm:table-cell whitespace-nowrap">{getClientName(c)}</TableCell>
+                  <TableCell><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></TableCell>
+                  <TableCell className="hidden md:table-cell"><Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[c.priority])}>{PRIORITY_LABELS[c.priority] || c.priority}</Badge></TableCell>
+                  <TableCell className="text-xs hidden lg:table-cell whitespace-nowrap">{wc.nextDueDate ? <span className={cn(isPastDue && 'text-[var(--danger)] font-medium')}>{fmtDate(wc.nextDueDate)}</span> : '—'}</TableCell>
+                  <TableCell className="hidden xl:table-cell"><div className="flex items-center gap-1 flex-wrap">{(wc.tags || []).slice(0, 2).map((t: CaseTag) => <span key={t.id} className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: t.color + '18', color: t.color }}>{t.name}</span>)}{(wc.tags || []).length > 2 && <span className="text-[9px] text-jl-muted">+{(wc.tags || []).length - 2}</span>}</div></TableCell>
+                  <TableCell className="text-xs hidden md:table-cell text-right font-medium whitespace-nowrap">{c.amountInDispute != null && c.amountInDispute > 0 ? fmtMoney(c.amountInDispute) : '—'}</TableCell>
+                  <TableCell className="text-right"><div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}><Button variant="ghost" size="icon" className="size-7" onClick={() => openEdit(c)}><Edit className="size-3.5" /></Button></div></TableCell>
+                </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+          </div>
+        </div>
+        )}
+
+      {/* Pagination */}
+      {totalCases > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-jl-muted">Affichage {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCases)} sur {totalCases} dossier{totalCases > 1 ? 's' : ''}</p>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" className="size-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="size-4" /></Button>
+            {(() => {
+              const pages: (number | '...')[] = []
+              const start = Math.max(1, page - 2)
+              const end = Math.min(totalPages, page + 2)
+              if (start > 1) { pages.push(1); if (start > 2) pages.push('...') }
+              for (let i = start; i <= end; i++) pages.push(i)
+              if (end < totalPages) { if (end < totalPages - 1) pages.push('...'); pages.push(totalPages) }
+              return pages.map((p, i) => p === '...' ? <span key={`e${i}`} className="px-1 text-xs text-jl-muted">…</span> : <Button key={p} variant={p === page ? 'default' : 'outline'} size="icon" className="size-8 text-xs" onClick={() => setPage(p as number)}>{p}</Button>)
+            })()}
+            <Button variant="outline" size="icon" className="size-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight className="size-4" /></Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) resetForm() }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -632,6 +784,23 @@ export function CasesView() {
               <div><Label>Montant en jeu</Label><Input type="number" value={form.amountInDispute} onChange={e => setForm(f => ({ ...f, amountInDispute: e.target.value }))} placeholder="0" /></div>
               <div><Label>Facturation</Label><Select value={form.billingType} onValueChange={v => setForm(f => ({ ...f, billingType: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="forfait">Forfait</SelectItem><SelectItem value="horaire">Horaire</SelectItem><SelectItem value="abonnement">Abonnement</SelectItem><SelectItem value="success_fee">Success fee</SelectItem><SelectItem value="provision">Provision</SelectItem></SelectContent></Select></div>
               <div><Label>Prochaine échéance</Label><Input type="date" value={form.nextDueDate} onChange={e => setForm(f => ({ ...f, nextDueDate: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Résultat</Label><Select value={form.outcome} onValueChange={v => setForm(f => ({ ...f, outcome: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="">—</SelectItem><SelectItem value="gagné">Gagné</SelectItem><SelectItem value="perdu">Perdu</SelectItem><SelectItem value="transaction">Transaction</SelectItem><SelectItem value="abandonné">Abandonné</SelectItem><SelectItem value="en_cours">En cours</SelectItem></SelectContent></Select></div>
+              <div><Label>Statut paiement</Label><Select value={form.paymentStatus} onValueChange={v => setForm(f => ({ ...f, paymentStatus: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="">—</SelectItem><SelectItem value="paye">Payé</SelectItem><SelectItem value="partiel">Partiel</SelectItem><SelectItem value="non_paye">Non payé</SelectItem></SelectContent></Select></div>
+            </div>
+            {/* Tags multi-select */}
+            <div>
+              <Label className="text-xs mb-1.5 block">Étiquettes</Label>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 border rounded-lg bg-jl-page">
+                {(Array.isArray(caseTags) ? caseTags : []).map((t: CaseTag) => (
+                  <button key={t.id} type="button" onClick={() => setSelectedTagIds(prev => prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id])} className={cn('inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs cursor-pointer transition-all border', selectedTagIds.includes(t.id) ? 'shadow-sm' : 'opacity-60 hover:opacity-100')} style={selectedTagIds.includes(t.id) ? { backgroundColor: t.color + '20', borderColor: t.color + '40', color: t.color } : { borderColor: 'var(--border)' }}>
+                    <span className="size-2 rounded-full" style={{ backgroundColor: t.color }} />{t.name}
+                    {selectedTagIds.includes(t.id) && <X className="size-2.5" />}
+                  </button>
+                ))}
+                {(!caseTags || caseTags.length === 0) && <span className="text-xs text-jl-muted">Aucune étiquette disponible</span>}
+              </div>
             </div>
             <div className="flex items-center gap-6 mt-2">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => setForm(f => ({ ...f, isSecret: !f.isSecret }))}>
@@ -676,6 +845,14 @@ export function CasesView() {
                 {caseDetail?.jurisdiction && <div className="col-span-2"><span className="text-jl-secondary">Juridiction :</span> <span className="font-medium">{caseDetail.jurisdiction}</span></div>}
                 {caseDetail?.amountInDispute != null && <div><span className="text-jl-secondary">Montant en jeu :</span> <span className="font-medium">{fmtMoney(caseDetail.amountInDispute)}</span></div>}
                 {caseDetail?.billingType && <div><span className="text-jl-secondary">Facturation :</span> <Badge variant="secondary" className="text-[10px]">{BILLING_LABELS[caseDetail.billingType] || caseDetail.billingType}</Badge></div>}
+                {caseDetail?.nextDueDate && (() => {
+                  const dd = caseDetail.nextDueDate
+                  const days = differenceInDays(parseISO(dd), new Date())
+                  return <div><span className="text-jl-secondary">Prochaine échéance :</span> <span className={cn('font-medium', days < 0 ? 'text-[var(--danger)]' : days <= 7 ? 'text-jl-gold' : '')}>{fmtDate(dd)}{days < 0 ? ` (${Math.abs(days)}j de retard)` : days <= 7 ? ` (dans ${days}j)` : ''}</span></div>
+                })()}
+                {caseDetail?.outcome && <div><span className="text-jl-secondary">Résultat :</span> <Badge variant="outline" className={cn('text-[10px]', { gagné: 'bg-[#D1FAE5] text-[#065F46]', perdu: 'bg-[#FEE2E2] text-[#991B1B]', transaction: 'bg-[#FEF3C7] text-[#92400E]', abandonné: 'bg-[#F3F4F6] text-[#6B7280]', en_cours: 'bg-[#E8F0F8] text-[#1E5A8A]' }[caseDetail.outcome] || '')}>{ { gagné: 'Gagné', perdu: 'Perdu', transaction: 'Transaction', abandonné: 'Abandonné', en_cours: 'En cours' }[caseDetail.outcome] || caseDetail.outcome }</Badge></div>}
+                {caseDetail?.paymentStatus && <div><span className="text-jl-secondary">Paiement :</span> <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[caseDetail.paymentStatus])}>{ { paye: 'Payé', partiel: 'Partiel', non_paye: 'Non payé' }[caseDetail.paymentStatus] || caseDetail.paymentStatus }</Badge></div>}
+                {caseDetail?.tags && caseDetail.tags.length > 0 && <div className="col-span-2"><span className="text-jl-secondary">Étiquettes :</span><div className="flex items-center gap-1.5 mt-1 flex-wrap">{caseDetail.tags.map((t: CaseTag) => <span key={t.id} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: t.color + '18', color: t.color }}><span className="size-1.5 rounded-full" style={{ backgroundColor: t.color }} />{t.name}</span>)}</div></div>}
                 <div className="col-span-2"><span className="text-jl-secondary">Description :</span><p className="mt-1 text-sm text-jl-secondary whitespace-pre-wrap">{caseDetail?.description || 'Aucune description'}</p></div>
               </div>
             </TabsContent>
@@ -960,10 +1137,20 @@ export function CasesView() {
               <div className="space-y-2">{(Array.isArray(caseTasks) ? caseTasks : []).map((t: TaskItem) => (
                 <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
                   <span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[var(--danger)]' : t.priority === 'haute' ? 'bg-[var(--accent)]' : 'bg-jl-gold')} />
-                  <div className="min-w-0 flex-1"><p className={cn('text-sm font-medium', t.status === 'terminee' && 'line-through')}>{t.title}</p>{t.dueDate && <p className="text-[10px] text-jl-muted">Échéance: {fmtDate(t.dueDate)}</p>}</div>
+                  <div className="min-w-0 flex-1"><p className={cn('text-sm font-medium', t.status === 'terminee' && 'line-through')}>{t.title}</p><div className="flex items-center gap-2">{t.dueDate && <p className="text-[10px] text-jl-muted">Échéance: {fmtDate(t.dueDate)}</p>}{t.assignedToUser && <p className="text-[10px] text-jl-blue flex items-center gap-0.5"><User className="size-2.5" />{t.assignedToUser.fullName}</p>}</div></div>
                   <Badge variant="outline" className={cn('text-[10px] shrink-0', taskStatusColor(t.status))}>{taskStatusLabel(t.status)}</Badge>
                 </div>
               ))}</div>}
+              {/* Assign task form */}
+              {Array.isArray(caseTasks) && caseTasks.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-jl">
+                  <p className="text-[11px] font-semibold text-jl-secondary mb-2">Assigner une tâche</p>
+                  <div className="flex items-center gap-2">
+                    <Select><SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Sélectionner une tâche…" /></SelectTrigger><SelectContent>{(Array.isArray(caseTasks) ? caseTasks : []).filter((t: TaskItem) => t.status !== 'terminee').map((t: TaskItem) => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}</SelectContent></Select>
+                    <Select><SelectTrigger className="h-8 text-xs w-40"><SelectValue placeholder="Utilisateur…" /></SelectTrigger><SelectContent>{(Array.isArray(users) ? users : []).map((u: UserItem) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}</SelectContent></Select>
+                  </div>
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="events" className="mt-4 overflow-y-auto max-h-[50vh]">
               {(caseDetail?.events || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucun événement</p> :

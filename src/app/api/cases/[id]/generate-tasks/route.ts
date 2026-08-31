@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { authenticate } from '@/lib/auth-server'
+import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { getWorkflowTemplate } from '@/lib/workflow-templates'
 
 export async function POST(
@@ -8,13 +8,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await authenticate(request, 'task', 'create')
-  if (auth instanceof NextResponse) return auth
+  if (isErrorResponse(auth)) return auth
 
   const { id } = await params
   const db = getDb()
 
   try {
-    // Fetch the case with its type and tenant
+    // Fetch the case with its type, tenant, and assignments
     const caze = await db.case.findUnique({
       where: { id },
       select: {
@@ -26,6 +26,7 @@ export async function POST(
         title: true,
         assignments: {
           select: { userId: true },
+          orderBy: { createdAt: 'asc' },
         },
       },
     })
@@ -68,6 +69,9 @@ export async function POST(
     // Calculate due dates based on case creation date
     const baseDate = new Date(caze.createdAt)
 
+    // Use the first assignment user as default assignee if available
+    const defaultAssignedToId = caze.assignments.length > 0 ? caze.assignments[0].userId : null
+
     // Create tasks in a transaction
     const tasks = await db.$transaction(
       template.tasks.map((t) => {
@@ -83,6 +87,7 @@ export async function POST(
             dueDate,
             tenantId: caze.tenantId,
             caseId: id,
+            assignedToId: defaultAssignedToId,
           },
           include: {
             case: { select: { id: true, reference: true, title: true } },

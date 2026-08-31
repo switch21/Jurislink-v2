@@ -73,7 +73,8 @@ export {
   FileImage, List, LayoutGrid, History,
   Globe, ShieldUser, FileDown, MessageCircleReply, UserCog,
   Building2 as BuildingIcon, CreditCard as CreditCardIcon, Zap as ZapIcon,
-  QrCode, KeyRound as Key
+  QrCode, KeyRound as Key,
+  SlidersHorizontal, Table2
 } from 'lucide-react'
 // ═══ Internal Components ═══
 export { EmptyState } from './EmptyState'
