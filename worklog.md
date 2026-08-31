@@ -1865,3 +1865,17 @@ Stage Summary:
 - 9 nouveaux fichiers, 6 fichiers modifiés
 - SQL migration à exécuter sur Supabase par l'utilisateur
 - Version: v3.8.68 → v3.8.70
+---
+Task ID: bugfix-comm-time
+Agent: Super Z (main)
+Task: Fix two bugs — Time Tracking case selection + Communications COMM_TYPE_LABELS undefined
+
+Work Log:
+- **Bug 1 (TimeTracking case selection)**: `/api/cases` returns `{ cases: [...], total, page, totalPages }` (paginated response). The TimeTrackingView query used `.then(d => Array.isArray(d) ? d : [])` which resolved to `[]` because the response is an object, not an array. Fixed by changing to `.then((d: any) => Array.isArray(d) ? d : (d.cases || d.data || []))` and adding `&limit=200` to fetch all cases.
+- **Bug 2 (Communications COMM_TYPE_LABELS)**: `COMM_TYPE_LABELS`, `COMM_TYPE_COLORS`, `COMM_STATUS_LABELS`, `COMM_STATUS_COLORS`, and `QUICK_TEMPLATES` were defined locally (non-exported) in `TimeTrackingView.tsx` but referenced in `CommunicationsView.tsx` without import. Fixed by moving all 5 constants to `constants.ts` (exported) and updating imports in both `CommunicationsView.tsx` and `TimeTrackingView.tsx`.
+- ESLint passes with 0 errors.
+
+Stage Summary:
+- Files modified: `src/views/TimeTrackingView.tsx`, `src/views/CommunicationsView.tsx`, `src/views/constants.ts`
+- TimeTracking case dropdown now properly shows cases from paginated API
+- Communications page no longer crashes with "COMM_TYPE_LABELS is not defined"

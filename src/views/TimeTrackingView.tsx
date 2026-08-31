@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
-import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP } from './constants'
+import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, COMM_TYPE_LABELS, COMM_TYPE_COLORS, COMM_STATUS_LABELS, COMM_STATUS_COLORS, QUICK_TEMPLATES } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== TIME TRACKING VIEW ====================
@@ -12,18 +12,6 @@ const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
   assignation: { label: 'Assignation', color: 'bg-[var(--danger)] text-white' },
   general: { label: 'Général', color: 'bg-jl-page text-white' },
 }
-const COMM_TYPE_LABELS: Record<string, string> = { email: 'Email', sms: 'SMS', whatsapp: 'WhatsApp' }
-const COMM_TYPE_COLORS: Record<string, string> = { email: 'bg-jl-blue text-white', sms: 'bg-[var(--success)] text-white', whatsapp: 'bg-[var(--success)] text-white' }
-const COMM_STATUS_COLORS: Record<string, string> = {
-  sent: 'bg-[#D1FAE5] text-[#065F46]', pending: 'bg-[var(--accent-light)] text-[#92400E]', failed: 'bg-[#FEE2E2] text-[#991B1B]', bounced: 'bg-jl-page text-jl-secondary',
-}
-const COMM_STATUS_LABELS: Record<string, string> = { sent: 'Envoyé', pending: 'En attente', failed: 'Échoué', bounced: 'Rebondi' }
-const QUICK_TEMPLATES = [
-  { label: 'Rappel audience', content: 'Bonjour {name},\n\nNous vous rappelons que votre audience est prévue le {date} à {time} au {location}.\n\nCordialement,' },
-  { label: 'Relance facture', content: 'Bonjour {name},\n\nNous vous prions de bien vouloir régler la facture n° {ref} d\'un montant de {amount} qui est arrivée à échéance le {date}.\n\nCordialement,' },
-  { label: 'Demande de pièces', content: 'Bonjour {name},\n\nDans le cadre du dossier {caseRef}, nous aurions besoin des pièces suivantes :\n- {doc1}\n- {doc2}\n\nMerci de nous les transmettre dès que possible.\n\nCordialement,' },
-  { label: 'Confirmation rendez-vous', content: 'Bonjour {name},\n\nNous confirmons votre rendez-vous le {date} à {time} dans nos locaux.\n\nCordialement,' },
-]
 
 export function TimeTrackingView() {
   const { user } = useAppStore()
@@ -40,7 +28,7 @@ export function TimeTrackingView() {
 
   const { data: cases } = useQuery({
     queryKey: ['cases-tt', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&status=open,en_cours,en_attente`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&status=open,en_cours,en_attente&limit=200`).then(r => r.json()).then((d: any) => Array.isArray(d) ? d : (d.cases || d.data || [])),
   })
 
   const { data: entries, isLoading } = useQuery({

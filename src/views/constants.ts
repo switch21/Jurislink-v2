@@ -65,6 +65,18 @@ export const CHART_COLORS = ['#1E5A8A', '#C8A45D', '#059669', '#DC2626', '#6B728
 export const CHART_COLORS_DARK = ['#4A8FCA', '#E0C87A', '#34D399', '#FB7185', '#9CA3AF', '#FBBF24']
 export const CASE_STATUS_LABELS: Record<string, string> = { nouveau: 'Nouveau', ouvert: 'Ouvert', en_cours: 'En cours', en_attente: 'En attente', clos: 'Clos', archive: 'Archivé' }
 export const INVOICE_STATUS_LABELS: Record<string, string> = { non_paye: 'Non payé', partiel: 'Partiel', paye: 'Payé', annule: 'Annulé' }
+export const COMM_TYPE_LABELS: Record<string, string> = { email: 'Email', sms: 'SMS', whatsapp: 'WhatsApp' }
+export const COMM_TYPE_COLORS: Record<string, string> = { email: 'bg-jl-blue text-white', sms: 'bg-[var(--success)] text-white', whatsapp: 'bg-[var(--success)] text-white' }
+export const COMM_STATUS_COLORS: Record<string, string> = {
+  sent: 'bg-[#D1FAE5] text-[#065F46]', pending: 'bg-[var(--accent-light)] text-[#92400E]', failed: 'bg-[#FEE2E2] text-[#991B1B]', bounced: 'bg-jl-page text-jl-secondary',
+}
+export const COMM_STATUS_LABELS: Record<string, string> = { sent: 'Envoyé', pending: 'En attente', failed: 'Échoué', bounced: 'Rebondi' }
+export const QUICK_TEMPLATES = [
+  { label: 'Rappel audience', content: 'Bonjour {name},\n\nNous vous rappelons que votre audience est prévue le {date} à {time} au {location}.\n\nCordialement,' },
+  { label: 'Relance facture', content: "Bonjour {name},\n\nNous vous prions de bien vouloir régler la facture n° {ref} d'un montant de {amount} qui est arrivée à échéance le {date}.\n\nCordialement," },
+  { label: 'Demande de pièces', content: 'Bonjour {name},\n\nDans le cadre du dossier {caseRef}, nous aurions besoin des pièces suivantes :\n- {doc1}\n- {doc2}\n\nMerci de nous les transmettre dès que possible.\n\nCordialement,' },
+  { label: 'Confirmation rendez-vous', content: 'Bonjour {name},\n\nNous confirmons votre rendez-vous le {date} à {time} dans nos locaux.\n\nCordialement,' },
+]
 
 export const NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType; adminOnly?: boolean; permission?: { resource: string; action: string } }[] = [
   { view: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
