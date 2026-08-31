@@ -53,16 +53,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Code invalide. Veuillez réessayer.' }, { status: 401 })
     }
 
-    // Enable MFA
+    // Enable MFA in DB first
     await db.user.update({
       where: { id: user.id },
       data: { mfaEnabled: true },
     })
 
-    // Generate backup codes (8 codes)
-    const backupCodes = Array.from({ length: 8 }, () => {
-      return crypto.randomBytes(4).toString('hex').toUpperCase()
-    })
+    // Generate backup codes using Web Crypto API (universally available)
+    let backupCodes: string[] = []
+    try {
+      const buf = new Uint8Array(32) // 8 codes × 4 bytes each
+      crypto.getRandomValues(buf)
+      backupCodes = Array.from({ length: 8 }, (_, i) => {
+        const start = i * 4
+        return Array.from(buf.slice(start, start + 4))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .toUpperCase()
+      })
+    } catch (backupErr) {
+      console.error('MFA backup codes generation failed (non-critical):', backupErr)
+    }
 
     return NextResponse.json({
       enabled: true,
