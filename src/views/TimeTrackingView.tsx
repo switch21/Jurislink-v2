@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, COMM_TYPE_LABELS, COMM_TYPE_COLORS, COMM_STATUS_LABELS, COMM_STATUS_COLORS, QUICK_TEMPLATES } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/useFormDraft'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== TIME TRACKING VIEW ====================
 const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
@@ -14,13 +15,21 @@ const TEMPLATE_CATEGORIES: Record<string, { label: string; color: string }> = {
 }
 
 export function TimeTrackingView() {
-  const { user } = useAppStore()
+  const { user, setHasUnsavedChanges } = useAppStore()
   const qc = useQueryClient()
   const [timerState, setTimerState] = useState<'idle' | 'running' | 'paused'>('idle')
   const [elapsed, setElapsed] = useState(0)
   const [timerDesc, setTimerDesc] = useState('')
   const [timerCaseId, setTimerCaseId] = useState('')
   const [timerIsBillable, setTimerIsBillable] = useState(true)
+  const timerFormData = useMemo(() => ({ description: timerDesc, caseId: timerCaseId, isBillable: timerIsBillable }), [timerDesc, timerCaseId, timerIsBillable])
+  const { restoredDraft: ttRestoredDraft, isDirty: ttIsDirty, clearDraft: clearTtDraft, getDraft: getTtDraft } = useFormDraft('time-tracking-form', timerFormData as unknown as Record<string, unknown>, { enabled: timerState === 'idle' })
+
+  // Sync dirty state with global store
+  useEffect(() => { registerDirtyForm('time-tracking-form', ttIsDirty); setHasUnsavedChanges(ttIsDirty); return () => { unregisterDirtyForm('time-tracking-form') } }, [ttIsDirty])
+
+  // Restore draft on mount
+  useEffect(() => { if (ttRestoredDraft) { const draft = getTtDraft(); if (draft) { if (draft.description) setTimerDesc(draft.description as string); if (draft.caseId) setTimerCaseId(draft.caseId as string); if (typeof draft.isBillable === 'boolean') setTimerIsBillable(draft.isBillable) } } }, [ttRestoredDraft])
   const [dateRange, setDateRange] = useState('week')
   const [filterCaseId, setFilterCaseId] = useState('')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -53,7 +62,7 @@ export function TimeTrackingView() {
 
   const createMut = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch('/api/time-entries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { toast.success('Temps enregistré'); qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-summary'] }) },
+    onSuccess: () => { toast.success('Temps enregistré'); qc.invalidateQueries({ queryKey: ['time-entries'] }); qc.invalidateQueries({ queryKey: ['time-summary'] }); clearTtDraft() },
     onError: () => toast.error('Erreur lors de l\'enregistrement'),
   })
 

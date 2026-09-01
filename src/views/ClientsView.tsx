@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, RISK_COLORS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
-import { useDraftSave } from '@/hooks/useDraftSave'
+import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/useFormDraft'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== CLIENTS VIEW ====================
 export function ClientsView() {
-  const { user, setCurrentView } = useAppStore()
+  const { user, setCurrentView, setHasUnsavedChanges } = useAppStore()
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -15,7 +15,14 @@ export function ClientsView() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [form, setForm] = useState({ fullName: '', company: '', email: '', phone: '', address: '', city: '', country: 'Cameroun', notes: '', clientType: 'particulier', niu: '', riskLevel: 'faible', source: '', isActive: true })
-  const { hasDraft: clientHasDraft, clearDraft: clearClientDraft } = useDraftSave('client-form', form, { enabled: dialogOpen })
+  const { restoredDraft: clientRestoredDraft, isDirty: clientIsDirty, clearDraft: clearClientDraft, getDraft: getClientDraft } = useFormDraft('client-form', form as unknown as Record<string, unknown>, { enabled: dialogOpen })
+  const clientHasDraft = clientIsDirty
+
+  // Sync dirty state with global store
+  useEffect(() => { registerDirtyForm('client-form', clientIsDirty); setHasUnsavedChanges(clientIsDirty); return () => { unregisterDirtyForm('client-form') } }, [clientIsDirty])
+
+  // Restore draft on mount
+  useEffect(() => { if (clientRestoredDraft) { const draft = getClientDraft(); if (draft && draft.fullName) setForm(draft as typeof form) } }, [clientRestoredDraft])
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ['clients', user?.tenantId, search],
@@ -41,7 +48,7 @@ export function ClientsView() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...body }: Record<string, unknown>) => fetch(`/api/clients/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success('Client mis à jour'); setDialogOpen(false); resetForm() },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success('Client mis à jour'); setDialogOpen(false); resetForm(); clearClientDraft() },
     onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
@@ -64,8 +71,8 @@ export function ClientsView() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-lg font-semibold">Clients</h2>
         <Button onClick={() => {
-          const draft = (typeof window !== 'undefined') ? (() => { try { const s = localStorage.getItem('jurislink_draft_client-form'); return s ? JSON.parse(s) : null } catch { return null } })() : null
-          if (draft && draft.fullName) { setForm(draft); toast.info('Brouillon restauré') } else { resetForm() }
+          const draft = getClientDraft()
+          if (draft && draft.fullName) { setForm(draft as typeof form); toast.info('Brouillon restauré') } else { resetForm() }
           setDialogOpen(true)
         }} size="sm"><Plus className="size-4 mr-1" />Nouveau client{clientHasDraft && <span className="ml-1 size-2 rounded-full bg-amber-400 inline-block" title="Brouillon enregistré" />}</Button>
       </div>

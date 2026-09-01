@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, INVOICE_TYPE_LABELS, INVOICE_TYPE_COLORS, PAYMENT_METHOD_LABELS, PAYMENT_METHOD_COLORS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/useFormDraft'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== INVOICES VIEW ====================
 export function InvoicesView() {
-  const { user } = useAppStore()
+  const { user, setHasUnsavedChanges } = useAppStore()
   const qc = useQueryClient()
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -17,6 +18,13 @@ export function InvoicesView() {
   const [payForm, setPayForm] = useState({ amount: '', method: 'virement', reference: '', paidAt: new Date().toISOString().slice(0, 10), notes: '' })
   const [lineItems, setLineItems] = useState<Array<{ description: string; quantity: number; unitPrice: number }>>([{ description: '', quantity: 1, unitPrice: 0 }])
   const [createForm, setCreateForm] = useState({ type: 'facture', clientId: '', caseId: '', currencyId: '', dueDate: '', billingType: 'forfait', notes: '', taxRate: '0', discountAmount: '0', terms: '' })
+  const { restoredDraft: invoiceRestoredDraft, isDirty: invoiceIsDirty, clearDraft: clearInvoiceDraft, getDraft: getInvoiceDraft } = useFormDraft('invoice-form', createForm as unknown as Record<string, unknown>, { enabled: createOpen })
+
+  // Sync dirty state with global store
+  useEffect(() => { registerDirtyForm('invoice-form', invoiceIsDirty); setHasUnsavedChanges(invoiceIsDirty); return () => { unregisterDirtyForm('invoice-form') } }, [invoiceIsDirty])
+
+  // Restore draft on mount
+  useEffect(() => { if (invoiceRestoredDraft) { const draft = getInvoiceDraft(); if (draft && draft.clientId) setCreateForm(draft as typeof createForm) } }, [invoiceRestoredDraft])
   const [timeEntryDialog, setTimeEntryDialog] = useState(false)
   const [selectedTimeEntries, setSelectedTimeEntries] = useState<Set<string>>(new Set())
   const [teClientId, setTeClientId] = useState('')
@@ -77,7 +85,7 @@ export function InvoicesView() {
 
   const createMut = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['invoices'] }); toast.success('Facture créée'); setCreateOpen(false); resetCreateForm() },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['invoices'] }); toast.success('Facture créée'); setCreateOpen(false); resetCreateForm(); clearInvoiceDraft() },
     onError: () => toast.error('Erreur lors de la création'),
   })
 
@@ -130,7 +138,11 @@ export function InvoicesView() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-lg font-semibold">Factures</h2>
         <div className="flex gap-2">
-          <Button onClick={() => { resetCreateForm(); setCreateOpen(true) }} size="sm" className="bg-jl-blue hover:bg-jl-blue"><Plus className="size-4 mr-1" />Nouvelle facture</Button>
+          <Button onClick={() => {
+            const draft = getInvoiceDraft()
+            if (draft && draft.clientId) { setCreateForm(draft as typeof createForm); toast.info('Brouillon restauré') } else { resetCreateForm() }
+            setCreateOpen(true)
+          }} size="sm" className="bg-jl-blue hover:bg-jl-blue"><Plus className="size-4 mr-1" />Nouvelle facture{invoiceIsDirty && <span className="ml-1 size-2 rounded-full bg-amber-400 inline-block" title="Brouillon enregistré" />}</Button>
           <Button onClick={() => { setSelectedTimeEntries(new Set()); setTeClientId(''); setTeCaseId(''); setTimeEntryDialog(true) }} size="sm" variant="outline"><Timer className="size-4 mr-1" />Depuis les temps</Button>
         </div>
       </div>

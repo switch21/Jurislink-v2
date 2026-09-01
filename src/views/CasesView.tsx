@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, SlidersHorizontal, Table2, EmptyState } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS, BILLING_LABELS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
-import { useDraftSave } from '@/hooks/useDraftSave'
+import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/useFormDraft'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData, CaseTag, CaseWithDetails, CasesListResponse } from './types'
 import ReactMarkdown from 'react-markdown'
 
@@ -200,7 +200,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
 
 // ==================== CASES VIEW ====================
 export function CasesView() {
-  const { user, pendingResourceOpen, setPendingResourceOpen } = useAppStore()
+  const { user, pendingResourceOpen, setPendingResourceOpen, setHasUnsavedChanges } = useAppStore()
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -212,7 +212,14 @@ export function CasesView() {
   const [selectedCase, setSelectedCase] = useState<CaseItem | null>(null)
   const [conflicts, setConflicts] = useState<ConflictResult[]>([])
   const [form, setForm] = useState({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', outcome: '', paymentStatus: '', isSecret: false })
-  const { hasDraft: caseHasDraft, clearDraft: clearCaseDraft } = useDraftSave('case-form', form, { enabled: dialogOpen })
+  const { restoredDraft: caseRestoredDraft, isDirty: caseIsDirty, clearDraft: clearCaseDraft, getDraft: getCaseDraft } = useFormDraft('case-form', form as unknown as Record<string, unknown>, { enabled: dialogOpen })
+  const caseHasDraft = caseIsDirty
+
+  // Sync dirty state with global store
+  useEffect(() => { registerDirtyForm('case-form', caseIsDirty); setHasUnsavedChanges(caseIsDirty); return () => { unregisterDirtyForm('case-form') } }, [caseIsDirty])
+
+  // Restore draft on mount
+  useEffect(() => { if (caseRestoredDraft) { const draft = getCaseDraft(); if (draft && draft.title) setForm(draft as typeof form) } }, [caseRestoredDraft])
   const [selectedCollabs, setSelectedCollabs] = useState<string[]>([])
   const [timelineFilter, setTimelineFilter] = useState<Set<string>>(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication']))
   const [showInlineNote, setShowInlineNote] = useState(false)
@@ -505,7 +512,7 @@ export function CasesView() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...body }: Record<string, unknown>) => fetch(`/api/cases/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-tags'] }); toast.success('Dossier mis à jour') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-tags'] }); toast.success('Dossier mis à jour'); clearCaseDraft() },
     onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
@@ -628,8 +635,8 @@ export function CasesView() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-lg font-semibold">Dossiers</h2>
         <Button onClick={() => {
-          const draft = (typeof window !== 'undefined') ? (() => { try { const s = localStorage.getItem('jurislink_draft_case-form'); return s ? JSON.parse(s) : null } catch { return null } })() : null
-          if (draft && draft.title) { setForm(draft); toast.info('Brouillon restauré') } else { resetForm() }
+          const draft = getCaseDraft()
+          if (draft && draft.title) { setForm(draft as typeof form); toast.info('Brouillon restauré') } else { resetForm() }
           setDialogOpen(true)
         }} size="sm"><Plus className="size-4 mr-1" />Nouveau dossier{caseHasDraft && <span className="ml-1 size-2 rounded-full bg-amber-400 inline-block" title="Brouillon enregistré" />}</Button>
       </div>

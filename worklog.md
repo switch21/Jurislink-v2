@@ -2125,3 +2125,66 @@ Stage Summary:
 - Status filter pills on documents view (All / Pending / Rejected)
 - Case detail view documents tab has upload button with pre-filled case
 - All labels in French
+---
+Task ID: form-autosave-integration
+Agent: Sub-agent (form autosave integration)
+Task: Integrate useFormDraft hook into CasesView, ClientsView, InvoicesView, TimeTrackingView
+
+Work Log:
+- Replaced `useDraftSave` import with `useFormDraft, registerDirtyForm, unregisterDirtyForm` from `@/hooks/useFormDraft` in CasesView.tsx and ClientsView.tsx
+- Added `useFormDraft` import to InvoicesView.tsx and TimeTrackingView.tsx (no prior draft mechanism)
+- In all 4 views, added `setHasUnsavedChanges` to the `useAppStore()` destructuring
+- In all 4 views, added `useFormDraft` call with unique key (case-form, client-form, invoice-form, time-tracking-form) and appropriate `enabled` flag (dialog open for cases/clients/invoices, timer idle for time-tracking)
+- In all 4 views, added `useEffect` to sync `isDirty` with `registerDirtyForm`/`unregisterDirtyForm` and `setHasUnsavedChanges`
+- In all 4 views, added `useEffect` to restore draft data on mount when `restoredDraft` is true
+- CasesView: Added `clearCaseDraft()` call to update mutation onSuccess (was missing); updated manual draft restore in button to use `getCaseDraft()` instead of raw localStorage read
+- ClientsView: Added `clearClientDraft()` call to update mutation onSuccess (was missing); updated manual draft restore in button to use `getClientDraft()` instead of raw localStorage read
+- InvoicesView: Added `clearInvoiceDraft()` call to create mutation onSuccess; added draft restore + dirty indicator in "Nouvelle facture" button
+- TimeTrackingView: Combined `timerDesc`, `timerCaseId`, `timerIsBillable` into `timerFormData` via `useMemo`; added `clearTtDraft()` call to create mutation onSuccess; draft enabled only when timer is idle
+- Preserved existing `caseHasDraft`/`clientHasDraft` alias for UI indicator compatibility
+- No type errors introduced (pre-existing errors in seed/validator files are unrelated)
+
+Files modified:
+- src/views/CasesView.tsx
+- src/views/ClientsView.tsx
+- src/views/InvoicesView.tsx
+- src/views/TimeTrackingView.tsx
+---
+Task ID: 18
+Agent: Main Agent
+Task: Persistance d'état au refresh — Autosave formulaires + BeforeUnload guard
+
+Work Log:
+- Verified that view persistence (Approach 1) was ALREADY implemented in appStore.ts (loadSavedView/loadSavedPortalView + setCurrentView saves to localStorage)
+- Created `/home/z/my-project/src/hooks/useFormDraft.ts` — new hook with:
+  - `useFormDraft(key, data, opts)` — autosaves form data to localStorage every 3s, restores on mount
+  - `useBeforeUnload(dirty, message)` — browser warning on close/refresh
+  - `registerDirtyForm`/`unregisterDirtyForm` — global dirty tracking
+  - `clearAllDrafts()` — bulk cleanup
+  - `STORAGE_PREFIX = 'jurislink_draft_'` exported for BeforeUnloadGuard
+- Created `/home/z/my-project/src/components/BeforeUnloadGuard.tsx` — global component:
+  - Shows banner when drafts exist on page load
+  - Registers beforeunload listener (warns when leaving with unsaved changes)
+  - Polls localStorage every 2s to count drafts
+  - "Ignorer les brouillons" button to dismiss
+- Added `hasUnsavedChanges` + `setHasUnsavedChanges` to appStore.ts
+- Integrated BeforeUnloadGuard into all 3 app layouts (portal, admin, dashboard) in page.tsx
+- Migrated 5 views from old `useDraftSave` to new `useFormDraft`:
+  - CasesView.tsx — case create/edit form
+  - ClientsView.tsx — client create/edit form
+  - InvoicesView.tsx — invoice create form
+  - TimeTrackingView.tsx — time entry form
+  - CalendarView.tsx — event create/edit form
+- Each view integration includes: useFormDraft hook, registerDirtyForm/unregisterDirtyForm for global tracking, setHasUnsavedChanges sync, clearDraft on successful submission
+- Deleted obsolete `/home/z/my-project/src/hooks/useDraftSave.ts`
+- Updated version to v3.8.71
+- All lint checks pass (0 errors)
+
+Stage Summary:
+- 3 state persistence approaches implemented:
+  1. ✅ View persistence (was already working via localStorage)
+  2. ✅ Form autosave (new useFormDraft hook, integrated in 5 views)
+  3. ✅ BeforeUnload guard (BeforeUnloadGuard component + global dirty tracking)
+- New files: useFormDraft.ts, BeforeUnloadGuard.tsx
+- Modified: appStore.ts, page.tsx, CasesView.tsx, ClientsView.tsx, InvoicesView.tsx, TimeTrackingView.tsx, CalendarView.tsx
+- Deleted: useDraftSave.ts

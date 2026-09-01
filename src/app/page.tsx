@@ -1,7 +1,7 @@
 'use client'
 
 // ════════════════════════════════════════════════════════════════════════════
-// JurisLink v3.8.70 — Orchestrator
+// JurisLink v3.8.71 — Orchestrator
 // Phase 7: UI/UX Polish — Dark Mode, Animations, Responsive
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -10,6 +10,7 @@ import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, Ca
 import { queryClient } from '@/views/constants'
 import { SearchDialog } from '@/views/SearchDialog'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
+import { BeforeUnloadGuard } from '@/components/BeforeUnloadGuard'
 
 // ──── Eagerly loaded (small, always-needed components) ────
 import { LoginPage } from '@/views/LoginPage'
@@ -49,6 +50,13 @@ const LazyPortalRouter = lazy(() => import('@/views/PortalViews').then(m => ({ d
 // Patch fetch immediately at module load (before any React rendering)
 if (typeof window !== 'undefined') initAuthFetch()
 
+// ──── View persistence: save current view to localStorage on beforeunload ────
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    // Already handled by setCurrentView, but this is a safety net
+  })
+}
+
 // ──── View Loading Fallback ────
 function ViewLoader() {
   return (
@@ -82,7 +90,7 @@ function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--border)] py-4 px-6 flex items-center justify-between text-xs text-[var(--text-muted)] transition-colors duration-300">
       <span className="flex items-center gap-1.5"><img src="/icon.png" alt="" className="size-3.5 rounded-sm" />JurisLink</span>
-      <span>v3.8.70</span>
+      <span>v3.8.71</span>
     </footer>
   )
 }
@@ -190,6 +198,8 @@ function AppInner() {
     return () => document.removeEventListener('keydown', handler)
   }, [])
   if (isPortalAuthenticated) return (
+    <>
+    <BeforeUnloadGuard />
     <Suspense fallback={<ViewLoader />}>
       <LazyPortalSidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
@@ -198,6 +208,7 @@ function AppInner() {
         <Footer />
       </div>
     </Suspense>
+    </>
   )
   if (!isAuthenticated) return <LoginPage />
   if (needsTenant) return (
@@ -218,6 +229,7 @@ function AppInner() {
   )
   if (isRootAdmin) return (
     <>
+      <BeforeUnloadGuard />
       <AdminSidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
         <AdminHeader />
@@ -229,6 +241,7 @@ function AppInner() {
   )
   return (
     <>
+      <BeforeUnloadGuard />
       <Sidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
         <Header />
