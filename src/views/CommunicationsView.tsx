@@ -43,14 +43,14 @@ export function CommunicationsView() {
 
   const sendMut = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch('/api/communications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { toast.success('Communication envoyée'); setShowCompose(false); resetForm(); qc.invalidateQueries({ queryKey: ['communications'] }) },
-    onError: () => toast.error("Erreur lors de l'envoi"),
+    onSuccess: () => { toast.success(t('communications.sentSuccess')); setShowCompose(false); resetForm(); qc.invalidateQueries({ queryKey: ['communications'] }) },
+    onError: () => toast.error(t('communications.sendError')),
   })
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => fetch(`/api/communications/${id}`, { method: 'DELETE' }).then(r => r.json()),
-    onSuccess: () => { toast.success('Communication supprimée'); qc.invalidateQueries({ queryKey: ['communications'] }) },
-    onError: () => toast.error('Erreur lors de la suppression'),
+    onSuccess: () => { toast.success(t('common.delete')); qc.invalidateQueries({ queryKey: ['communications'] }) },
+    onError: () => toast.error(t('common.error')),
   })
 
   const resetForm = () => setForm({ type: 'email', clientId: '', subject: '', content: '', recipientEmail: '', recipientPhone: '' })
@@ -65,9 +65,9 @@ export function CommunicationsView() {
   }
 
   const handleSend = () => {
-    if (form.type === 'email' && !form.recipientEmail) { toast.error('Veuillez renseigner l\'email du destinataire'); return }
-    if (form.type === 'sms' && !form.recipientPhone) { toast.error('Veuillez renseigner le téléphone du destinataire'); return }
-    if (!form.content) { toast.error('Veuillez saisir un message'); return }
+    if (form.type === 'email' && !form.recipientEmail) { toast.error(t('communications.emailRequired')); return }
+    if (form.type === 'sms' && !form.recipientPhone) { toast.error(t('communications.phoneRequired')); return }
+    if (!form.content) { toast.error(t('communications.contentRequired')); return }
     sendMut.mutate({
       tenantId: user?.tenantId, sentById: user?.id,
       clientId: form.clientId || undefined,
@@ -87,36 +87,36 @@ export function CommunicationsView() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-semibold">Communications</h2>
-        <Button size="sm" onClick={() => { resetForm(); setShowCompose(true) }}><SendHorizontal className="size-4 mr-1" />Nouveau message</Button>
+        <h2 className="text-lg font-semibold">{t('communications.title')}</h2>
+        <Button size="sm" onClick={() => { resetForm(); setShowCompose(true) }}><SendHorizontal className="size-4 mr-1" />{t('communications.new')}</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-blue/10 flex items-center justify-center"><Mail className="size-5 text-jl-blue" /></div><div><p className="text-xs text-jl-secondary">Emails envoyés</p><p className="text-lg font-bold text-jl-blue">{summary.totalEmails}</p></div></CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--success)]/10 flex items-center justify-center"><MessageCircle className="size-5 text-[var(--success)]" /></div><div><p className="text-xs text-jl-secondary">SMS envoyés</p><p className="text-lg font-bold text-[var(--success)]">{summary.totalSms}</p></div></CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-gold/10 flex items-center justify-center"><MailCheck className="size-5 text-jl-gold" /></div><div><p className="text-xs text-jl-secondary">Taux d'envoi réussi</p><p className="text-lg font-bold text-jl-gold">{summary.successRate}%</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-blue/10 flex items-center justify-center"><Mail className="size-5 text-jl-blue" /></div><div><p className="text-xs text-jl-secondary">{t('communications.emailsSent')}</p><p className="text-lg font-bold text-jl-blue">{summary.totalEmails}</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--success)]/10 flex items-center justify-center"><MessageCircle className="size-5 text-[var(--success)]" /></div><div><p className="text-xs text-jl-secondary">{t('communications.smsSent')}</p><p className="text-lg font-bold text-[var(--success)]">{summary.totalSms}</p></div></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-gold/10 flex items-center justify-center"><MailCheck className="size-5 text-jl-gold" /></div><div><p className="text-xs text-jl-secondary">{t('communications.sendRate')}</p><p className="text-lg font-bold text-jl-gold">{summary.successRate}%</p></div></CardContent></Card>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tous les types</SelectItem><SelectItem value="email">Email</SelectItem><SelectItem value="sms">SMS</SelectItem><SelectItem value="whatsapp">WhatsApp</SelectItem></SelectContent>
+          <SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder={t('common.type')} /></SelectTrigger>
+          <SelectContent><SelectItem value="all">{t('search.allTypes')}</SelectItem><SelectItem value="email">{t('communications.email')}</SelectItem><SelectItem value="sms">{t('communications.sms')}</SelectItem><SelectItem value="whatsapp">{t('communications.whatsapp')}</SelectItem></SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px] h-9 text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tous les statuts</SelectItem><SelectItem value="sent">Envoyé</SelectItem><SelectItem value="pending">En attente</SelectItem><SelectItem value="failed">Échoué</SelectItem></SelectContent>
+          <SelectTrigger className="w-[150px] h-9 text-xs"><SelectValue placeholder={t('common.status')} /></SelectTrigger>
+          <SelectContent><SelectItem value="all">{t('tasks.allStatuses')}</SelectItem><SelectItem value="sent">{t('communications.sent')}</SelectItem><SelectItem value="pending">{t('communications.pending')}</SelectItem><SelectItem value="failed">{t('communications.failed')}</SelectItem></SelectContent>
         </Select>
         <Select value={clientFilter} onValueChange={setClientFilter}>
-          <SelectTrigger className="w-[180px] h-9 text-xs"><SelectValue placeholder="Tous les clients" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Tous les clients</SelectItem>{(clients || []).map((c: Client) => <SelectItem key={c.id} value={c.id}>{c.fullName}</SelectItem>)}</SelectContent>
+          <SelectTrigger className="w-[180px] h-9 text-xs"><SelectValue placeholder={t('communications.allClients')} /></SelectTrigger>
+          <SelectContent><SelectItem value="all">{t('communications.allClients')}</SelectItem>{(clients || []).map((c: Client) => <SelectItem key={c.id} value={c.id}>{c.fullName}</SelectItem>)}</SelectContent>
         </Select>
       </div>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (comms || []).length === 0 ? <EmptyState icon={SendHorizontal} title="Aucune communication" description="Envoyez votre premier email ou SMS" /> :
+        (comms || []).length === 0 ? <EmptyState icon={SendHorizontal} title={t('communications.noComm')} description={t('communications.sendFirst')} /> :
         <Card><CardContent className="p-0"><div className="max-h-[500px] overflow-y-auto">
           <Table><TableHeader><TableRow>
-            <TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>Destinataire</TableHead><TableHead className="hidden md:table-cell">Sujet</TableHead><TableHead>Statut</TableHead><TableHead className="hidden lg:table-cell">Envoyé par</TableHead><TableHead className="w-[50px]"></TableHead>
+            <TableHead>{t('common.date')}</TableHead><TableHead>{t('common.type')}</TableHead><TableHead>{t('communications.to')}</TableHead><TableHead className="hidden md:table-cell">{t('communications.subject')}</TableHead><TableHead>{t('common.status')}</TableHead><TableHead className="hidden lg:table-cell">{t('communications.sentBy')}</TableHead><TableHead className="w-[50px]"></TableHead>
           </TableRow></TableHeader><TableBody>
             {(comms || []).map((c: Communication) => (
               <TableRow key={c.id}>
@@ -135,7 +135,7 @@ export function CommunicationsView() {
       {/* Compose Dialog */}
       <Dialog open={showCompose} onOpenChange={v => { if (!v) { setShowCompose(false); resetForm() } }}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Nouvelle communication</DialogTitle><DialogDescription>Composez et envoyez un message</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>{t('communications.new')}</DialogTitle><DialogDescription>{t('communications.composeDesc')}</DialogDescription></DialogHeader>
           <div className="space-y-4">
             <div className="flex gap-2">
               {(['email', 'sms', 'whatsapp'] as const).map(t => (
@@ -145,16 +145,16 @@ export function CommunicationsView() {
                 </Button>
               ))}
             </div>
-            <div className="space-y-2"><Label className="text-xs">Client</Label><Select value={form.clientId} onValueChange={handleClientSelect}><SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sélectionner un client" /></SelectTrigger><SelectContent>{(clients || []).map((c: Client) => <SelectItem key={c.id} value={c.id}>{c.fullName}</SelectItem>)}</SelectContent></Select></div>
-            {form.type === 'email' && <div className="space-y-2"><Label className="text-xs">Email destinataire</Label><Input value={form.recipientEmail} onChange={e => setForm(f => ({ ...f, recipientEmail: e.target.value }))} placeholder="email@exemple.com" className="h-9 text-sm" /></div>}
-            {(form.type === 'sms' || form.type === 'whatsapp') && <div className="space-y-2"><Label className="text-xs">Téléphone destinataire</Label><Input value={form.recipientPhone} onChange={e => setForm(f => ({ ...f, recipientPhone: e.target.value }))} placeholder="+237 6XX XXX XXX" className="h-9 text-sm" /></div>}
-            {form.type === 'email' && <div className="space-y-2"><Label className="text-xs">Sujet</Label><Input value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="Sujet du message" className="h-9 text-sm" /></div>}
-            <div className="space-y-2"><Label className="text-xs">Message</Label><Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="Votre message..." className="text-sm min-h-[120px]" /></div>
-            <div className="space-y-2"><Label className="text-xs">Modèle rapide</Label><Select onValueChange={v => { const t = QUICK_TEMPLATES.find(qt => qt.label === v); if (t) setForm(f => ({ ...f, content: t.content })) }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Choisir un modèle..." /></SelectTrigger><SelectContent>{QUICK_TEMPLATES.map(qt => <SelectItem key={qt.label} value={qt.label}>{qt.label}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label className="text-xs">{t('nav.clients')}</Label><Select value={form.clientId} onValueChange={handleClientSelect}><SelectTrigger className="h-9 text-sm"><SelectValue placeholder={t('communications.selectClient')} /></SelectTrigger><SelectContent>{(clients || []).map((c: Client) => <SelectItem key={c.id} value={c.id}>{c.fullName}</SelectItem>)}</SelectContent></Select></div>
+            {form.type === 'email' && <div className="space-y-2"><Label className="text-xs">{t('communications.recipientEmail')}</Label><Input value={form.recipientEmail} onChange={e => setForm(f => ({ ...f, recipientEmail: e.target.value }))} placeholder="email@exemple.com" className="h-9 text-sm" /></div>}
+            {(form.type === 'sms' || form.type === 'whatsapp') && <div className="space-y-2"><Label className="text-xs">{t('communications.recipientPhone')}</Label><Input value={form.recipientPhone} onChange={e => setForm(f => ({ ...f, recipientPhone: e.target.value }))} placeholder="+237 6XX XXX XXX" className="h-9 text-sm" /></div>}
+            {form.type === 'email' && <div className="space-y-2"><Label className="text-xs">{t('communications.subject')}</Label><Input value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder={t('communications.subject')} className="h-9 text-sm" /></div>}
+            <div className="space-y-2"><Label className="text-xs">{t('communications.content')}</Label><Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder={t('communications.contentPlaceholder')} className="text-sm min-h-[120px]" /></div>
+            <div className="space-y-2"><Label className="text-xs">{t('communications.quickTemplates')}</Label><Select onValueChange={v => { const tmpl = QUICK_TEMPLATES.find(qt => qt.label === v); if (tmpl) setForm(f => ({ ...f, content: tmpl.content })) }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder={t('communications.chooseTemplate')} /></SelectTrigger><SelectContent>{QUICK_TEMPLATES.map(qt => <SelectItem key={qt.label} value={qt.label}>{qt.label}</SelectItem>)}</SelectContent></Select></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCompose(false); resetForm() }}>{t('common.cancel')}</Button>
-            <Button onClick={handleSend} disabled={sendMut.isPending}><SendHorizontal className="size-4 mr-1" />Envoyer</Button>
+            <Button onClick={handleSend} disabled={sendMut.isPending}><SendHorizontal className="size-4 mr-1" />{t('common.send')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

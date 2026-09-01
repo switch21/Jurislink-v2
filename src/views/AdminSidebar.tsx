@@ -18,7 +18,7 @@ export function AdminSidebar() {
               active
                 ? 'bg-jl-gold-light text-jl-gold border-l-[3px] border-jl-gold'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--border-light)] border-l-[3px] border-transparent')}>
-            <Icon className='size-5 shrink-0 mr-3' /><span className='whitespace-nowrap'>{item.label}</span>
+            <Icon className='size-5 shrink-0 mr-3' /><span className='whitespace-nowrap'>{item.labelKey ? t(item.labelKey) : item.label}</span>
           </button>
         )
       })}

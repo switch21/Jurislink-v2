@@ -27,7 +27,7 @@ export function Sidebar() {
               active
                 ? 'bg-jl-blue-light text-jl-blue border-l-[3px] border-jl-gold'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--border-light)] border-l-[3px] border-transparent')}>
-            <Icon className='size-5 shrink-0 mr-3' /><span className='whitespace-nowrap flex-1 text-left'>{item.label}</span>
+            <Icon className='size-5 shrink-0 mr-3' /><span className='whitespace-nowrap flex-1 text-left'>{item.labelKey ? t(item.labelKey) : item.label}</span>
             {item.view === 'impayes' && overdueCount > 0 && <span className='size-5 rounded-full bg-[var(--danger)] text-white text-[10px] flex items-center justify-center font-bold shrink-0 animate-pulse-glow'>{overdueCount > 9 ? '9+' : overdueCount}</span>}
           </button>
         )

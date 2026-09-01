@@ -32,44 +32,44 @@ interface SearchResponse {
 
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; label: string; href: (id: string) => string }> = {
   case: {
-    icon: Briefcase, color: 'text-jl-gold', label: 'Dossiers',
+    icon: Briefcase, color: 'text-jl-gold', label: 'nav.cases',
     href: () => 'cases',
   },
   client: {
-    icon: Users, color: 'text-[var(--success)]', label: 'Clients',
+    icon: Users, color: 'text-[var(--success)]', label: 'nav.clients',
     href: () => 'clients',
   },
   task: {
-    icon: ClipboardList, color: 'text-jl-blue', label: 'Tâches',
+    icon: ClipboardList, color: 'text-jl-blue', label: 'nav.tasks',
     href: () => 'tasks',
   },
   document: {
-    icon: FileText, color: 'text-jl-secondary', label: 'Documents',
+    icon: FileText, color: 'text-jl-secondary', label: 'nav.documents',
     href: (id) => `/api/documents/${id}/download`,
   },
   event: {
-    icon: Calendar, color: 'text-jl-gold', label: 'Événements',
+    icon: Calendar, color: 'text-jl-gold', label: 'nav.calendar',
     href: () => 'calendar',
   },
   message: {
-    icon: MessageSquare, color: 'text-jl-blue', label: 'Messages',
+    icon: MessageSquare, color: 'text-jl-blue', label: 'nav.messages',
     href: () => 'messages',
   },
   communication: {
-    icon: Mail, color: 'text-jl-secondary', label: 'Communications',
+    icon: Mail, color: 'text-jl-secondary', label: 'nav.communications',
     href: () => 'communications',
   },
 }
 
 const FILTER_OPTIONS = [
-  { value: 'all', label: 'Tout' },
-  { value: 'cases', label: 'Dossiers' },
-  { value: 'clients', label: 'Clients' },
-  { value: 'tasks', label: 'Tâches' },
-  { value: 'documents', label: 'Documents' },
-  { value: 'events', label: 'Événements' },
-  { value: 'messages', label: 'Messages' },
-  { value: 'communications', label: 'Communications' },
+  { value: 'all', label: 'common.all' },
+  { value: 'cases', label: 'nav.cases' },
+  { value: 'clients', label: 'nav.clients' },
+  { value: 'tasks', label: 'nav.tasks' },
+  { value: 'documents', label: 'nav.documents' },
+  { value: 'events', label: 'nav.calendar' },
+  { value: 'messages', label: 'nav.messages' },
+  { value: 'communications', label: 'nav.communications' },
 ]
 
 export function SearchView() {
@@ -132,7 +132,7 @@ export function SearchView() {
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-lg font-semibold">Recherche avancée</h2>
+        <h2 className="text-lg font-semibold">{t('search.title')}</h2>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -142,7 +142,7 @@ export function SearchView() {
           </div>
           <Input
             ref={inputRef}
-            placeholder="Rechercher dans tous les dossiers, clients, documents, tâches..."
+            placeholder={t('search.placeholder')}
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="pl-10 h-11 text-sm"
@@ -152,7 +152,7 @@ export function SearchView() {
               onClick={() => setQuery('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-jl-muted hover:text-jl-secondary"
             >
-              <span className="text-xs">Effacer</span>
+              <span className="text-xs">{t('common.close')}</span>
             </button>
           )}
         </div>
@@ -200,7 +200,7 @@ export function SearchView() {
       )}
 
       {!loading && debouncedQuery && results && totalResults === 0 && (
-        <EmptyState icon={SearchX} title="Aucun résultat" description={`Aucun résultat trouvé pour ${debouncedQuery}`} />
+        <EmptyState icon={SearchX} title={t('common.noResults')} description={t('search.noResultsFor')} />
       )}
 
       {!loading && !debouncedQuery && (
@@ -208,19 +208,19 @@ export function SearchView() {
           <div className="size-16 rounded-2xl bg-jl-blue/10 flex items-center justify-center mb-4">
             <Briefcase className="size-8 text-jl-blue" />
           </div>
-          <p className="text-sm font-medium text-jl-primary">Recherche globale</p>
+          <p className="text-sm font-medium text-jl-primary">{t('search.title')}</p>
           <p className="text-xs text-jl-muted mt-1 max-w-md">
-            Tapez un terme pour rechercher dans tous les dossiers, clients, documents, tâches, événements, messages et communications.
+            {t('search.description')}
           </p>
           <p className="text-[10px] text-jl-muted mt-3">
-            Vous pouvez aussi utiliser <kbd className="px-1.5 py-0.5 rounded bg-jl-page border border-jl font-mono text-[10px]">⌘K</kbd> depuis n&apos;importe quelle page pour une recherche rapide.
+            {t('search.kbdHint')}
           </p>
         </div>
       )}
 
       {!loading && results && totalResults > 0 && (
         <div className="space-y-6">
-          <p className="text-xs text-jl-muted">{totalResults} résultat{totalResults > 1 ? 's' : ''} trouvé{totalResults > 1 ? 's' : ''}</p>
+          <p className="text-xs text-jl-muted">{totalResults} {t('common.results')}</p>
 
           {categoryOrder.map(catKey => {
             const apiKey = catKey + 's'
@@ -234,7 +234,7 @@ export function SearchView() {
               <div key={catKey}>
                 <div className="flex items-center gap-2 mb-3">
                   <CatIcon className={cn('size-4', config.color)} />
-                  <h3 className="text-sm font-semibold">{config.label}</h3>
+                  <h3 className="text-sm font-semibold">{t(config.label)}</h3>
                   <Badge variant="secondary" className="text-[10px]">{items.length}</Badge>
                 </div>
                 <div className="space-y-2">
@@ -279,7 +279,7 @@ export function SearchView() {
                             {item.eventType && <Badge variant="outline" className="text-[10px]">{EVENT_typeLabel(item.eventType)}</Badge>}
                             {item.fileSize && <span className="text-[10px] text-jl-muted">{fmtFileSize(item.fileSize)}</span>}
                             {item.createdAt && <span className="text-[10px] text-jl-muted">{fmtDate(item.createdAt)}</span>}
-                            {item.dueDate && <span className="text-[10px] text-jl-muted">Échéance: {fmtDate(item.dueDate)}</span>}
+                            {item.dueDate && <span className="text-[10px] text-jl-muted">{t('tasks.dueDate')}: {fmtDate(item.dueDate)}</span>}
                             {item.startTime && <span className="text-[10px] text-jl-muted">{fmtDateTime(item.startTime)}</span>}
                           </div>
                         </CardContent>

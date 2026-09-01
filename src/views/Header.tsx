@@ -66,7 +66,7 @@ export function Header() {
   const [dropdownFilter, setDropdownFilter] = useState('all')
   const prevUnreadRef = useRef(0)
   const [badgePulse, setBadgePulse] = useState(false)
-  const viewLabel = NAV_ITEMS.find(n => n.view === currentView)?.label || ADMIN_NAV_ITEMS.find(n => n.view === currentView)?.label || 'JurisLink'
+  const viewLabel = (() => { const item = NAV_ITEMS.find(n => n.view === currentView) || ADMIN_NAV_ITEMS.find(n => n.view === currentView); return item?.labelKey ? t(item.labelKey) : item?.label || 'JurisLink' })()
 
   // Polling hook — 30s interval, auto-pauses when unauthenticated
   const { notifications, unreadCount, refetchNow } = usePollingNotifications(!!user?.tenantId)

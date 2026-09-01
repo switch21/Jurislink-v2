@@ -6,25 +6,25 @@ import type { Notification, ViewName } from './types'
 
 // Category config
 const CAT_TABS = [
-  { value: 'all', label: 'Tous', icon: Bell },
-  { value: 'dossier', label: 'Dossiers', icon: Briefcase },
-  { value: 'echeance', label: 'Échéances', icon: Calendar },
-  { value: 'facture', label: 'Factures', icon: Receipt },
-  { value: 'document', label: 'Documents', icon: FileText },
-  { value: 'tache', label: 'Tâches', icon: ClipboardList },
-  { value: 'message', label: 'Messages', icon: MessageSquare },
+  { value: 'all', label: 'common.all', icon: Bell },
+  { value: 'dossier', label: 'nav.cases', icon: Briefcase },
+  { value: 'echeance', label: 'search.echeances', icon: Calendar },
+  { value: 'facture', label: 'nav.invoices', icon: Receipt },
+  { value: 'document', label: 'nav.documents', icon: FileText },
+  { value: 'tache', label: 'nav.tasks', icon: ClipboardList },
+  { value: 'message', label: 'nav.messages', icon: MessageSquare },
 ]
 
 const CAT_COLORS: Record<string, string> = { dossier: 'text-jl-gold', echeance: 'text-[var(--accent)]', facture: 'text-[var(--danger)]', document: 'text-jl-secondary', tache: 'text-jl-blue', message: 'text-[var(--success)]' }
 
 const EMPTY_MESSAGES: Record<string, { title: string; description: string }> = {
-  all: { title: 'Aucune notification', description: 'Vous êtes à jour !' },
-  dossier: { title: 'Aucune notification de dossier', description: 'Pas de mise à jour sur vos dossiers' },
-  echeance: { title: 'Aucune échéance', description: 'Pas d\'échéance à venir' },
-  facture: { title: 'Aucune notification de facture', description: 'Pas de mise à jour sur vos factures' },
-  document: { title: 'Aucun document récent', description: 'Pas de nouveau document ajouté' },
-  tache: { title: 'Aucune tâche', description: 'Pas de notification de tâche' },
-  message: { title: 'Aucun message', description: 'Pas de nouveau message' },
+  all: { title: 'notifications.noNotif', description: 'notifications.allCaughtUp' },
+  dossier: { title: 'notifications.noCaseNotif', description: 'notifications.noCaseUpdate' },
+  echeance: { title: 'notifications.noDeadline', description: 'notifications.noDeadlineUpcoming' },
+  facture: { title: 'notifications.noInvoiceNotif', description: 'notifications.noInvoiceUpdate' },
+  document: { title: 'notifications.noRecentDoc', description: 'notifications.noNewDoc' },
+  tache: { title: 'notifications.noTaskNotif', description: 'notifications.noTaskNotifDesc' },
+  message: { title: 'notifications.noMessage', description: 'notifications.noNewMessage' },
 }
 
 // Map category/resourceType → view
@@ -80,7 +80,7 @@ export function NotificationsView() {
   // Mark all read
   const markAllRead = useMutation({
     mutationFn: () => fetch(`/api/notifications/read-all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user?.id, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: (data) => { toast.success(`Toutes les notifications marquées comme lues (${data?.updated ?? 0})`); qc.invalidateQueries({ queryKey: ['notifications'] }) },
+    onSuccess: (data) => { toast.success(`${t('notifications.allMarkedRead')} (${data?.updated ?? 0})`); qc.invalidateQueries({ queryKey: ['notifications'] }) },
     onError: () => toast.error(t('common.error')),
   })
 
@@ -93,8 +93,8 @@ export function NotificationsView() {
   // Bulk delete
   const deleteBulk = useMutation({
     mutationFn: (ids: string[]) => Promise.all(ids.map(id => fetch(`/api/notifications/${id}`, { method: 'DELETE' }))),
-    onSuccess: () => { toast.success(`${selectedCount} notification(s) supprimée(s)`); setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ['notifications'] }) },
-    onError: () => toast.error('Erreur lors de la suppression'),
+    onSuccess: () => { toast.success(`${selectedCount} ${t('notifications.deleted')}`); setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ['notifications'] }) },
+    onError: () => toast.error(t('common.error')),
   })
 
   // Toggle select one
@@ -149,8 +149,8 @@ export function NotificationsView() {
       {/* Header row */}
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
         <div className='flex items-center gap-3'>
-          <h2 className='text-lg font-semibold text-jl-primary'>Notifications</h2>
-          {unreadCount > 0 && <Badge className='bg-[var(--danger)] text-white text-[10px]'>{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</Badge>}
+          <h2 className='text-lg font-semibold text-jl-primary'>{t('notifications.title')}</h2>
+          {unreadCount > 0 && <Badge className='bg-[var(--danger)] text-white text-[10px]'>{unreadCount} {t('notifications.unread')}</Badge>}
         </div>
         <div className='flex items-center gap-2'>
           {selectedCount > 0 && (
@@ -158,11 +158,11 @@ export function NotificationsView() {
               onClick={() => deleteBulk.mutate(Array.from(selectedIds))}
               disabled={deleteBulk.isPending}
             >
-              <Trash2 className='size-3.5 mr-1' />Supprimer ({selectedCount})
+              <Trash2 className='size-3.5 mr-1' />{t('notifications.delete')} ({selectedCount})
             </Button>
           )}
           <Button variant='outline' size='sm' onClick={() => markAllRead.mutate()} disabled={markAllRead.isPending || unreadCount === 0} className='text-xs h-8'>
-            <CheckCheck className='size-3.5 mr-1' />Tout marquer comme lu
+            <CheckCheck className='size-3.5 mr-1' />{t('notifications.markAllRead')}
           </Button>
         </div>
       </div>
@@ -179,7 +179,7 @@ export function NotificationsView() {
           />
         </div>
         <Button size='sm' variant={unreadOnly ? 'default' : 'outline'} className={cn('text-xs h-8 shrink-0', unreadOnly && 'bg-jl-gold hover:bg-[#926B2D] text-white')} onClick={() => setUnreadOnly(!unreadOnly)}>
-          {unreadOnly ? 'Non lues uniquement' : 'Toutes'}
+          {unreadOnly ? t('notifications.unreadOnly') : t('common.all')}
         </Button>
       </div>
 
@@ -189,7 +189,7 @@ export function NotificationsView() {
           const Icon = ct.icon
           return (
             <Button key={ct.value} size='sm' variant={category === ct.value ? 'default' : 'outline'} className={cn('text-xs h-8 gap-1.5', category === ct.value && 'bg-jl-blue hover:bg-jl-blue')} onClick={() => setCategory(ct.value)}>
-              <Icon className='size-3.5' />{ct.label}
+              <Icon className='size-3.5' />{t(ct.label)}
             </Button>
           )
         })}
@@ -211,8 +211,8 @@ export function NotificationsView() {
       ) : paginatedNotifs.length === 0 ? (
         <EmptyState
           icon={CAT_TABS.find(c => c.value === category)?.icon || Bell}
-          title={EMPTY_MESSAGES[category]?.title || EMPTY_MESSAGES.all.title}
-          description={EMPTY_MESSAGES[category]?.description || EMPTY_MESSAGES.all.description}
+          title={t(EMPTY_MESSAGES[category]?.title || EMPTY_MESSAGES.all.title)}
+          description={t(EMPTY_MESSAGES[category]?.description || EMPTY_MESSAGES.all.description)}
         />
       ) : (
         <>
@@ -221,9 +221,9 @@ export function NotificationsView() {
             <Checkbox
               checked={allOnPageSelected}
               onCheckedChange={toggleSelectAll}
-              aria-label='Sélectionner tout sur cette page'
+              aria-label={t('notifications.selectAllPage')}
             />
-            <span>{allNotifs.length} notification{allNotifs.length > 1 ? 's' : ''}{category !== 'all' ? ` dans ${CAT_TABS.find(c => c.value === category)?.label}` : ''}</span>
+            <span>{allNotifs.length} {t('notifications.notificationCount')}{category !== 'all' ? ` ${t('notifications.in')} ${t(CAT_TABS.find(c => c.value === category)?.label || 'common.all')}` : ''}</span>
           </div>
 
           {/* Notification list */}
@@ -255,7 +255,7 @@ export function NotificationsView() {
                               checked={isSelected}
                               onCheckedChange={() => toggleSelect(n.id)}
                               onClick={e => e.stopPropagation()}
-                              aria-label={`Sélectionner: ${n.title}`}
+                              aria-label={`${t('common.select')}: ${n.title}`}
                             />
                           </div>
 
@@ -276,7 +276,7 @@ export function NotificationsView() {
                               <span className='text-[10px] text-jl-muted'>{relativeTime(n.createdAt)}</span>
                               {hasResource && (
                                 <button className='text-[10px] text-jl-blue hover:underline flex items-center gap-0.5' onClick={e => { e.stopPropagation(); handleNotifClick(n) }}>
-                                  Ouvrir <ExternalLink className='size-2.5' />
+                                  {t('notifications.open')} <ExternalLink className='size-2.5' />
                                 </button>
                               )}
                             </div>
@@ -287,7 +287,7 @@ export function NotificationsView() {
                             variant='ghost' size='icon' className='size-7 shrink-0 opacity-0 group-hover:opacity-100 hover:text-[var(--danger)] transition-opacity'
                             onClick={e => { e.stopPropagation(); deleteOne.mutate(n.id) }}
                             disabled={deleteOne.isPending}
-                            aria-label='Supprimer cette notification'
+                            aria-label={t('notifications.deleteNotif')}
                           >
                             <X className='size-4' />
                           </Button>
@@ -304,7 +304,7 @@ export function NotificationsView() {
           {totalPages > 1 && (
             <div className='flex items-center justify-between pt-2'>
               <p className='text-xs text-jl-muted'>
-                Page {page} sur {totalPages} ({allNotifs.length} résultat{allNotifs.length > 1 ? 's' : ''})
+                {t('notifications.page')} {page} {t('common.of')} {totalPages} ({allNotifs.length} {t('common.results')})
               </p>
               <div className='flex items-center gap-1'>
                 <Button variant='outline' size='icon' className='size-8' disabled={page <= 1} onClick={() => setPage(p => p - 1)}>

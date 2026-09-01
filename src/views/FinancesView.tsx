@@ -88,7 +88,7 @@ export function FinancesView() {
   const filteredTotal = useMemo(() => filteredPayments.reduce((s, p) => s + p.amount, 0), [filteredPayments])
 
   const exportCSV = useCallback(() => {
-    const rows = [['Date', 'Client', 'Facture', 'Montant', 'Méthode', 'Enregistré par']]
+    const rows = [[t('common.date'), t('nav.clients'), t('nav.invoices'), t('common.amount'), t('finances.method'), t('finances.recordedBy')]]
     for (const p of filteredPayments) {
       rows.push([
         p.paidAt ? format(parseISO(p.paidAt), 'yyyy-MM-dd') : '',
@@ -120,7 +120,7 @@ export function FinancesView() {
       const a = document.createElement('a')
       a.href = url; a.download = `finances_${format(new Date(), 'yyyy-MM-dd')}.xlsx`; a.click()
       URL.revokeObjectURL(url)
-    } catch { toast.error('Erreur export Excel') }
+    } catch { toast.error(t('finances.exportExcelError')) }
   }, [user?.tenantId, dateRange, clientFilter])
 
   const exportFinPDF = useCallback(async () => {
@@ -136,7 +136,7 @@ export function FinancesView() {
       const a = document.createElement('a')
       a.href = url; a.download = `rapport_financier_${format(new Date(), 'yyyy-MM-dd')}.pdf`; a.click()
       URL.revokeObjectURL(url)
-    } catch { toast.error('Erreur export PDF') }
+    } catch { toast.error(t('finances.exportPDFError')) }
   }, [user?.tenantId, dateRange, clientFilter])
 
   const isLoading = dashLoading || payLoading || odLoading
@@ -146,18 +146,18 @@ export function FinancesView() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-semibold">Finances</h2>
+        <h2 className="text-lg font-semibold">{t('finances.title')}</h2>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <Select value={periodFilter} onValueChange={setPeriodFilter}>
           <SelectTrigger className="w-[170px] h-8 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="ce_mois">Ce mois</SelectItem>
-            <SelectItem value="ce_trimestre">Ce trimestre</SelectItem>
-            <SelectItem value="ce_semestre">Ce semestre</SelectItem>
-            <SelectItem value="cette_annee">Cette année</SelectItem>
-            <SelectItem value="personnalise">Personnalisé</SelectItem>
+            <SelectItem value="ce_mois">{t('finances.monthly')}</SelectItem>
+            <SelectItem value="ce_trimestre">{t('finances.quarterly')}</SelectItem>
+            <SelectItem value="ce_semestre">{t('finances.semiAnnual')}</SelectItem>
+            <SelectItem value="cette_annee">{t('finances.annual')}</SelectItem>
+            <SelectItem value="personnalise">{t('finances.custom')}</SelectItem>
           </SelectContent>
         </Select>
         {periodFilter === 'personnalise' && (
@@ -167,9 +167,9 @@ export function FinancesView() {
           </>
         )}
         <Select value={clientFilter} onValueChange={setClientFilter}>
-          <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Tous les clients" /></SelectTrigger>
+          <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder={t('finances.allClients')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les clients</SelectItem>
+            <SelectItem value="all">{t('finances.allClients')}</SelectItem>
             {(Array.isArray(finClients) ? finClients : []).map((c: Client) => (
               <SelectItem key={c.id} value={c.id}>{c.fullName}{c.company ? ` (${c.company})` : ''}</SelectItem>
             ))}
@@ -183,19 +183,19 @@ export function FinancesView() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-blue-light flex items-center justify-center shrink-0"><TrendingUp className="size-5 text-jl-blue" /></div><div className="min-w-0"><p className="text-xs text-jl-secondary">Encaissé (filtré)</p><p className="text-base sm:text-lg font-bold text-jl-blue truncate" title={fmtMoney(filteredTotal)}>{fmtMoney(filteredTotal, 'XAF', true)}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--success)]/10 flex items-center justify-center"><Banknote className="size-5 text-[var(--success)]" /></div><div><p className="text-xs text-jl-secondary">Nb paiements</p><p className="text-lg font-bold text-[var(--success)]">{filteredPayments.length}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--accent-light)] flex items-center justify-center shrink-0"><Clock className="size-5 text-[var(--accent)]" /></div><div className="min-w-0"><p className="text-xs text-jl-secondary">À recouvrer</p><p className="text-base sm:text-lg font-bold text-[var(--accent)] truncate" title={fmtMoney(fin?.toRecover || 0)}>{fmtMoney(fin?.toRecover || 0, 'XAF', true)}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--danger)]/10 flex items-center justify-center"><AlertCircle className="size-5 text-[var(--danger)]" /></div><div><p className="text-xs text-jl-secondary">Impayés</p><p className="text-lg font-bold text-[var(--danger)]">{fin?.overdueInvoicesCount || 0} facture{(fin?.overdueInvoicesCount || 0) !== 1 ? 's' : ''}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-jl-blue-light flex items-center justify-center shrink-0"><TrendingUp className="size-5 text-jl-blue" /></div><div className="min-w-0"><p className="text-xs text-jl-secondary">{t('finances.filteredCollected')}</p><p className="text-base sm:text-lg font-bold text-jl-blue truncate" title={fmtMoney(filteredTotal)}>{fmtMoney(filteredTotal, 'XAF', true)}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--success)]/10 flex items-center justify-center"><Banknote className="size-5 text-[var(--success)]" /></div><div><p className="text-xs text-jl-secondary">{t('finances.paymentCount')}</p><p className="text-lg font-bold text-[var(--success)]">{filteredPayments.length}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--accent-light)] flex items-center justify-center shrink-0"><Clock className="size-5 text-[var(--accent)]" /></div><div className="min-w-0"><p className="text-xs text-jl-secondary">{t('finances.toRecover')}</p><p className="text-base sm:text-lg font-bold text-[var(--accent)] truncate" title={fmtMoney(fin?.toRecover || 0)}>{fmtMoney(fin?.toRecover || 0, 'XAF', true)}</p></div></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="size-10 rounded-lg bg-[var(--danger)]/10 flex items-center justify-center"><AlertCircle className="size-5 text-[var(--danger)]" /></div><div><p className="text-xs text-jl-secondary">{t('nav.impayes')}</p><p className="text-lg font-bold text-[var(--danger)]">{fin?.overdueInvoicesCount || 0} {t('finances.invoiceCount')}</p></div></div></CardContent></Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><CreditCard className="size-4 text-jl-blue" />Paiements récents</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><CreditCard className="size-4 text-jl-blue" />{t('finances.recentPayments')}</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0">
-            {filteredPayments.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucun paiement</p> : (
+            {filteredPayments.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">{t('finances.noPayment')}</p> : (
               <div className="max-h-96 overflow-y-auto">
-                <Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Client</TableHead><TableHead className="hidden sm:table-cell">Facture</TableHead><TableHead className="text-right">Montant</TableHead><TableHead className="hidden md:table-cell">Méthode</TableHead><TableHead className="hidden lg:table-cell">Enregistré par</TableHead></TableRow></TableHeader><TableBody>
+                <Table><TableHeader><TableRow><TableHead>{t('common.date')}</TableHead><TableHead>{t('nav.clients')}</TableHead><TableHead className="hidden sm:table-cell">{t('nav.invoices')}</TableHead><TableHead className="text-right">{t('common.amount')}</TableHead><TableHead className="hidden md:table-cell">{t('finances.method')}</TableHead><TableHead className="hidden lg:table-cell">{t('finances.recordedBy')}</TableHead></TableRow></TableHeader><TableBody>
                   {filteredPayments.slice(0, 20).map((p: Payment) => (
                     <TableRow key={p.id}>
                       <TableCell className="text-sm text-jl-secondary">{fmtDate(p.paidAt)}</TableCell>
@@ -213,9 +213,9 @@ export function FinancesView() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Wallet className="size-4 text-jl-gold" />Répartition par méthode</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Wallet className="size-4 text-jl-gold" />{t('finances.byMethod')}</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0">
-            {methodBreakdown.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune donnée</p> : (
+            {methodBreakdown.length === 0 ? <p className="text-sm text-jl-muted text-center py-8">{t('common.noData')}</p> : (
               <div className="space-y-3">
                 {methodBreakdown.map(([method, amount]) => {
                   const pct = filteredTotal > 0 ? (amount / filteredTotal) * 100 : 0
@@ -234,7 +234,7 @@ export function FinancesView() {
 
       {overdueList.length > 0 && (
         <Card className="border-l-4 border-l-[#DC2626]">
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2 text-[var(--danger)]"><AlertTriangle className="size-4" />Factures en retard ({overdueList.length})</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2 text-[var(--danger)]"><AlertTriangle className="size-4" />{t('finances.overdueInvoices')} ({overdueList.length})</CardTitle></CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="max-h-64 overflow-y-auto space-y-2">
               {overdueList.map(inv => (
@@ -245,7 +245,7 @@ export function FinancesView() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-semibold">{fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</p>
-                    <p className="text-[10px] font-semibold text-[var(--danger)]">{inv.daysOverdue}j de retard</p>
+                    <p className="text-[10px] font-semibold text-[var(--danger)]">{t('finances.daysLate')}</p>
                   </div>
                 </div>
               ))}

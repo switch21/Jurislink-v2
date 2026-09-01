@@ -37,20 +37,20 @@ export function TasksView() {
 
   const createMut = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success('Tâche créée'); setDialogOpen(false); resetForm() },
-    onError: () => toast.error('Erreur lors de la création'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success(t('tasks.taskCreated')); setDialogOpen(false); resetForm() },
+    onError: () => toast.error(t('tasks.createError')),
   })
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...body }: Record<string, unknown>) => fetch(`/api/tasks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success('Tâche mise à jour') },
-    onError: () => toast.error('Erreur lors de la mise à jour'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success(t('tasks.taskUpdated')) },
+    onError: () => toast.error(t('tasks.updateError')),
   })
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => fetch(`/api/tasks/${id}`, { method: 'DELETE' }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success('Tâche supprimée') },
-    onError: () => toast.error('Erreur lors de la suppression'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success(t('tasks.taskDeleted')) },
+    onError: () => toast.error(t('tasks.deleteError')),
   })
 
   const resetForm = () => { setForm({ title: '', description: '', priority: 'normal', dueDate: '', caseId: '' }); setEditing(null) }
@@ -72,42 +72,42 @@ export function TasksView() {
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-lg font-semibold">Tâches</h2>
-        <Button onClick={() => { resetForm(); setDialogOpen(true) }} size="sm"><Plus className="size-4 mr-1" />Nouvelle tâche</Button>
+        <h2 className="text-lg font-semibold">{t('tasks.title')}</h2>
+        <Button onClick={() => { resetForm(); setDialogOpen(true) }} size="sm"><Plus className="size-4 mr-1" />{t('tasks.new')}</Button>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px] h-9 text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
+          <SelectTrigger className="w-[160px] h-9 text-xs"><SelectValue placeholder={t('common.status')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="a_faire">À faire</SelectItem>
-            <SelectItem value="en_cours">En cours</SelectItem>
-            <SelectItem value="terminee">Terminée</SelectItem>
+            <SelectItem value="all">{t('tasks.allStatuses')}</SelectItem>
+            <SelectItem value="a_faire">{t('tasks.statusTodo')}</SelectItem>
+            <SelectItem value="en_cours">{t('tasks.inProgress')}</SelectItem>
+            <SelectItem value="terminee">{t('tasks.completed')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[150px] h-9 text-xs"><SelectValue placeholder="Priorité" /></SelectTrigger>
+          <SelectTrigger className="w-[150px] h-9 text-xs"><SelectValue placeholder={t('tasks.priority')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes les priorités</SelectItem>
-            <SelectItem value="normal">Normal</SelectItem>
-            <SelectItem value="haute">Haute</SelectItem>
-            <SelectItem value="urgente">Urgente</SelectItem>
+            <SelectItem value="all">{t('tasks.allPriorities')}</SelectItem>
+            <SelectItem value="normal">{t('tasks.normal')}</SelectItem>
+            <SelectItem value="haute">{t('tasks.high')}</SelectItem>
+            <SelectItem value="urgente">{t('tasks.urgent')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        tasks.length === 0 ? <EmptyState icon={ClipboardList} title="Aucune tâche" description="Créez votre première tâche" /> :
+        tasks.length === 0 ? <EmptyState icon={ClipboardList} title={t('tasks.noTask')} description={t('tasks.createFirst')} /> :
         <Card><CardContent className="p-0"><div className="max-h-[500px] overflow-y-auto">
           <Table><TableHeader><TableRow>
             <TableHead className="w-8"></TableHead>
-            <TableHead>Titre</TableHead>
-            <TableHead className="hidden md:table-cell">Priorité</TableHead>
-            <TableHead className="hidden sm:table-cell">Statut</TableHead>
-            <TableHead className="hidden lg:table-cell">Assigné à</TableHead>
-            <TableHead className="hidden lg:table-cell">Échéance</TableHead>
-            <TableHead className="w-24">Actions</TableHead>
+            <TableHead>{t('tasks.titleLabel')}</TableHead>
+            <TableHead className="hidden md:table-cell">{t('tasks.priority')}</TableHead>
+            <TableHead className="hidden sm:table-cell">{t('common.status')}</TableHead>
+            <TableHead className="hidden lg:table-cell">{t('tasks.assignTo')}</TableHead>
+            <TableHead className="hidden lg:table-cell">{t('tasks.dueDate')}</TableHead>
+            <TableHead className="w-24">{t('common.actions')}</TableHead>
           </TableRow></TableHeader><TableBody>
             {tasks.map(t => {
               const isDone = t.status === 'terminee' || t.status === 'done'
@@ -116,7 +116,7 @@ export function TasksView() {
                 <TableCell className="font-medium"><span className={cn(isDone && 'line-through')}>{t.title}</span>{t.case?.reference && <p className="text-[10px] text-jl-muted">{t.case.reference}</p>}</TableCell>
                 <TableCell className="hidden md:table-cell"><Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[t.priority])}>{PRIORITY_LABELS[t.priority] || t.priority}</Badge></TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="text-[10px] h-7 gap-1"><Badge variant="outline" className={cn('text-[10px] border-0 p-0', taskStatusColor(t.status))}>{taskStatusLabel(t.status)}</Badge><ChevronDown className="size-3" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => { if (t.status !== 'a_faire') updateMut.mutate({ id: t.id, status: 'a_faire' }) }}><CircleDot className="size-3 mr-2" />À faire</DropdownMenuItem><DropdownMenuItem onClick={() => { if (t.status !== 'en_cours') updateMut.mutate({ id: t.id, status: 'en_cours' }) }}><Timer className="size-3 mr-2" />En cours</DropdownMenuItem><DropdownMenuItem onClick={() => { if (t.status !== 'terminee') updateMut.mutate({ id: t.id, status: 'terminee' }) }}><CheckCircle2 className="size-3 mr-2" />Terminée</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+                  <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" size="sm" className="text-[10px] h-7 gap-1"><Badge variant="outline" className={cn('text-[10px] border-0 p-0', taskStatusColor(t.status))}>{taskStatusLabel(t.status)}</Badge><ChevronDown className="size-3" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => { if (t.status !== 'a_faire') updateMut.mutate({ id: t.id, status: 'a_faire' }) }}><CircleDot className="size-3 mr-2" />{taskStatusLabel('a_faire')}</DropdownMenuItem><DropdownMenuItem onClick={() => { if (t.status !== 'en_cours') updateMut.mutate({ id: t.id, status: 'en_cours' }) }}><Timer className="size-3 mr-2" />{taskStatusLabel('en_cours')}</DropdownMenuItem><DropdownMenuItem onClick={() => { if (t.status !== 'terminee') updateMut.mutate({ id: t.id, status: 'terminee' }) }}><CheckCircle2 className="size-3 mr-2" />{taskStatusLabel('terminee')}</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
                 </TableCell>
                 <TableCell className="hidden lg:table-cell"><div className="flex items-center gap-1.5">{t.assignedUsers && t.assignedUsers.length > 0 ? <><Avatar className="size-5"><AvatarFallback className="text-[8px] bg-jl-blue text-white">{initials(t.assignedUsers[0].fullName)}</AvatarFallback></Avatar><span className="text-xs text-jl-secondary">{t.assignedUsers[0].fullName}</span></> : <span className="text-xs text-jl-muted">—</span>}</div></TableCell>
                 <TableCell className="hidden lg:table-cell text-sm text-jl-secondary">{fmtDate(t.dueDate)}</TableCell>
@@ -133,19 +133,19 @@ export function TasksView() {
 
       <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) resetForm() }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>{editing ? 'Modifier la tâche' : 'Nouvelle tâche'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? t('tasks.editTask') : t('tasks.new')}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>Titre *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Titre de la tâche" /></div>
-            <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+            <div><Label>{t('tasks.titleLabel')}</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={t('tasks.titlePlaceholder')} /></div>
+            <div><Label>{t('tasks.description')}</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Priorité</Label><Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="basse">Basse</SelectItem><SelectItem value="normal">Normal</SelectItem><SelectItem value="haute">Haute</SelectItem><SelectItem value="urgente">Urgente</SelectItem></SelectContent></Select></div>
-              <div><Label>Échéance</Label><Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+              <div><Label>{t('tasks.priority')}</Label><Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="basse">{t('tasks.low')}</SelectItem><SelectItem value="normal">{t('tasks.normal')}</SelectItem><SelectItem value="haute">{t('tasks.high')}</SelectItem><SelectItem value="urgente">{t('tasks.urgent')}</SelectItem></SelectContent></Select></div>
+              <div><Label>{t('tasks.dueDate')}</Label><Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Dossier</Label><Select value={form.caseId} onValueChange={v => setForm(f => ({ ...f, caseId: v }))}><SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger><SelectContent>{(cases || []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>{t('tasks.case')}</Label><Select value={form.caseId} onValueChange={v => setForm(f => ({ ...f, caseId: v }))}><SelectTrigger><SelectValue placeholder={t('tasks.none')} /></SelectTrigger><SelectContent>{(cases || []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button><Button onClick={handleSubmit} disabled={!form.title.trim() || createMut.isPending || updateMut.isPending}>{editing ? 'Enregistrer' : 'Créer'}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button><Button onClick={handleSubmit} disabled={!form.title.trim() || createMut.isPending || updateMut.isPending}>{editing ? t('common.save') : t('common.create')}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
