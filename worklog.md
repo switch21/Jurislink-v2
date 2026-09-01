@@ -2189,22 +2189,35 @@ Stage Summary:
 - Modified: appStore.ts, page.tsx, CasesView.tsx, ClientsView.tsx, InvoicesView.tsx, TimeTrackingView.tsx, CalendarView.tsx
 - Deleted: useDraftSave.ts
 ---
-Task ID: 1
+Task ID: 11
 Agent: main
-Task: Fix dashboard not displaying data (v3.8.72)
+Task: Diagnostic et fix du 500 Internal Server Error du dashboard + création migration alignement complète
 
 Work Log:
-- Analyzed page.tsx, DashboardView, AdminDashboardView, auth-fetch, appStore, rbac
-- Identified root cause: `fetch().then(r => r.json())` resolves with error objects on 401/403/500 instead of rejecting
-- When API returns `{ error: '...' }`, React Query treats it as valid data → component renders with all fields undefined → empty dashboard
-- Created `/src/lib/api-fetch.ts` utility with `fetchJson()` (throws on !r.ok) and `fetchJsonOrNull()` (returns null on error)
-- Fixed DashboardView: uses fetchJson, shows error state with retry button, handles missing tenantId
-- Fixed AdminDashboardView: same pattern
-- Fixed usePollingNotifications: added r.ok check
-- Found 72 other instances of same bug across codebase (documented for future migration)
-- Bumped version to v3.8.72, committed and pushed
+- Analysé le fichier /api/dashboard/route.ts pour identifier les 26 requêtes Prisma
+- Comparé le schéma Prisma (744 lignes) avec les 4 fichiers de migration Supabase existants
+- Identifié le désalignement massif entre Prisma et la DB :
+  - INVOICES: 11 colonnes manquantes (type, invoice_number, paid_amount, issued_at, billing_type, reminder_level, last_reminder_at, tax_rate, discount_amount, terms, paid_at) + mauvais nom (issue_date vs issued_at) + currency_id NOT NULL au lieu de nullable
+  - AUDIT_LOGS: colonne timestamp manquante (DB a created_at), metadata JSONB vs TEXT, resource_id UUID vs TEXT
+  - DOCUMENTS: uploader_id vs uploaded_by_id, tags TEXT[] vs TEXT, 4 colonnes manquantes (description, status, document_type, folder, uploaded_by_portal_id)
+  - TASKS: case_id NOT NULL vs nullable, assigned_to_id manquant
+  - CASES: 6 colonnes manquantes (description, outcome, payment_status, is_secret, ai_analysis, next_due_date)
+  - EVENTS: 3 colonnes manquantes (location, external_event_id, all_day)
+  - PAYMENTS: recorded_by manquant
+  - CURRENCIES: tenant_id manquant
+  - CASE_NOTES: user_id vs author_id
+  - TIME_ENTRIES: billed et invoice_id manquants
+  - PORTAL_NOTIFICATIONS + EXTERNAL_CALENDARS: tables entières manquantes
+- Créé /migrations/full_alignment_migration.sql (migration d'alignement complète, idempotente)
+- Modifié /api/dashboard/route.ts : chaque requête enveloppée dans safe() avec fallback
 
 Stage Summary:
-- Key fix: `api-fetch.ts` helper + error states in dashboard views
-- v3.8.72 pushed to main (commit 10f5a28)
-- Remaining: 72 other useQuery instances need migration to fetchJson (non-blocking, other views)
+- Fichier créé : migrations/full_alignment_migration.sql — migration unique qui corrige TOUS les désalignements
+- Fichier modifié : src/app/api/dashboard/route.ts — API résiliente, ne crash plus si colonne manque
+- L'utilisateur doit exécuter la migration SQL sur Supabase pour que toutes les données apparaissent
+- Même sans la migration, le dashboard ne crashera plus (affiche 0/[] pour les queries en erreur)
+
+Unresolved:
+- L'utilisateur doit exécuter les migrations SQL sur Supabase (voir liste ci-dessous)
+- 72 autres instances du bug fetch().then(r => r.json()) non corrigées
+- Variables OAuth Google/Outlook non configurées
