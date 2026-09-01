@@ -20,7 +20,7 @@ export async function fetchJson<T = any>(url: string, init?: RequestInit): Promi
     let message = `Erreur ${res.status}`
     try {
       const body = await res.json()
-      if (body?.error) message = body.error
+      if (body?.error) message = body.detail ? `${body.error}: ${body.detail}` : body.error
     } catch { /* ignore parse errors */ }
     throw new Error(message)
   }
