@@ -54,7 +54,7 @@ export function MessagesView() {
             contactList.map((c: UserItem) => (
               <button key={c.id} className={cn('w-full flex items-center gap-2 p-3 hover:bg-jl-page text-left transition-colors', selectedContact === c.id && 'bg-jl-blue-light')} onClick={() => setSelectedContact(c.id)}>
                 <Avatar className="size-8"><AvatarFallback className="text-[10px] bg-jl-page">{initials(c.fullName)}</AvatarFallback></Avatar>
-                <div className="min-w-0"><p className="text-sm font-medium truncate">{c.fullName}</p><p className="text-[10px] text-jl-muted">{ROLE_LABELS[c.role] || c.role}</p></div>
+                <div className="min-w-0"><p className="text-sm font-medium truncate">{c.fullName}</p><p className="text-[10px] text-jl-muted">{roleLabel(c.role)}</p></div>
               </button>
             ))}
         </div>

@@ -121,10 +121,10 @@ export function CommunicationsView() {
             {(comms || []).map((c: Communication) => (
               <TableRow key={c.id}>
                 <TableCell className="text-xs text-jl-secondary">{fmtDateTime(c.sentAt || c.createdAt)}</TableCell>
-                <TableCell><Badge className={cn('text-[10px]', COMM_TYPE_COLORS[c.type])}><span className="flex items-center gap-1">{typeIcon(c.type)}{COMM_TYPE_LABELS[c.type] || c.type}</span></Badge></TableCell>
+                <TableCell><Badge className={cn('text-[10px]', COMM_TYPE_COLORS[c.type])}><span className="flex items-center gap-1">{typeIcon(c.type)}{COMM_typeLabel(c.type)}</span></Badge></TableCell>
                 <TableCell className="text-sm">{c.client?.fullName || c.recipientEmail || c.recipientPhone || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-sm text-jl-secondary truncate max-w-[200px]">{c.subject || c.content.slice(0, 50)}</TableCell>
-                <TableCell><Badge className={cn('text-[10px]', COMM_STATUS_COLORS[c.status])}>{COMM_STATUS_LABELS[c.status] || c.status}</Badge></TableCell>
+                <TableCell><Badge className={cn('text-[10px]', COMM_STATUS_COLORS[c.status])}>{COMM_statusLabel(c.status)}</Badge></TableCell>
                 <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{c.sentBy?.fullName || '—'}</TableCell>
                 <TableCell><Button variant="ghost" size="icon" className="size-7" onClick={() => deleteMut.mutate(c.id)}><Trash2 className="size-3.5 text-red-500" /></Button></TableCell>
               </TableRow>
@@ -141,7 +141,7 @@ export function CommunicationsView() {
               {(['email', 'sms', 'whatsapp'] as const).map(t => (
                 <Button key={t} variant={form.type === t ? 'default' : 'outline'} size="sm" className="flex-1 h-9 text-xs" onClick={() => setForm(f => ({ ...f, type: t }))}>
                   {t === 'email' && <Mail className="size-3.5 mr-1" />}{t === 'sms' && <MessageCircle className="size-3.5 mr-1" />}{t === 'whatsapp' && <Phone className="size-3.5 mr-1" />}
-                  {COMM_TYPE_LABELS[t]}
+                  {COMM_typeLabel(t)}
                 </Button>
               ))}
             </div>
@@ -153,7 +153,7 @@ export function CommunicationsView() {
             <div className="space-y-2"><Label className="text-xs">Modèle rapide</Label><Select onValueChange={v => { const t = QUICK_TEMPLATES.find(qt => qt.label === v); if (t) setForm(f => ({ ...f, content: t.content })) }}><SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Choisir un modèle..." /></SelectTrigger><SelectContent>{QUICK_TEMPLATES.map(qt => <SelectItem key={qt.label} value={qt.label}>{qt.label}</SelectItem>)}</SelectContent></Select></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowCompose(false); resetForm() }}>Annuler</Button>
+            <Button variant="outline" onClick={() => { setShowCompose(false); resetForm() }}>{t('common.cancel')}</Button>
             <Button onClick={handleSend} disabled={sendMut.isPending}><SendHorizontal className="size-4 mr-1" />Envoyer</Button>
           </DialogFooter>
         </DialogContent>

@@ -269,14 +269,14 @@ export function SearchView() {
                               <Badge variant="outline" className={cn('text-[10px]',
                                 catKey === 'task' ? taskStatusColor(item.status) : ''
                               )}>
-                                {catKey === 'task' ? taskStatusLabel(item.status) : (STATUS_LABELS[item.status] || item.status)}
+                                {catKey === 'task' ? taskStatusLabel(item.status) : (statusLabel(item.status))}
                               </Badge>
                             )}
                             {item.priority && catKey === 'task' && (
-                              <span className="text-[10px] text-jl-muted">{PRIORITY_LABELS[item.priority] || item.priority}</span>
+                              <span className="text-[10px] text-jl-muted">{priorityLabel(item.priority)}</span>
                             )}
-                            {item.caseType && <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[item.caseType] || item.caseType}</Badge>}
-                            {item.eventType && <Badge variant="outline" className="text-[10px]">{EVENT_TYPE_LABELS[item.eventType] || item.eventType}</Badge>}
+                            {item.caseType && <Badge variant="outline" className="text-[10px]">{typeLabel(item.caseType)}</Badge>}
+                            {item.eventType && <Badge variant="outline" className="text-[10px]">{EVENT_typeLabel(item.eventType)}</Badge>}
                             {item.fileSize && <span className="text-[10px] text-jl-muted">{fmtFileSize(item.fileSize)}</span>}
                             {item.createdAt && <span className="text-[10px] text-jl-muted">{fmtDate(item.createdAt)}</span>}
                             {item.dueDate && <span className="text-[10px] text-jl-muted">Échéance: {fmtDate(item.dueDate)}</span>}

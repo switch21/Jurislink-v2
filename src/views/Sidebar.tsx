@@ -42,7 +42,7 @@ export function Sidebar() {
         <span className='text-lg font-bold tracking-tight whitespace-nowrap'><span className='text-jl-blue'>Juris</span><span className='text-jl-gold'>Link</span></span>
       </div>
       <ScrollArea className='flex-1 min-h-0 py-4 custom-scrollbar'>{navContent}</ScrollArea>
-      <div className='p-4 border-t border-jl shrink-0'><div className='flex items-center gap-3'><Avatar className='size-8 shrink-0'><AvatarFallback className='bg-jl-blue text-white text-xs'>{user?.fullName ? initials(user.fullName) : 'U'}</AvatarFallback></Avatar><div className='min-w-0'><p className='text-sm font-medium truncate text-jl-primary'>{user?.fullName}</p><p className='text-xs text-jl-muted truncate'>{ROLE_LABELS[user?.role || ''] || user?.role}</p></div></div></div>
+      <div className='p-4 border-t border-jl shrink-0'><div className='flex items-center gap-3'><Avatar className='size-8 shrink-0'><AvatarFallback className='bg-jl-blue text-white text-xs'>{user?.fullName ? initials(user.fullName) : 'U'}</AvatarFallback></Avatar><div className='min-w-0'><p className='text-sm font-medium truncate text-jl-primary'>{user?.fullName}</p><p className='text-xs text-jl-muted truncate'>{roleLabel(user?.role)}</p></div></div></div>
     </aside>
     {/* Mobile Sidebar (Sheet) */}
     <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}><SheetContent side='left' className='w-[280px] p-0 bg-jl-card border-jl'>

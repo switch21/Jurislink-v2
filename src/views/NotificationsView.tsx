@@ -81,7 +81,7 @@ export function NotificationsView() {
   const markAllRead = useMutation({
     mutationFn: () => fetch(`/api/notifications/read-all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user?.id, tenantId: user?.tenantId }) }).then(r => r.json()),
     onSuccess: (data) => { toast.success(`Toutes les notifications marquées comme lues (${data?.updated ?? 0})`); qc.invalidateQueries({ queryKey: ['notifications'] }) },
-    onError: () => toast.error('Erreur'),
+    onError: () => toast.error(t('common.error')),
   })
 
   // Delete single
@@ -172,7 +172,7 @@ export function NotificationsView() {
         <div className='relative flex-1 max-w-sm'>
           <Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' />
           <Input
-            placeholder='Rechercher dans les notifications…'
+            placeholder={t('common.search')}
             value={search}
             onChange={e => handleSearchChange(e.target.value)}
             className='pl-9 h-9 text-sm'

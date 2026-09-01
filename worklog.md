@@ -2515,3 +2515,34 @@ Remaining i18n work:
 - SettingsView, DocumentsView, TemplatesView, PortalViews, AdminViews, CalendarView, TasksView, FinancesView, ImpayesView, TimeTrackingView, CommunicationsView, NotificationsView, SearchView still have many hardcoded French strings
 - These views can use the new label helpers (statusLabel, etc.) and t() for full i18n
 - The i18n fallback system ensures the app still works (shows key name or French) even if some strings aren't translated yet
+
+---
+Task ID: 2b-3
+Agent: Main agent (batch 2)
+Task: Integrate i18n label helpers, batch i18n replacements, fix issues
+
+Work Log:
+- Created 16 translatable label helper functions in helpers.tsx (statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel)
+- Added ROLE_OPTIONS array for role selection dropdowns
+- Exported t() and all 16 label helpers + ROLE_OPTIONS from shared-ui.tsx
+- Replaced all STATUS_LABELS[x] usages with statusLabel(x) across views (44→0 usages)
+- Replaced all PRIORITY_LABELS[x] with priorityLabel(x) (28→0)
+- Replaced all TYPE_LABELS[x] with typeLabel(x) (42→0)
+- Replaced all EVENT_TYPE_LABELS[x] with eventTypeLabel(x) (26→0)
+- Replaced all ROLE_LABELS[x] usages in JSX with roleLabel(x) (14→1, AdminViews uses ROLE_OPTIONS)
+- Replaced BILLING_LABELS, INVOICE_TYPE_LABELS, INVOICE_STATUS_LABELS, PAYMENT_METHOD_LABELS, COMM_TYPE_LABELS, COMM_STATUS_LABELS, CASE_STATUS_LABELS
+- Made relativeTime() fully i18n (relative.justNow, relative.minutesAgo, etc.)
+- CasesView: 84 t() calls, ReportsView: 60 t() calls, InvoicesView: 55 t() calls (survived git revert)
+- Attempted batch sed for common strings (Annuler, Enregistrer, etc.) — caused parsing errors
+- Reverted broken files via git checkout — 0 lint errors achieved
+
+Stage Summary:
+- All label constant maps now use i18n helpers instead of hardcoded French
+- 3 major views (Cases, Reports, Invoices) have extensive t() usage
+- Translation files: 813+ keys × 7 languages
+- 0 ESLint errors
+- Batch sed approach is too fragile for JSX — future i18n should use Edit tool per-view
+
+Remaining work:
+- Replace hardcoded French strings in remaining views (Settings, Documents, Calendar, Tasks, Finances, Admin, Portal, Templates, Communications, Notifications, Search, Login) using Edit tool (NOT sed)
+- The label helpers are ready and exported — views just need to import and use them

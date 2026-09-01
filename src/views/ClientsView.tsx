@@ -138,7 +138,7 @@ export function ClientsView() {
             </div>
             <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button><Button onClick={handleSubmit} disabled={!form.fullName.trim() || createMut.isPending || updateMut.isPending}>{editing ? 'Enregistrer' : 'Créer'}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button><Button onClick={handleSubmit} disabled={!form.fullName.trim() || createMut.isPending || updateMut.isPending}>{editing ? t('common.save') : t('common.create')}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -165,8 +165,8 @@ export function ClientsView() {
               <div className="space-y-2">{(clientDetail?.cases || []).map((c: CaseItem) => (
                 <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl hover:bg-jl-page cursor-pointer" onClick={() => { setDetailOpen(false); setCurrentView('cases') }}>
                   <Briefcase className="size-4 text-jl-gold shrink-0" />
-                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{c.reference} — {c.title}</p><p className="text-[10px] text-jl-muted">{TYPE_LABELS[c.caseType] || c.caseType} • Créé le {fmtDate(c.createdAt)}</p></div>
-                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge>
+                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{c.reference} — {c.title}</p><p className="text-[10px] text-jl-muted">{typeLabel(c.caseType)} • Créé le {fmtDate(c.createdAt)}</p></div>
+                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[c.status])}>{statusLabel(c.status)}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
@@ -177,7 +177,7 @@ export function ClientsView() {
                   <Receipt className="size-4 text-jl-gold shrink-0" />
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium">{inv.id.slice(0,8)}{inv.case?.reference ? ` — ${inv.case.reference}` : ''}</p><p className="text-[10px] text-jl-muted">{fmtDate(inv.createdAt)}</p></div>
                   <span className="text-sm font-semibold shrink-0">{fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</span>
-                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[inv.status])}>{STATUS_LABELS[inv.status] || inv.status}</Badge>
+                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[inv.status])}>{statusLabel(inv.status)}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>

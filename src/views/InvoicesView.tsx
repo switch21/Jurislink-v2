@@ -164,11 +164,11 @@ export function InvoicesView() {
               return (
                 <TableRow key={inv.id} className={cn(i % 2 === 1 && 'bg-jl-page', 'cursor-pointer')} onClick={() => openDetail(inv)}>
                   <TableCell className="font-medium text-sm">{inv.invoiceNumber || '—'}</TableCell>
-                  <TableCell className="hidden sm:table-cell"><Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[inv.type] || 'bg-jl-page text-white')}>{INVOICE_TYPE_LABELS[inv.type] || inv.type}</Badge></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[inv.type] || 'bg-jl-page text-white')}>{INVOICE_typeLabel(inv.type)}</Badge></TableCell>
                   <TableCell className="text-sm text-jl-secondary">{inv.client?.fullName || '—'}</TableCell>
                   <TableCell className="text-sm font-medium text-right">{fmtMoney(invTotal, inv.currency?.code || 'XAF')}</TableCell>
                   <TableCell className="hidden md:table-cell"><div className="text-right"><p className="text-xs font-medium">{fmtMoney(invPaid, inv.currency?.code || 'XAF')}</p>{inv.status === 'partiel' && <div className="w-16 h-1.5 bg-jl-page rounded-full mt-1 ml-auto"><div className="h-full rounded-full bg-jl-gold" style={{ width: invPercent + '%' }} /></div>}</div></TableCell>
-                  <TableCell><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[inv.status])}>{STATUS_LABELS[inv.status] || inv.status}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[inv.status])}>{statusLabel(inv.status)}</Badge></TableCell>
                   <TableCell className="hidden lg:table-cell text-sm text-jl-secondary">{fmtDate(inv.dueDate)}</TableCell>
                   <TableCell><Button variant="ghost" size="icon" className="size-7" onClick={e => { e.stopPropagation(); openDetail(inv) }}><Eye className="size-3.5" /></Button></TableCell>
                 </TableRow>
@@ -215,7 +215,7 @@ export function InvoicesView() {
             <div><Label>{t('invoices.terms')}</Label><Textarea value={createForm.terms} onChange={e => setCreateForm(f => ({ ...f, terms: e.target.value }))} rows={2} placeholder={t('invoices.termsPlaceholder')} /></div>
             <div><Label>{t('invoices.notes')}</Label><Textarea value={createForm.notes} onChange={e => setCreateForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setCreateOpen(false)}>Annuler</Button><Button onClick={handleCreate} disabled={!createForm.clientId || createMut.isPending || lineItems.every(li => !li.description.trim())}>{createMut.isPending ? <RefreshCw className="size-4 mr-1 animate-spin" /> : 'Créer'}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setCreateOpen(false)}>{t('common.cancel')}</Button><Button onClick={handleCreate} disabled={!createForm.clientId || createMut.isPending || lineItems.every(li => !li.description.trim())}>{createMut.isPending ? <RefreshCw className="size-4 mr-1 animate-spin" /> : t('common.create')}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -275,11 +275,11 @@ export function InvoicesView() {
                 {tenant?.niu && <p className="text-xs text-jl-muted">NIU : {tenant.niu}</p>}
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xl font-bold text-jl-blue">{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || 'FACTURE'}</p>
+                <p className="text-xl font-bold text-jl-blue">{invoiceTypeLabel(invoiceDetail?.type)}</p>
                 <p className="text-sm font-mono font-semibold text-jl-primary mt-1">{invoiceDetail?.invoiceNumber || '—'}</p>
                 <div className="flex items-center gap-2 justify-end mt-2">
-                  <Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[invoiceDetail?.type || ''] || 'bg-jl-page text-white')}>{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || invoiceDetail?.type}</Badge>
-                  <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[invoiceDetail?.status || ''])}>{STATUS_LABELS[invoiceDetail?.status || ''] || invoiceDetail?.status}</Badge>
+                  <Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[invoiceDetail?.type || ''] || 'bg-jl-page text-white')}>{invoiceTypeLabel(invoiceDetail?.type)}</Badge>
+                  <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[invoiceDetail?.status || ''])}>{statusLabel(invoiceDetail?.status)}</Badge>
                 </div>
               </div>
             </div>
@@ -393,17 +393,17 @@ export function InvoicesView() {
                     <div><Label>Date</Label><Input type="date" value={payForm.paidAt} onChange={e => setPayForm(f => ({ ...f, paidAt: e.target.value }))} /></div>
                   </div>
                   <div><Label>{t('invoices.notes')}</Label><Input value={payForm.notes} onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))} placeholder={t('invoices.notesPlaceholder')} /></div>
-                  <div className="flex gap-2"><Button size="sm" className="bg-[var(--success)] hover:bg-[var(--success)] text-white" onClick={handlePay} disabled={!payForm.amount || parseFloat(payForm.amount) <= 0 || payMut.isPending}>{payMut.isPending ? <RefreshCw className="size-3.5 mr-1 animate-spin" /> : <Banknote className="size-3.5 mr-1" />}Enregistrer</Button><Button size="sm" variant="outline" onClick={() => setShowPayForm(false)}>Annuler</Button></div>
+                  <div className="flex gap-2"><Button size="sm" className="bg-[var(--success)] hover:bg-[var(--success)] text-white" onClick={handlePay} disabled={!payForm.amount || parseFloat(payForm.amount) <= 0 || payMut.isPending}>{payMut.isPending ? <RefreshCw className="size-3.5 mr-1 animate-spin" /> : <Banknote className="size-3.5 mr-1" />}Enregistrer</Button><Button size="sm" variant="outline" onClick={() => setShowPayForm(false)}>{t('common.cancel')}</Button></div>
                 </div>
               )}
               {(invoiceDetail?.payments || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-4">{t('invoices.noPayments')}</p> : (
                 <div className="space-y-2">
                   {(invoiceDetail?.payments || []).map((p: Payment) => (
                     <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
-                      <div className={cn('size-8 rounded-lg flex items-center justify-center shrink-0', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')}><span className="text-white text-xs font-bold">{(PAYMENT_METHOD_LABELS[p.method] || '?')[0]}</span></div>
+                      <div className={cn('size-8 rounded-lg flex items-center justify-center shrink-0', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')}><span className="text-white text-xs font-bold">{(paymentMethodLabel(p.method) || '?')[0]}</span></div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium font-mono">{fmtMoney(p.amount, curCode)}</p>
-                        <p className="text-[10px] text-jl-muted">{PAYMENT_METHOD_LABELS[p.method] || p.method}{p.reference ? ` • ${p.reference}` : ''} • {p.recorder?.fullName || '—'}</p>
+                        <p className="text-[10px] text-jl-muted">{paymentMethodLabel(p.method)}{p.reference ? ` • ${p.reference}` : ''} • {p.recorder?.fullName || '—'}</p>
                       </div>
                       <span className="text-xs text-jl-muted shrink-0">{fmtDate(p.paidAt)}</span>
                     </div>

@@ -21,10 +21,10 @@ export function ArchivesView() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
           {(Array.isArray(cases) ? cases : []).map((c: CaseItem) => (
             <Card key={c.id} className="opacity-80">
-              <CardHeader className="pb-2"><div className="flex items-start justify-between"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS.archive)}>{STATUS_LABELS.archive}</Badge></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
+              <CardHeader className="pb-2"><div className="flex items-start justify-between"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS.archive)}>{statusLabel('archive')}</Badge></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-1">
                 <p className="text-xs text-jl-secondary">{c.client?.fullName || '—'}</p>
-                <p className="text-xs text-jl-muted">Type : {TYPE_LABELS[c.caseType] || c.caseType}</p>
+                <p className="text-xs text-jl-muted">Type : {typeLabel(c.caseType)}</p>
                 {c.closingDate && <p className="text-xs text-jl-muted">Clôture : {fmtDate(c.closingDate)}</p>}
               </CardContent>
             </Card>

@@ -195,13 +195,13 @@ export function PortalCasesView() {
     <div className='p-4 lg:p-6 space-y-4'>
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
         <div><h2 className='text-xl font-bold text-jl-primary'>Mes dossiers</h2><p className='text-sm text-jl-secondary'>{filtered.length} dossier{filtered.length > 1 ? 's' : ''}</p></div>
-        <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' /><Input placeholder='Rechercher...' value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-jl' /></div>
+        <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' /><Input placeholder={t('common.search')} value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-jl' /></div>
       </div>
       <div className='flex gap-2 overflow-x-auto pb-1'>
         {statusPills.map(s => (
           <button key={s} onClick={() => setStatusFilter(s)} className={cn('px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
             statusFilter === s ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary hover:bg-jl-page')}>
-            {s === 'all' ? 'Tous' : CASE_STATUS_LABELS[s] || s}
+            {s === 'all' ? t('common.all') : invoiceStatusLabel(s)}
           </button>
         ))}
       </div>
@@ -400,7 +400,7 @@ function PortalUploadDialog({ open, onOpenChange, prefillCaseId, onSuccess }: {
           )}
         </div>
         <DialogFooter>
-          <Button variant='outline' onClick={() => onOpenChange(false)} disabled={uploading}>Annuler</Button>
+          <Button variant='outline' onClick={() => onOpenChange(false)} disabled={uploading}>{t('common.cancel')}</Button>
           <Button onClick={handleUpload} disabled={uploading || !selectedFile || !form.caseId} className='bg-jl-blue hover:bg-jl-blue'>
             {uploading ? <><Loader2 className='size-4 mr-1.5 animate-spin' />{progress < 100 ? 'Téléversement...' : 'Finalisation...'}</> : <><Upload className='size-4 mr-1.5' />Téléverser</>}
           </Button>
@@ -587,7 +587,7 @@ export function PortalInvoicesView() {
         {statusPills.map(s => (
           <button key={s} onClick={() => setStatusFilter(s)} className={cn('px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
             statusFilter === s ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary hover:bg-jl-page')}>
-            {s === 'all' ? 'Toutes' : INVOICE_STATUS_LABELS[s] || s}
+            {s === 'all' ? 'Toutes' : INVOICE_statusLabel(s)}
           </button>
         ))}
       </div>
@@ -694,7 +694,7 @@ export function PortalDocumentsView() {
       <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
         <div><h2 className='text-xl font-bold text-jl-primary'>Documents</h2><p className='text-sm text-jl-secondary'>{filtered.length} document{filtered.length > 1 ? 's' : ''}</p></div>
         <div className='flex items-center gap-2'>
-          <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' /><Input placeholder='Rechercher un document...' value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-jl' /></div>
+          <div className='relative w-full sm:w-64'><Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' /><Input placeholder={t('common.search')} value={search} onChange={e => setSearch(e.target.value)} className='pl-9 h-9 rounded-lg border-jl' /></div>
           <Button size='sm' className='bg-jl-blue hover:bg-jl-blue shrink-0' onClick={() => setUploadOpen(true)}><Upload className='size-4 mr-1.5' />Téléverser un document</Button>
         </div>
       </div>
@@ -704,7 +704,7 @@ export function PortalDocumentsView() {
         {['all', 'en_attente', 'rejete'].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)} className={cn('px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
             statusFilter === s ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary hover:bg-jl-page')}>
-            {s === 'all' ? 'Tous' : s === 'en_attente' ? 'En attente' : 'Rejetés'}
+            {s === 'all' ? t('common.all') : s === 'en_attente' ? 'En attente' : 'Rejetés'}
           </button>
         ))}
       </div>
@@ -756,7 +756,7 @@ export function PortalMessagesView() {
   const sendMessage = useMutation({
     mutationFn: async () => {
       const res = await fetch('/api/portal/communications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject: subject || null, content: message, caseId: selectedCaseId || null }) })
-      if (!res.ok) throw new Error('Erreur')
+      if (!res.ok) throw new Error(t('common.error'))
       return res.json()
     },
     onSuccess: () => { setMessage(''); setSubject(''); setSelectedCaseId(''); queryClient.invalidateQueries({ queryKey: ['portal-communications'] }) },
@@ -809,7 +809,7 @@ export function PortalProfileView() {
   const updateProfile = useMutation({
     mutationFn: async (data: typeof form) => {
       const res = await fetch('/api/portal/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
-      if (!res.ok) throw new Error('Erreur')
+      if (!res.ok) throw new Error(t('common.error'))
       return res.json()
     },
     onSuccess: () => { setEditing(false); toast.success('Profil mis à jour') },
@@ -831,7 +831,7 @@ export function PortalProfileView() {
                 <div><Label className='text-xs'>Téléphone</Label><Input value={editForm.phone} onChange={e => setForm({ ...editForm, phone: e.target.value })} className='h-9 mt-1 rounded-lg' /></div>
                 <div><Label className='text-xs'>Adresse</Label><Input value={editForm.address} onChange={e => setForm({ ...editForm, address: e.target.value })} className='h-9 mt-1 rounded-lg' /></div>
                 <div className='grid grid-cols-2 gap-2'><div><Label className='text-xs'>Ville</Label><Input value={editForm.city} onChange={e => setForm({ ...editForm, city: e.target.value })} className='h-9 mt-1 rounded-lg' /></div><div><Label className='text-xs'>Pays</Label><Input value={editForm.country} onChange={e => setForm({ ...editForm, country: e.target.value })} className='h-9 mt-1 rounded-lg' /></div></div>
-                <div className='flex gap-2 pt-1'><Button size='sm' onClick={() => updateProfile.mutate(editForm)} disabled={updateProfile.isPending} className='bg-jl-blue hover:bg-jl-blue'>{updateProfile.isPending ? <Loader2 className='size-4 animate-spin' /> : 'Enregistrer'}</Button><Button size='sm' variant='outline' onClick={() => setEditing(false)}>Annuler</Button></div>
+                <div className='flex gap-2 pt-1'><Button size='sm' onClick={() => updateProfile.mutate(editForm)} disabled={updateProfile.isPending} className='bg-jl-blue hover:bg-jl-blue'>{updateProfile.isPending ? <Loader2 className='size-4 animate-spin' /> : t('common.save')}</Button><Button size='sm' variant='outline' onClick={() => setEditing(false)}>{t('common.cancel')}</Button></div>
               </div>
             ) : (
               <>

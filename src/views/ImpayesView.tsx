@@ -193,7 +193,7 @@ export function ImpayesView() {
               </div>
             </div>
           )}
-          <DialogFooter><Button variant="outline" onClick={() => setRemindDialog(null)}>Annuler</Button><Button onClick={handleRemind} disabled={sendingRemind} className="bg-[var(--accent)] hover:bg-[var(--accent)]"><Send className="size-4 mr-1" />{sendingRemind ? 'Envoi...' : 'Envoyer la relance'}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setRemindDialog(null)}>{t('common.cancel')}</Button><Button onClick={handleRemind} disabled={sendingRemind} className="bg-[var(--accent)] hover:bg-[var(--accent)]"><Send className="size-4 mr-1" />{sendingRemind ? t('communications.sent') + '...' : t('impayes.sendReminder')}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 

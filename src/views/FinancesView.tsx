@@ -95,7 +95,7 @@ export function FinancesView() {
         p.invoice?.client?.fullName || '',
         p.invoice?.invoiceNumber || '',
         String(p.amount),
-        PAYMENT_METHOD_LABELS[p.method] || p.method,
+        paymentMethodLabel(p.method),
         p.recorder?.fullName || '',
       ])
     }
@@ -202,7 +202,7 @@ export function FinancesView() {
                       <TableCell className="text-sm font-medium">{p.invoice?.client?.fullName || '—'}</TableCell>
                       <TableCell className="hidden sm:table-cell text-xs text-jl-muted">{p.invoice?.invoiceNumber || p.id.slice(0, 8)}</TableCell>
                       <TableCell className="text-sm font-medium text-right">{fmtMoney(p.amount)}</TableCell>
-                      <TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')} /><span className="text-xs text-jl-secondary">{PAYMENT_METHOD_LABELS[p.method] || p.method}</span></div></TableCell>
+                      <TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')} /><span className="text-xs text-jl-secondary">{paymentMethodLabel(p.method)}</span></div></TableCell>
                       <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{p.recorder?.fullName || '—'}</TableCell>
                     </TableRow>
                   ))}
@@ -221,7 +221,7 @@ export function FinancesView() {
                   const pct = filteredTotal > 0 ? (amount / filteredTotal) * 100 : 0
                   return (
                     <div key={method} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm"><div className="flex items-center gap-2"><span className={cn('size-3 rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-jl-page')} /><span className="text-xs font-medium">{PAYMENT_METHOD_LABELS[method] || method}</span></div><span className="text-xs font-semibold">{fmtMoney(amount)}</span></div>
+                      <div className="flex items-center justify-between text-sm"><div className="flex items-center gap-2"><span className={cn('size-3 rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-jl-page')} /><span className="text-xs font-medium">{paymentMethodLabel(method)}</span></div><span className="text-xs font-semibold">{fmtMoney(amount)}</span></div>
                       <div className="h-1.5 bg-jl-page rounded-full overflow-hidden"><div className={cn('h-full rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-jl-page')} style={{ width: pct + '%' }} /></div>
                     </div>
                   )
