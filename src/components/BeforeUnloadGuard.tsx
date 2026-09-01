@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, memo } from 'react'
 import { hasAnyDirtyForm, clearAllDrafts, STORAGE_PREFIX } from '@/hooks/useFormDraft'
 import { toast } from '@/lib/sonner-lazy'
 import { X } from 'lucide-react'
@@ -16,27 +16,26 @@ function countDrafts(): number {
 }
 
 /**
- * BeforeUnloadGuard — Global component that:
- * 1. Registers a beforeunload listener to warn about unsaved changes
- * 2. Shows a banner when there are unsaved drafts on page load
- * 3. Provides a way to clear all drafts
+ * BeforeUnloadGuard — Shows browser warning when leaving with unsaved changes.
+ * Memoized to prevent unnecessary re-renders.
  */
-export function BeforeUnloadGuard() {
-  // Initialize from localStorage to avoid setState in effect
+const BeforeUnloadGuardInner = memo(function BeforeUnloadGuardInner() {
   const [initialCount] = useState(() => countDrafts())
   const [showBanner, setShowBanner] = useState(() => initialCount > 0)
   const [dirtyCount, setDirtyCount] = useState(initialCount)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Poll for dirty state (every 2s) — setState in interval callback is fine
+  // Only poll if there are drafts (stop polling when count reaches 0)
   useEffect(() => {
-    pollRef.current = setInterval(() => {
-      setDirtyCount(countDrafts())
-    }, 2000)
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [])
+    if (dirtyCount === 0 && !showBanner) return
+    const id = setInterval(() => {
+      const c = countDrafts()
+      setDirtyCount(c)
+      if (c === 0) setShowBanner(false)
+    }, 3000)
+    return () => clearInterval(id)
+  }, [dirtyCount, showBanner])
 
-  // beforeunload listener
+  // beforeunload listener — always active
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (hasAnyDirtyForm() || dirtyCount > 0) {
@@ -91,4 +90,6 @@ export function BeforeUnloadGuard() {
       </div>
     </div>
   )
-}
+})
+
+export { BeforeUnloadGuardInner as BeforeUnloadGuard }

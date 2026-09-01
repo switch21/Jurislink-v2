@@ -10,7 +10,9 @@ import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, Ca
 import { queryClient } from '@/views/constants'
 import { SearchDialog } from '@/views/SearchDialog'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
-import { BeforeUnloadGuard } from '@/components/BeforeUnloadGuard'
+
+// ──── Lazy-loaded guard (non-critical, loads after mount) ────
+const LazyBeforeUnloadGuard = lazy(() => import('@/components/BeforeUnloadGuard').then(m => ({ default: m.BeforeUnloadGuard })))
 
 // ──── Eagerly loaded (small, always-needed components) ────
 import { LoginPage } from '@/views/LoginPage'
@@ -50,21 +52,13 @@ const LazyPortalRouter = lazy(() => import('@/views/PortalViews').then(m => ({ d
 // Patch fetch immediately at module load (before any React rendering)
 if (typeof window !== 'undefined') initAuthFetch()
 
-// ──── View persistence: save current view to localStorage on beforeunload ────
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    // Already handled by setCurrentView, but this is a safety net
-  })
-}
-
 // ──── View Loading Fallback ────
 function ViewLoader() {
   return (
     <div className='flex-1 flex items-center justify-center p-8'>
       <div className='flex flex-col items-center gap-4 w-full max-w-sm'>
         <div className='flex items-center gap-3 w-full'>
-          <div className='size-8 rounded-lg bg-[var(--primary-light)] animate-pulse' />
-          <div className='flex-1 space-y-2'>
+          <div className='size-8 rounded-lg bg-[var(--primary-light)] animate-pulse' />\n          <div className='flex-1 space-y-2'>
             <Skeleton className='h-3.5 w-3/4 rounded' />
             <Skeleton className='h-3 w-1/2 rounded' />
           </div>
@@ -199,7 +193,6 @@ function AppInner() {
   }, [])
   if (isPortalAuthenticated) return (
     <>
-    <BeforeUnloadGuard />
     <Suspense fallback={<ViewLoader />}>
       <LazyPortalSidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
@@ -208,6 +201,7 @@ function AppInner() {
         <Footer />
       </div>
     </Suspense>
+    <LazyBeforeUnloadGuard />
     </>
   )
   if (!isAuthenticated) return <LoginPage />
@@ -229,7 +223,6 @@ function AppInner() {
   )
   if (isRootAdmin) return (
     <>
-      <BeforeUnloadGuard />
       <AdminSidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
         <AdminHeader />
@@ -237,11 +230,11 @@ function AppInner() {
         <Footer />
       </div>
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+      <LazyBeforeUnloadGuard />
     </>
   )
   return (
     <>
-      <BeforeUnloadGuard />
       <Sidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
         <Header />
@@ -249,6 +242,7 @@ function AppInner() {
         <Footer />
       </div>
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+      <LazyBeforeUnloadGuard />
     </>
   )
 }
