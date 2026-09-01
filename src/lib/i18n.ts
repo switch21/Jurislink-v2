@@ -23,9 +23,17 @@ import swDict from './translations/sw'
 import arDict from './translations/ar'
 import itDict from './translations/it'
 import deDict from './translations/de'
+import pricingDict from './translations/pricing'
 
+// Merge base translations with pricing translations
 const TRANSLATIONS: Record<Locale, Record<string, string>> = {
-  fr: frDict, en: enDict, es: esDict, sw: swDict, ar: arDict, it: itDict, de: deDict,
+  fr: { ...frDict, ...pricingDict.fr },
+  en: { ...enDict, ...pricingDict.en },
+  es: { ...esDict, ...pricingDict.es },
+  sw: { ...swDict, ...pricingDict.sw },
+  ar: { ...arDict, ...pricingDict.ar },
+  it: { ...itDict, ...pricingDict.it },
+  de: { ...deDict, ...pricingDict.de },
 }
 
 // Detect locale only when called, not at module level

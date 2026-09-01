@@ -160,6 +160,7 @@ model SubscriptionPlan {
   currencyCode    String   @default("XAF") @map("currency_code")
   maxUsers        Int      @default(3) @map("max_users")
   maxStorageGb    Float    @default(5) @map("max_storage_gb")
+  maxCases        Int      @default(50) @map("max_cases")
   hasAI           Boolean  @default(false) @map("has_ai")
   features        String   @default("[]")
   isActive        Boolean  @default(true) @map("is_active")

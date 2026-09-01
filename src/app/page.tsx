@@ -10,6 +10,7 @@ import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, Ca
 import { queryClient } from '@/views/constants'
 import { SearchDialog } from '@/views/SearchDialog'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
+import { TrialBanner } from '@/views/TrialBanner'
 
 // ──── Lazy-loaded guard (non-critical, loads after mount) ────
 const LazyBeforeUnloadGuard = lazy(() => import('@/components/BeforeUnloadGuard').then(m => ({ default: m.BeforeUnloadGuard })))
@@ -41,6 +42,7 @@ const LazyImpayesView = lazy(() => import('@/views/ImpayesView').then(m => ({ de
 const LazyTimeTrackingView = lazy(() => import('@/views/TimeTrackingView').then(m => ({ default: m.TimeTrackingView })))
 const LazyTemplatesView = lazy(() => import('@/views/TemplatesView').then(m => ({ default: m.TemplatesView })))
 const LazySearchView = lazy(() => import('@/views/SearchView').then(m => ({ default: m.SearchView })))
+const LazyPricingView = lazy(() => import('@/views/PricingView').then(m => ({ default: m.PricingView })))
 const LazyAdminDashboardView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminDashboardView })))
 const LazyAdminCabinsView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminCabinsView })))
 const LazyAdminUsersView = lazy(() => import('@/views/AdminViews').then(m => ({ default: m.AdminUsersView })))
@@ -150,6 +152,7 @@ function DashboardRouter() {
             'settings': <LazySettingsView />,
             'archives': <ArchivesView />,
             'notifications': <NotificationsView />,
+            'pricing': <LazyPricingView />,
           }, <DashboardView />)}
         </motion.div>
       </AnimatePresence>
@@ -204,7 +207,11 @@ function AppInner() {
     <LazyBeforeUnloadGuard />
     </>
   )
-  if (!isAuthenticated) return <LoginPage />
+  if (!isAuthenticated) {
+    const { currentView: cv } = useAppStore.getState()
+    if (cv === 'pricing') return <LazyPricingView />
+    return <LoginPage />
+  }
   if (needsTenant) return (
     <div className='flex-1 flex items-center justify-center p-4'>
       <Card className='max-w-md w-full animate-scale-in'>
@@ -238,6 +245,7 @@ function AppInner() {
       <Sidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
         <Header />
+        <TrialBanner />
         <main id='main-content' className='flex-1' role='main'><DashboardRouter /></main>
         <Footer />
       </div>

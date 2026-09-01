@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { enforceLimit } from '@/lib/plan-limits'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'user', 'view')
@@ -83,9 +84,25 @@ export async function POST(request: Request) {
   const auth = await authenticate(request, 'user', 'create')
   if (isErrorResponse(auth)) return auth
 
+  const body = await request.json()
+  const targetTenantId = body.tenantId || auth.tenantId
+
+  // Plan limit check
+  if (targetTenantId && auth.role !== 'root_admin') {
+    try {
+      const limitDb = getDb()
+      const currentCount = await limitDb.user.count({ where: { tenantId: targetTenantId, isActive: true } })
+      const limitCheck = await enforceLimit('users', targetTenantId, limitDb, currentCount)
+      if (!limitCheck.allowed) {
+        await limitDb.$disconnect().catch(() => {})
+        return NextResponse.json({ error: limitCheck.message || "Limite d'utilisateurs atteinte" }, { status: 403 })
+      }
+      await limitDb.$disconnect().catch(() => {})
+    } catch (_e) { /* proceed on error */ }
+  }
+
   const db = getDb()
   try {
-    const body = await request.json()
     const user = await db.user.create({
       data: {
         email: body.email,

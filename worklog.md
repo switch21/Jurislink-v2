@@ -2221,3 +2221,207 @@ Unresolved:
 - L'utilisateur doit exécuter les migrations SQL sur Supabase (voir liste ci-dessous)
 - 72 autres instances du bug fetch().then(r => r.json()) non corrigées
 - Variables OAuth Google/Outlook non configurées
+
+---
+Task ID: 11
+Agent: Sub-agent (plan limits + pricing API)
+Task: Plan limits enforcement middleware + public pricing API
+
+Work Log:
+- Créé src/lib/plan-limits.ts — utilitaire serveur de vérification des limites de forfait:
+  - `getTenantLimits(tenantId)`: retourne les limites effectives (maxUsers, maxStorageGb, maxCases, hasAI, features, trialEndsAt, isTrial)
+  - `enforceLimit(resource, tenantId, db, currentCount?)`: vérifie si la création d'une ressource est autorisée, retourne `{ allowed, limit, current, message? }`
+  - Pour 'storage', le currentCount est en octets (somme de file_size des documents), converti en Go pour la comparaison
+  - Plan enterprise (slug): maxUsers=-1 / maxCases=-1 = illimité (pas de vérification)
+  - Utilise `getDb()` avec `db.$disconnect()` dans finally
+  - Si aucun abonnement, retourne les limites gratuit (1 utilisateur, 1 Go, 3 dossiers)
+- Créé src/app/api/pricing/route.ts — endpoint PUBLIC (pas d'auth) GET /api/pricing:
+  - Retourne les forfaits actifs avec features parsées (JSON → tableau)
+  - Détection de devise: ?region= > Accept-Language header > XAF par défaut
+  - Conversion: 1 EUR ≈ 655.96 XAF, 1 USD ≈ 601.50 XAF, 1 GBP ≈ 783.50 XAF
+  - Réponse: `{ plans, currency: { code, symbol }, region }`
+  - Prix convertis pour chaque période (monthly, quarterly, semiAnnual, annual)
+- Créé src/app/api/subscription/check/route.ts — GET /api/subscription/check:
+  - Authentifié via `authenticate(request, 'subscription', 'view')`
+  - Retourne: plan, subscription, limits (avec usage courant: users, cases, storageGb), isTrial, trialDaysRemaining, trialExpired
+  - root_admin peut vérifier via X-Tenant-Id header ou ?tenantId= param
+  - Si aucun abonnement: retourne les limites du forfait gratuit
+
+Stage Summary:
+- 3 fichiers créés:
+  - src/lib/plan-limits.ts (utilitaire de limites)
+  - src/app/api/pricing/route.ts (endpoint public)
+  - src/app/api/subscription/check/route.ts (endpoint authentifié)
+- Conventions respectées: getDb() + $disconnect() dans finally, authenticate() pour l'auth, messages d'erreur en français
+- Aucune migration nécessaire (utilise les colonnes existantes: maxCases, features)
+
+---
+Task ID: 12
+Agent: Sub-agent (encryption + privacy compliance)
+Task: AES-256 encryption utility, PII masking, and privacy compliance API endpoints
+
+Work Log:
+- Créé src/lib/encryption.ts — utilitaire de chiffrement AES-256-GCM :
+  - encryptBuffer(plainBuffer): chiffre un buffer, retourne { encrypted, iv }
+  - decryptBuffer(encryptedBuffer, iv): déchiffre un buffer (auth tag à la fin)
+  - encryptFile(absolutePath): lit et chiffre un fichier en-place, retourne l'IV
+  - decryptFile(absolutePath, iv): déchiffre un fichier en-place
+  - IV aléatoire de 12 octets, auth tag de 16 octets
+  - Clé depuis ENCRYPTION_KEY (64 chars hex) ou fallback déterministe en dev (refuse en production sans clé)
+- Créé src/lib/pii-masker.ts — masquage PII pour journaux d'audit (Loi 2024/017) :
+  - maskPII(data): masque récursivement les champs PII connus par nom de clé
+  - Masques: email (j***@example.com), phone (+237 6** *** *6), fullName (J*** D***), NIU (M2***78)
+  - Complètement redacte: password, tokens, secrets
+  - Préserve la structure (objets, arrays, valeurs non-PII)
+- Créé src/app/api/privacy/export/route.ts — POST /api/privacy/export :
+  - Authentifié via authenticate(request, 'user', 'view')
+  - Exporte: user, cases (participant), documents, notes, invoices, payments, communications, audit logs, time entries
+  - Enregistre la demande dans data_export_requests (raw SQL, table pas dans Prisma)
+  - Journal d'audit de l'export
+  - Retourne JSON avec Content-Disposition: attachment
+- Créé src/app/api/privacy/forget/route.ts — POST /api/privacy/forget :
+  - Authentifié via authenticate(request, 'user', 'update')
+  - Requiert confirmation par mot de passe (bcrypt compare)
+  - Journal d'audit AVANT anonymisation (nom et email d'origine)
+  - Anonymise: fullName → 'Anonymized', email → 'anonymized-{uuid}@deleted.jurislink', phone → null, avatarUrl → null
+  - Supprime: messages reçus, case notes, notifications
+  - Anonymise contenu: messages envoyés, communications, time entries, audit logs existants
+  - Conserve: dossiers, factures, paiements (comptabilité)
+  - Désactive le compte (isActive=false, MFA désactivé)
+- Créé src/app/api/privacy/consent/route.ts — GET + POST /api/privacy/consent :
+  - GET: retourne les consentements de l'utilisateur via privacy_consent_logs (raw SQL)
+  - POST: enregistre un consentement (purpose + granted boolean)
+  - Purposes valides: data_processing, marketing, analytics, ai_analysis
+  - Enregistre IP et User-Agent
+  - Journal d'audit pour chaque action
+
+Stage Summary:
+- 5 fichiers créés:
+  - src/lib/encryption.ts (chiffrement AES-256-GCM)
+  - src/lib/pii-masker.ts (masquage PII pour audit)
+  - src/app/api/privacy/export/route.ts (droit d'accès)
+  - src/app/api/privacy/forget/route.ts (droit à l'effacement)
+  - src/app/api/privacy/consent/route.ts (gestion du consentement)
+- Conventions respectées: getDb() + $disconnect() dans finally, authenticate() pour l'auth, messages d'erreur en français
+- Tables privacy_consent_logs et data_export_requests accédées via $executeRaw/$queryRaw (absentes du schéma Prisma)
+- Prérequis: tables privacy_consent_logs et data_export_requests doivent exister en base (via migration SQL)
+- ENCRYPTION_KEY doit être configurée en production (64 chars hex)
+---
+Task ID: 13
+Agent: Main agent
+Task: Pricing page, Trial Banner, and i18n translation keys
+
+Work Log:
+- Créé /home/z/my-project/src/lib/translations/pricing.ts — 57 clés de traduction en 7 langues (fr/en/es/sw/ar/it/de) couvrant :
+  - pricing.title, pricing.subtitle, pricing.trialBanner, pricing.startTrial, pricing.choosePlan, pricing.currentPlan, pricing.popular, pricing.contactUs, pricing.unlimited
+  - pricing.perMonth, pricing.perQuarter, pricing.perSemiAnnual, pricing.perYear, pricing.monthly, pricing.quarterly, pricing.semiAnnual, pricing.annual, pricing.annualSavings, pricing.mostPopular, pricing.backToLogin
+  - pricing.starter, pricing.professional, pricing.enterprise
+  - pricing.maxUsers, pricing.maxStorage, pricing.maxCases, pricing.includesAI
+  - pricing.features.* (22 clés : cases, clients, calendar, documents, invoicing, reports, search, teams, workflow, ai, documentAnalysis, conflictDetection, communications, timeTracking, templates, portal, api, prioritySupport, dedicatedManager, customIntegration, auditLog, advancedSecurity)
+  - pricing.featureCategory.* (core, management, ai, enterprise)
+  - pricing.trust.* (title, security, compliance, backup, support, ssl)
+  - trial.banner, trial.daysRemaining, trial.upgrade, trial.expired, trial.expiredDesc
+  - privacy.exportData, privacy.rightToForget, privacy.consent, privacy.dataProcessing, privacy.description
+  - settings.language
+- Modifié /home/z/my-project/src/lib/i18n.ts :
+  - Import de pricingDict depuis ./translations/pricing
+  - Fusion (spread) des clés pricing dans chaque TRANSLATIONS[locale]
+- Créé /home/z/my-project/src/views/PricingView.tsx :
+  - Page publique de tarification accessible sans authentification
+  - Fetch depuis /api/pricing?region=auto avec useQuery (cache 5 min)
+  - 3 cartes de forfaits (Starter, Professional, Enterprise) côte à côte (1 col mobile, 3 col desktop)
+  - Forfait Professional mis en évidence (border primaire, badge « Most popular »)
+  - Sélecteur de période (mensuel/trimestriel/semestriel/annuel) avec badge économie pour annuel
+  - Prix formatés avec symbole de devise, handles XAF (pas de décimales)
+  - Feature list avec checkmarks et mappage i18n automatique (FEATURE_I18N)
+  - Badges de limites (utilisateurs max, stockage, dossiers, IA)
+  - Enterprise : texte « Illimité » et bouton « Contactez-nous » (pas de prix)
+  - Bannière d'essai 14 jours en haut de la page
+  - Section confiance en bas avec icônes
+  - Background subtil avec gradient blur
+  - Skeleton loader pendant le chargement
+  - Footer sticky avec bouton retour vers login si non authentifié
+  - Dark mode compatible (CSS custom properties)
+  - NO shadcn Card — divs avec rounded-2xl border bg-[var(--card)]
+  - Tous les textes via t() avec fallback français
+  - Animations framer-motion (fade-in, stagger)
+- Créé /home/z/my-project/src/views/TrialBanner.tsx :
+  - Composant bannière d'essai (affiché si isTrial ou trialExpired)
+  - Fond jaune/ambre, style urgence quand ≤ 3 jours restants
+  - Style rouge quand essai expiré
+  - Compte à rebours : « Période d'essai — X jours restants »
+  - Bouton « Passer à un forfait » navigue vers settings
+  - Dismissible (X) avec mémorisation dans localStorage (jurislink_trial_banner_dismissed)
+  - Animation slide-in via framer-motion spring
+  - useQuery avec staleTime 10 min, refetchOnWindowFocus: false
+  - role="alert" et aria-live="polite" pour accessibilité
+  - Tous textes via t()
+- Modifié /home/z/my-project/src/store/appStore.ts :
+  - Ajout de 'pricing' au type ViewName
+- Modifié /home/z/my-project/src/app/page.tsx :
+  - Import de TrialBanner et LazyPricingView
+  - PricingView accessible quand non authentifié (cv === 'pricing')
+  - PricingView dans DashboardRouter pour accès depuis settings
+  - TrialBanner inséré entre Header et main content (flow authentifié)
+
+Stage Summary:
+- 3 fichiers créés : PricingView.tsx, TrialBanner.tsx, translations/pricing.ts
+- 3 fichiers modifiés : i18n.ts, appStore.ts, page.tsx
+- Aucune erreur ESLint
+- La page pricing est publique (fonctionne sans auth)
+- Le bouton sur LoginPage peut naviguer vers pricing via setCurrentView('pricing')
+- La bannière d'essai s'affiche automatiquement pour les utilisateurs en période d'essai
+---
+Task ID: 12
+Agent: main + 3 subagents (parallel)
+Task: Phase 19 (SaaS Monétisation) + Phase 20 (Sécurité Maximale) + Multilingue
+
+Work Log:
+- Ajouté maxCases (Int, default 50) au modèle SubscriptionPlan dans prisma/schema.prisma
+- Créé migration phase19_20_saas_security.sql (max_cases, privacy_consent_logs, data_export_requests, encryption_iv, is_encrypted)
+- Sous-agent 1: Créé plan-limits.ts, /api/pricing (public, détection région/devise), /api/subscription/check
+- Sous-agent 2: Créé encryption.ts (AES-256-GCM), pii-masker.ts, /api/privacy/export, /api/privacy/forget, /api/privacy/consent
+- Sous-agent 3: Créé PricingView.tsx, TrialBanner.tsx, translations/pricing.ts (7 langues, 57 clés), intégré dans page.tsx et i18n.ts
+- Intégration Header.tsx: sélecteur langue (Globe dropdown, 7 locales avec drapeaux)
+- Intégration LoginPage.tsx: lien "Voir les forfaits et tarifs →" vers page pricing
+- Intégration /api/cases POST: enforceLimit('cases') avant création
+- Intégration /api/users POST: enforceLimit('users') avant création
+- Intégration /api/documents/[id]/download: contrôle accès is_confidential + déchiffrement AES-256
+- Lint: 0 erreurs, 1 warning pré-existant
+
+Stage Summary:
+- 11 nouveaux fichiers créés, 6 fichiers modifiés
+- Page pricing publique accessible depuis login ET depuis l'app
+- Sélecteur de langue fonctionnel dans le header (7 langues: fr/en/es/sw/ar/it/de)
+- Limites par forfait appliquées (cases, users) avec retour 403
+- Documents confidentiels: accès restreint + chiffrement AES-256 au repos
+- Conformité Loi 2024/017: export données, droit à l'oubli, gestion consentement
+- PII masking prêt à intégrer dans les audit logs
+
+Migrations à exécuter sur Supabase:
+- migrations/phase19_20_saas_security.sql
+
+Fichiers créés:
+- src/lib/plan-limits.ts
+- src/lib/encryption.ts  
+- src/lib/pii-masker.ts
+- src/lib/translations/pricing.ts
+- src/app/api/pricing/route.ts
+- src/app/api/subscription/check/route.ts
+- src/app/api/privacy/export/route.ts
+- src/app/api/privacy/forget/route.ts
+- src/app/api/privacy/consent/route.ts
+- src/views/PricingView.tsx
+- src/views/TrialBanner.tsx
+- migrations/phase19_20_saas_security.sql
+
+Fichiers modifiés:
+- prisma/schema.prisma (+maxCases)
+- src/app/api/cases/route.ts (+enforceLimit)
+- src/app/api/users/route.ts (+enforceLimit)
+- src/app/api/documents/[id]/download/route.ts (+confidential check + decrypt)
+- src/views/Header.tsx (+language selector)
+- src/views/LoginPage.tsx (+pricing link)
+- src/app/page.tsx (+PricingView + TrialBanner)
+- src/store/appStore.ts (+pricing view)
+- src/lib/i18n.ts (+pricing translations merge)

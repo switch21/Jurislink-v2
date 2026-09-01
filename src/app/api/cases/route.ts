@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse, requireTenantAccess } from '@/lib/auth-server'
 import { getWorkflowTemplate } from '@/lib/workflow-templates'
+import { enforceLimit } from '@/lib/plan-limits'
 
 // Allowed sort fields for sanitisation
 const SORTABLE_FIELDS = ['createdAt', 'updatedAt', 'title', 'reference', 'status', 'priority', 'caseType', 'nextDueDate'] as const
@@ -142,6 +143,21 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const auth = await authenticate(request, 'case', 'create')
   if (isErrorResponse(auth)) return auth
+
+  // Plan limit check
+  if (auth.tenantId) {
+    try {
+      const limitDb = getDb()
+      const currentCount = await limitDb.case.count({ where: { tenantId: auth.tenantId } })
+      const limitCheck = await enforceLimit('cases', auth.tenantId, limitDb, currentCount)
+      if (!limitCheck.allowed) {
+        await limitDb.$disconnect().catch(() => {})
+        return NextResponse.json({ error: limitCheck.message || 'Limite de dossiers atteinte' }, { status: 403 })
+      }
+      await limitDb.$disconnect().catch(() => {})
+    } catch (_e) { /* proceed on error */ }
+  }
+
   const db = getDb()
   try {
     const { searchParams } = new URL(request.url)

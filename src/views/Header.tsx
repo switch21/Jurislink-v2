@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, useAppStore, cn, Button, Badge, ScrollArea, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Search, Bell, LogOut, MessageSquare, Menu, X, Briefcase, Receipt, ClipboardList, FileText, Calendar, MessageCircle, ExternalLink, ThemeToggle } from './shared-ui'
+import { useState, useEffect, useRef, useAppStore, cn, Button, Badge, ScrollArea, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Search, Bell, LogOut, MessageSquare, Menu, X, Briefcase, Receipt, ClipboardList, FileText, Calendar, MessageCircle, ExternalLink, ThemeToggle, Globe } from './shared-ui'
 import { usePollingNotifications } from '@/hooks/use-polling-notifications'
 import { relativeTime } from './helpers'
 import { NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants'
+import { useLocale, LOCALE_NAMES, LOCALE_FLAGS, SUPPORTED_LOCALES } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n'
 import type { Notification, ViewName } from './types'
 
 // Map notification category → target view for deep-linking
@@ -59,6 +61,7 @@ const RESOURCE_TYPE_TO_VIEW: Record<string, ViewName> = {
 // ==================== Header ====================
 export function Header() {
   const { currentView, user, logout, setCurrentView, setPendingResourceOpen } = useAppStore()
+  const { locale, setLocale: setLocaleL } = useLocale()
   const [notifOpen, setNotifOpen] = useState(false)
   const [dropdownFilter, setDropdownFilter] = useState('all')
   const prevUnreadRef = useRef(0)
@@ -266,6 +269,7 @@ export function Header() {
               </button>
             </DropdownMenuContent>
           </DropdownMenu>
+          <DropdownMenu><DropdownMenuTrigger asChild><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant='ghost' size='icon' className='size-9' aria-label='Changer la langue'><Globe className='size-4' /></Button></TooltipTrigger><TooltipContent>{LOCALE_NAMES[locale]}</TooltipContent></Tooltip></TooltipProvider></DropdownMenuTrigger><DropdownMenuContent align='end'>{SUPPORTED_LOCALES.map((l: Locale) => (<DropdownMenuItem key={l} onClick={() => setLocaleL(l)} className={cn('cursor-pointer gap-2', locale === l && 'font-semibold bg-[var(--accent)]/10')}><span className='text-base'>{LOCALE_FLAGS[l]}</span><span>{LOCALE_NAMES[l]}</span></DropdownMenuItem>))}</DropdownMenuContent></DropdownMenu>
           <ThemeToggle />
           <DropdownMenu><DropdownMenuTrigger asChild><Button variant='ghost' size='icon' aria-label='Menu utilisateur'><LogOut className='size-5 text-jl-secondary' /></Button></DropdownMenuTrigger><DropdownMenuContent align='end'><DropdownMenuItem onClick={logout} className='text-[var(--danger)] cursor-pointer'><LogOut className='size-4 mr-2' />Déconnexion</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </div>

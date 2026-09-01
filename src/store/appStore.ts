@@ -79,6 +79,7 @@ export type ViewName =
   | 'admin-cabinets'
   | 'admin-users'
   | 'admin-plans'
+  | 'pricing'
   | 'portal-dashboard'
   | 'portal-cases'
   | 'portal-case-detail'

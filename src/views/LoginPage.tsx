@@ -199,6 +199,9 @@ export function LoginPage() {
           </Tabs>
         </Card>
         <p className="text-center text-xs text-[var(--text-muted)] mt-6">© 2025 JurisLink — Tous droits réservés</p>
+        <div className="text-center mt-3">
+          <button type="button" onClick={() => useAppStore.getState().setCurrentView('pricing')} className="text-xs text-[var(--primary)] hover:underline font-medium">Voir les forfaits et tarifs →</button>
+        </div>
       </div>
     </div>
   )
