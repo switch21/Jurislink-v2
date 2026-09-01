@@ -2188,3 +2188,23 @@ Stage Summary:
 - New files: useFormDraft.ts, BeforeUnloadGuard.tsx
 - Modified: appStore.ts, page.tsx, CasesView.tsx, ClientsView.tsx, InvoicesView.tsx, TimeTrackingView.tsx, CalendarView.tsx
 - Deleted: useDraftSave.ts
+---
+Task ID: 1
+Agent: main
+Task: Fix dashboard not displaying data (v3.8.72)
+
+Work Log:
+- Analyzed page.tsx, DashboardView, AdminDashboardView, auth-fetch, appStore, rbac
+- Identified root cause: `fetch().then(r => r.json())` resolves with error objects on 401/403/500 instead of rejecting
+- When API returns `{ error: '...' }`, React Query treats it as valid data → component renders with all fields undefined → empty dashboard
+- Created `/src/lib/api-fetch.ts` utility with `fetchJson()` (throws on !r.ok) and `fetchJsonOrNull()` (returns null on error)
+- Fixed DashboardView: uses fetchJson, shows error state with retry button, handles missing tenantId
+- Fixed AdminDashboardView: same pattern
+- Fixed usePollingNotifications: added r.ok check
+- Found 72 other instances of same bug across codebase (documented for future migration)
+- Bumped version to v3.8.72, committed and pushed
+
+Stage Summary:
+- Key fix: `api-fetch.ts` helper + error states in dashboard views
+- v3.8.72 pushed to main (commit 10f5a28)
+- Remaining: 72 other useQuery instances need migration to fetchJson (non-blocking, other views)
