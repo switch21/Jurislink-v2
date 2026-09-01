@@ -5,18 +5,19 @@ import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LA
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 import { usePollingNotifications } from '@/hooks/use-polling-notifications'
+import { fetchJson, fetchJsonOrNull } from '@/lib/api-fetch'
 // ==================== Dashboard ====================
 export function DashboardView() {
   const { user, setCurrentView } = useAppStore()
-  const { data: stats, isLoading } = useQuery<DashboardStats>({
+  const { data: stats, isLoading, isError, error, refetch } = useQuery<DashboardStats>({
     queryKey: ['dashboard', user?.tenantId],
-    queryFn: () => fetch(`/api/dashboard?tenantId=${user!.tenantId}&userId=${user!.id}`).then(r => r.json()),
-    enabled: !!user?.tenantId, refetchInterval: 60000
+    queryFn: () => fetchJson<DashboardStats>(`/api/dashboard?tenantId=${user!.tenantId}&userId=${user!.id}`),
+    enabled: !!user?.tenantId, refetchInterval: 60000, retry: 1
   })
 
   const { data: subData } = useQuery({
     queryKey: ['subscription', user?.tenantId],
-    queryFn: () => fetch(`/api/subscriptions?tenantId=${user?.tenantId}`).then(r => r.json()).catch(() => null),
+    queryFn: () => fetchJsonOrNull(`/api/subscriptions?tenantId=${user?.tenantId}`),
     enabled: !!user?.tenantId,
   })
 
@@ -38,6 +39,8 @@ export function DashboardView() {
   const minute = new Date().getMinutes()
 
   if (isLoading) return <div className="p-6"><Skeleton className="h-8 w-48 mb-6" /><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div></div>
+  if (isError) return <div className="p-6"><EmptyState icon={AlertCircle} title='Erreur de chargement' description={error?.message || 'Impossible de charger les données du tableau de bord'} action={<Button variant="outline" onClick={() => refetch()}><RefreshCw className="size-4 mr-2" />Réessayer</Button>} /></div>
+  if (!user?.tenantId) return <div className="p-6"><EmptyState icon={AlertCircle} title='Aucun cabinet assigné' description={'Votre compte n\'est pas encore lié à un cabinet. Contactez l\'administrateur.'} action={<Button variant="outline" onClick={() => setCurrentView('settings')}><Settings className="size-4 mr-2" />Paramètres</Button>} /></div>
   if (!stats) return null
 
   const finData = stats.financial

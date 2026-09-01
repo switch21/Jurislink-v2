@@ -1,7 +1,7 @@
 'use client'
 
 // ════════════════════════════════════════════════════════════════════════════
-// JurisLink v3.8.71 — Orchestrator
+// JurisLink v3.8.72 — Orchestrator
 // Phase 7: UI/UX Polish — Dark Mode, Animations, Responsive
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -84,7 +84,7 @@ function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--border)] py-4 px-6 flex items-center justify-between text-xs text-[var(--text-muted)] transition-colors duration-300">
       <span className="flex items-center gap-1.5"><img src="/icon.png" alt="" className="size-3.5 rounded-sm" />JurisLink</span>
-      <span>v3.8.71</span>
+      <span>v3.8.72</span>
     </footer>
   )
 }

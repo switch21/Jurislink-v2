@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutatio
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
+import { fetchJson } from '@/lib/api-fetch'
 // ==================== ADMIN VIEWS ====================
 export function AdminDashboardView() {
-  const { data, isLoading } = useQuery<AdminDashboardData>({ queryKey: ['admin-dashboard'], queryFn: () => fetch('/api/admin/dashboard').then(r => r.json()) })
+  const { data, isLoading, isError, error, refetch } = useQuery<AdminDashboardData>({ queryKey: ['admin-dashboard'], queryFn: () => fetchJson<AdminDashboardData>('/api/admin/dashboard'), retry: 1 })
   if (isLoading) return <div className='p-6 space-y-4'><div className='grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4'>{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className='h-24 rounded-xl' />)}</div></div>
+  if (isError) return <div className='p-6'><EmptyState icon={AlertCircle} title='Erreur de chargement' description={error?.message || 'Impossible de charger les données d\'administration'} action={<Button variant="outline" onClick={() => refetch()}><RefreshCw className='size-4 mr-2' />Réessayer</Button>} /></div>
   if (!data) return <EmptyState icon={ShieldCheck} title='Erreur de chargement' />
   const months = Object.entries(data.signupsByMonth || {}).slice(-12)
   const maxMonth = Math.max(...months.map(([, v]) => v), 1)
