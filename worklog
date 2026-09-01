@@ -1,0 +1,14 @@
+---
+Task ID: 11b
+Agent: main
+Task: Vérification post-migration (conteneur limité, dev server meurt)
+
+Work Log:
+- Lint: 0 erreurs, 1 warning pré-existant (seed.ts)
+- Dev server ne démarre pas dans le conteneur (limitation RAM/processus)
+- Code vérifié statiquement : logique safe() correcte
+
+Stage Summary:
+- L'utilisateur a confirmé l'exécution de la migration SQL d'alignement
+- Le fix API (safe() wrapper) + la migration résolvent le 500
+- Impossible de vérifier via navigateur dans ce conteneur
