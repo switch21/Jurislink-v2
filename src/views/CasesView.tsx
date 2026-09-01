@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, SlidersHorizontal, Table2, EmptyState } from './shared-ui'
+import { t } from '@/lib/i18n'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS, BILLING_LABELS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
 import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/useFormDraft'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData, CaseTag, CaseWithDetails, CasesListResponse } from './types'
+
 import ReactMarkdown from 'react-markdown'
 
 // ==================== AI ANALYSIS PANEL ====================
@@ -29,8 +31,8 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
           <div className="absolute -inset-4 rounded-full bg-jl-blue/10 animate-ping" style={{ animationDuration: '2s' }} />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-jl-primary">Analyse en cours…</p>
-          <p className="text-xs text-jl-muted mt-1">L'IA examine le dossier et prépare l'analyse</p>
+          <p className="text-sm font-medium text-jl-primary">{t('cases.aiAnalyzing')}</p>
+          <p className="text-xs text-jl-muted mt-1">{t('cases.aiExamining')}</p>
         </div>
         <div className="flex items-center gap-1.5">
           {[0, 1, 2].map(i => <div key={i} className="size-1.5 rounded-full bg-jl-blue animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
@@ -46,10 +48,10 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
           <Brain className="size-8 text-jl-blue" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium">Analyse IA disponible</p>
-          <p className="text-xs text-jl-muted mt-1">Obtenez une analyse intelligente de ce dossier</p>
+          <p className="text-sm font-medium">{t('cases.aiAvailable')}</p>
+          <p className="text-xs text-jl-muted mt-1">{t('cases.aiGetAnalysis')}</p>
         </div>
-        <Button onClick={onAnalyze} className="gap-2"><Sparkles className="size-4" />Analyser ce dossier</Button>
+        <Button onClick={onAnalyze} className="gap-2"><Sparkles className="size-4" />{t('cases.aiRunAnalysis')}</Button>
       </div>
     )
   }
@@ -67,12 +69,12 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
         <div className="flex items-center gap-2">
           <Brain className="size-4 text-jl-blue" />
           <span className="text-xs font-medium">Analyse IA</span>
-          {cached && <Badge variant="outline" className="text-[9px] text-jl-muted border-jl">En cache</Badge>}
+          {cached && <Badge variant="outline" className="text-[9px] text-jl-muted border-jl">{t('cases.aiCached')}</Badge>}
         </div>
         <div className="flex items-center gap-2">
           {analyzedAt && <span className="text-[10px] text-jl-muted">{new Date(analyzedAt).toLocaleString('fr-FR')}</span>}
           <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={onRefresh} disabled={loading}>
-            <RefreshCw className={cn('size-3', loading && 'animate-spin')} />Actualiser
+            <RefreshCw className={cn('size-3', loading && 'animate-spin')} />{t('cases.aiRefreshAnalysis')}
           </Button>
         </div>
       </div>
@@ -80,7 +82,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       {/* Résumé */}
       {analysis.resume && (
         <Card className="border-jl-blue/20 bg-jl-blue/[0.03]">
-          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold text-jl-blue flex items-center gap-1.5"><FileText className="size-3.5" />Résumé</CardTitle></CardHeader>
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold text-jl-blue flex items-center gap-1.5"><FileText className="size-3.5" />{t('cases.tabSummary')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3"><p className="text-sm text-jl-secondary leading-relaxed">{String(analysis.resume)}</p></CardContent>
         </Card>
       )}
@@ -88,7 +90,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       {/* Chronologie */}
       {analysis.chronologie && (
         <Card className="border-jl-gold/20 bg-jl-gold/[0.03]">
-          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold text-jl-gold flex items-center gap-1.5"><History className="size-3.5" />Chronologie</CardTitle></CardHeader>
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold text-jl-gold flex items-center gap-1.5"><History className="size-3.5" />{t('cases.tabTimeline')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3"><ReactMarkdown>{String(analysis.chronologie)}</ReactMarkdown></CardContent>
         </Card>
       )}
@@ -96,7 +98,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       {/* Parties */}
       {analysis.parties && (
         <Card className="border-jl">
-          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Scale className="size-3.5" />Parties</CardTitle></CardHeader>
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Scale className="size-3.5" />{t('cases.subtitle')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3"><ReactMarkdown>{String(analysis.parties)}</ReactMarkdown></CardContent>
         </Card>
       )}
@@ -104,7 +106,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       {/* Questions juridiques */}
       {questions.length > 0 && (
         <Card className="border-jl">
-          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Gavel className="size-3.5" />Questions juridiques</CardTitle></CardHeader>
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Gavel className="size-3.5" />{t('cases.jurisSearch')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3 space-y-1.5">
             {questions.map((q, i) => (
               <div key={i} className="flex items-start gap-2 text-sm">
@@ -119,7 +121,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       {/* Risques */}
       {risques.length > 0 && (
         <Card className="border-jl">
-          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><AlertTriangle className="size-3.5" />Risques identifiés</CardTitle></CardHeader>
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><AlertTriangle className="size-3.5" />{t('cases.identifiedRisks')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3 space-y-2">
             {risques.map((r, i) => {
               const niv = r.niveau?.toLowerCase() || 'moyen'
@@ -143,7 +145,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       {/* Pièces manquantes */}
       {pieces.length > 0 && (
         <Card className="border-jl">
-          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><FileWarning className="size-3.5" />Pièces manquantes</CardTitle></CardHeader>
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><FileWarning className="size-3.5" />{t('cases.missingDocs')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3">
             <div className="space-y-1">{pieces.map((p, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-jl-secondary">
@@ -157,7 +159,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       {/* Échéances */}
       {echeances.length > 0 && (
         <Card className="border-jl">
-          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Clock className="size-3.5" />Échéances</CardTitle></CardHeader>
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Clock className="size-3.5" />{t('cases.deadlines')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3 space-y-2">
             {echeances.map((e, i) => (
               <div key={i} className="flex items-center gap-3 text-sm border border-jl rounded-lg p-2">
@@ -168,7 +170,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
                 </div>
                 {e.urgence && (
                   <Badge variant={e.urgence === 'haute' ? 'destructive' : 'outline'} className="text-[9px] shrink-0">
-                    {e.urgence === 'haute' ? 'Urgent' : e.urgence === 'moyenne' ? 'Moyen' : 'Bas'}
+                    {e.urgence === 'haute' ? t('cases.urgent') : e.urgence === 'moyenne' ? t('cases.urgentMedium') : t('cases.urgentLow')}
                   </Badge>
                 )}
               </div>
@@ -180,7 +182,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       {/* Actions recommandées */}
       {actions.length > 0 && (
         <Card className="border-jl">
-          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Target className="size-3.5" />Actions recommandées</CardTitle></CardHeader>
+          <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Target className="size-3.5" />{t('cases.recommendedActions')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3 space-y-2">
             {actions.sort((a, b) => (a.priorite || 99) - (b.priorite || 99)).map((a, i) => (
               <div key={i} className="flex items-start gap-3 border border-jl rounded-lg p-2.5">
@@ -305,10 +307,10 @@ export function CasesView() {
         setAiCached(!!data.cached)
         setAiAnalyzedAt(data.analyzedAt)
       } else {
-        toast.error(data.error || 'Erreur lors de l\'analyse IA')
+        toast.error(data.error || t('cases.aiError'))
       }
     } catch (err: any) {
-      toast.error(err?.message || 'Erreur lors de l\'analyse IA')
+      toast.error(err?.message || t('cases.aiError'))
     } finally {
       setAiLoading(false)
     }
@@ -325,12 +327,12 @@ export function CasesView() {
       fd.append('folder', 'Général')
       fd.append('documentType', 'autre')
       await uploadWithProgress('/api/documents', fd, setCaseUploadProgress)
-      toast.success('Document ajouté au dossier')
+      toast.success(t('cases.documentAdded'))
       qc.invalidateQueries({ queryKey: ['case-detail', selectedCase.id] })
       qc.invalidateQueries({ queryKey: ['case-timeline', selectedCase.id] })
       qc.invalidateQueries({ queryKey: ['documents'] })
       setCaseUploadFile(null)
-    } catch (err: any) { toast.error(err?.message || 'Erreur lors du téléchargement du document') } finally { setCaseUploading(false); setCaseUploadProgress(0) }
+    } catch (err: any) { toast.error(err?.message || t('cases.uploadError')) } finally { setCaseUploading(false); setCaseUploadProgress(0) }
   }
 
   const handleGenerateWorkflow = async () => {
@@ -343,16 +345,16 @@ export function CasesView() {
       })
       const data = await res.json()
       if (data.created) {
-        toast.success(`${data.taskCount} tâches créées (${data.templateName})`)
+        toast.success(`${data.taskCount} ${t('cases.applyWorkflow')} (${data.templateName})`)
         qc.invalidateQueries({ queryKey: ['case-tasks', selectedCase.id] })
         qc.invalidateQueries({ queryKey: ['case-timeline', selectedCase.id] })
       } else if (data.alreadyApplied) {
-        toast.info('Le workflow a déjà été appliqué à ce dossier')
+        toast.info(t('cases.workflowAlreadyApplied'))
       } else {
-        toast.error(data.error || 'Erreur lors de la génération')
+        toast.error(data.error || t('cases.taskGenError'))
       }
     } catch (err: any) {
-      toast.error(err?.message || 'Erreur lors de la génération des tâches')
+      toast.error(err?.message || t('cases.taskGenError'))
     } finally {
       setGeneratingWorkflow(false)
     }
@@ -369,8 +371,8 @@ export function CasesView() {
         body: JSON.stringify({ templateId: caseTplId, caseId: selectedCase.id, variables: {} }),
       })
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Erreur' }))
-        toast.error(err.error || 'Erreur lors de la génération')
+        const err = await res.json().catch(() => ({ error: t('common.error') }))
+        toast.error(err.error || t('cases.taskGenError'))
         return
       }
       const blob = await res.blob()
@@ -384,10 +386,10 @@ export function CasesView() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      toast.success('Document généré avec succès')
+      toast.success(t('cases.docGenerated'))
       setCaseTplId('')
     } catch (err: any) {
-      toast.error(err?.message || 'Erreur lors de la génération')
+      toast.error(err?.message || t('cases.taskGenError'))
     } finally {
       setCaseTplGenerating(false)
     }
@@ -408,9 +410,9 @@ export function CasesView() {
         setAiJurisResult(data.result)
         qc.invalidateQueries({ queryKey: ['case-timeline', selectedCase.id] })
       } else {
-        toast.error(data.error || 'Erreur lors de la recherche')
+        toast.error(data.error || t('cases.jurisError'))
       }
-    } catch (err: any) { toast.error(err?.message || 'Erreur lors de la recherche') } finally { setAiJurisLoading(false) }
+    } catch (err: any) { toast.error(err?.message || t('cases.jurisError')) } finally { setAiJurisLoading(false) }
   }
 
   const handleSummary = async () => {
@@ -427,9 +429,9 @@ export function CasesView() {
       if (data.result) {
         setAiSummaryResult(data.result)
       } else {
-        toast.error(data.error || 'Erreur lors du résumé')
+        toast.error(data.error || t('cases.summaryError'))
       }
-    } catch (err: any) { toast.error(err?.message || 'Erreur lors du résumé') } finally { setAiSummaryLoading(false) }
+    } catch (err: any) { toast.error(err?.message || t('cases.summaryError')) } finally { setAiSummaryLoading(false) }
   }
 
   const { data: casesData, isLoading } = useQuery({
@@ -506,26 +508,26 @@ export function CasesView() {
       }
       return fetch('/api/cases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json())
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-tags'] }); toast.success('Dossier créé'); setDialogOpen(false); resetForm(); clearCaseDraft() },
-    onError: () => toast.error('Erreur lors de la création'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-tags'] }); toast.success(t('cases.caseCreated')); setDialogOpen(false); resetForm(); clearCaseDraft() },
+    onError: () => toast.error(t('cases.createError')),
   })
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...body }: Record<string, unknown>) => fetch(`/api/cases/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-tags'] }); toast.success('Dossier mis à jour'); clearCaseDraft() },
-    onError: () => toast.error('Erreur lors de la mise à jour'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cases'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-tags'] }); toast.success(t('cases.caseUpdated')); clearCaseDraft() },
+    onError: () => toast.error(t('cases.updateError')),
   })
 
   const createNoteMut = useMutation({
     mutationFn: (body: { content: string }) => fetch(`/api/cases/${selectedCase!.id}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: body.content, authorId: user?.id, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-timeline'] }); toast.success('Note ajoutée'); setInlineNote(''); setShowInlineNote(false) },
-    onError: () => toast.error('Erreur lors de l\'ajout de la note'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-timeline'] }); toast.success(t('cases.noteAdded')); setInlineNote(''); setShowInlineNote(false) },
+    onError: () => toast.error(t('cases.addNoteError')),
   })
 
   const createEventMut = useMutation({
     mutationFn: (body: { title: string; description?: string; eventType: string; startTime: string }) => fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, caseId: selectedCase?.id, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-timeline'] }); toast.success('Événement ajouté'); setInlineEvent({ title: '', description: '', eventType: 'autre', startTime: '' }); setShowInlineEvent(false) },
-    onError: () => toast.error('Erreur lors de l\'ajout de l\'événement'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-detail'] }); qc.invalidateQueries({ queryKey: ['case-timeline'] }); toast.success(t('cases.eventAdded')); setInlineEvent({ title: '', description: '', eventType: 'autre', startTime: '' }); setShowInlineEvent(false) },
+    onError: () => toast.error(t('cases.addEventError')),
   })
 
   // Unified timeline query from server
@@ -538,15 +540,15 @@ export function CasesView() {
   // Delete note mutation
   const deleteNoteMut = useMutation({
     mutationFn: (noteId: string) => fetch(`/api/cases/${selectedCase!.id}/notes/${noteId}`, { method: 'DELETE' }).then(r => r.ok ? { ok: true } : r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-timeline'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Note supprimée'); setDeletingItem(null) },
-    onError: () => { toast.error('Erreur lors de la suppression'); setDeletingItem(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-timeline'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success(t('cases.noteDeleted')); setDeletingItem(null) },
+    onError: () => { toast.error(t('cases.deleteError')); setDeletingItem(null) },
   })
 
   // Delete event mutation
   const deleteEventMut = useMutation({
     mutationFn: (eventId: string) => fetch(`/api/events/${eventId}`, { method: 'DELETE' }).then(r => r.ok ? { ok: true } : r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-timeline'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success('Événement supprimé'); setDeletingItem(null) },
-    onError: () => { toast.error('Erreur lors de la suppression'); setDeletingItem(null) },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['case-timeline'] }); qc.invalidateQueries({ queryKey: ['case-detail'] }); toast.success(t('cases.eventDeleted')); setDeletingItem(null) },
+    onError: () => { toast.error(t('cases.deleteError')); setDeletingItem(null) },
   })
 
   const handleDeleteTimelineItem = (id: string) => {
@@ -571,7 +573,7 @@ export function CasesView() {
 
   // Timeline from server — enrich with icons client-side
   const timelineIconMap: Record<string, React.ElementType> = { event: Calendar, note: MessageSquare, doc: FileText, task: ClipboardList, invoice: Receipt, payment: Wallet, communication: MessageCircle }
-  const timelineTypeLabels: Record<string, string> = { event: 'Événement', note: 'Note', doc: 'Document', task: 'Tâche', payment: 'Paiement', invoice: 'Facture', communication: 'Communication' }
+  const timelineTypeLabels: Record<string, string> = { event: t('cases.timeline.event'), note: t('cases.timeline.note'), doc: t('cases.timeline.doc'), task: t('cases.timeline.task'), payment: t('cases.timeline.payment'), invoice: t('cases.timeline.invoice'), communication: t('cases.timeline.communication') }
 
   const timeline = useMemo(() => {
     if (!timelineData?.items) return []
@@ -607,7 +609,7 @@ export function CasesView() {
       const isYesterday = isSameDay(d, yesterday)
       let label = ''
       if (isToday) label = "Aujourd'hui"
-      else if (isYesterday) label = 'Hier'
+      else if (isYesterday) label = t('cases.yesterday')
       else label = format(d, 'EEEE d MMMM yyyy', { locale: fr })
       if (key !== currentKey) {
         groups.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1), items: [item] })
@@ -633,24 +635,24 @@ export function CasesView() {
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 className="text-lg font-semibold">Dossiers</h2>
+        <h2 className="text-lg font-semibold">{t('common.cases')}</h2>
         <Button onClick={() => {
           const draft = getCaseDraft()
-          if (draft && draft.title) { setForm(draft as typeof form); toast.info('Brouillon restauré') } else { resetForm() }
+          if (draft && draft.title) { setForm(draft as typeof form); toast.info(t('cases.draftRestored')) } else { resetForm() }
           setDialogOpen(true)
-        }} size="sm"><Plus className="size-4 mr-1" />Nouveau dossier{caseHasDraft && <span className="ml-1 size-2 rounded-full bg-amber-400 inline-block" title="Brouillon enregistré" />}</Button>
+        }} size="sm"><Plus className="size-4 mr-1" />{t('cases.new')}{caseHasDraft && <span className="ml-1 size-2 rounded-full bg-amber-400 inline-block" title={t('common.draft')} />}</Button>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div className="relative flex-1 min-w-[200px] max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder="Rechercher..." value={filterSearch} onChange={e => { setFilterSearch(e.target.value); setPage(1) }} className="pl-8 h-9 text-xs" /></div>
+        <div className="relative flex-1 min-w-[200px] max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder={t('common.search')} value={filterSearch} onChange={e => { setFilterSearch(e.target.value); setPage(1) }} className="pl-8 h-9 text-xs" /></div>
         <div className="flex items-center gap-2">
           <Button variant={showFilters ? 'default' : 'outline'} size="sm" className="h-9 text-xs gap-1.5" onClick={() => setShowFilters(f => !f)}>
-            <SlidersHorizontal className="size-3.5" />Filtres
+            <SlidersHorizontal className="size-3.5" />{t('common.filter')}
             {(filterStatus || filterType || filterPriority || filterClient || filterTag || filterOutcome || filterPaymentStatus) && <span className="size-2 rounded-full bg-white/40" />}
           </Button>
           <div className="flex items-center border border-jl rounded-lg overflow-hidden">
-            <button className={cn('p-2 transition-colors', viewMode === 'grid' ? 'bg-jl-blue text-white' : 'bg-jl-card text-jl-muted hover:text-jl-secondary')} onClick={() => setViewMode('grid')} title="Vue grille"><LayoutGrid className="size-4" /></button>
-            <button className={cn('p-2 transition-colors', viewMode === 'table' ? 'bg-jl-blue text-white' : 'bg-jl-card text-jl-muted hover:text-jl-secondary')} onClick={() => setViewMode('table')} title="Vue tableau"><Table2 className="size-4" /></button>
+            <button className={cn('p-2 transition-colors', viewMode === 'grid' ? 'bg-jl-blue text-white' : 'bg-jl-card text-jl-muted hover:text-jl-secondary')} onClick={() => setViewMode('grid')} title={t('cases.gridView')}><LayoutGrid className="size-4" /></button>
+            <button className={cn('p-2 transition-colors', viewMode === 'table' ? 'bg-jl-blue text-white' : 'bg-jl-card text-jl-muted hover:text-jl-secondary')} onClick={() => setViewMode('table')} title={t('cases.tableView')}><Table2 className="size-4" /></button>
           </div>
         </div>
       </div>
@@ -660,9 +662,9 @@ export function CasesView() {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
           <div className="border border-jl rounded-lg bg-jl-card p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-jl-secondary">Filtres avancés</span>
+              <span className="text-xs font-semibold text-jl-secondary">{t('cases.advancedFilters')}</span>
               <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={() => { setFilterStatus(''); setFilterType(''); setFilterPriority(''); setFilterClient(''); setFilterTag(''); setFilterOutcome(''); setFilterPaymentStatus(''); setSortBy('createdAt'); setSortOrder('desc'); setPage(1) }}>
-                <RefreshCw className="size-3" />Réinitialiser
+                <RefreshCw className="size-3" />{t('cases.resetFilters')}
               </Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -684,7 +686,7 @@ export function CasesView() {
       </AnimatePresence>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (!Array.isArray(cases) || cases.length === 0) ? <EmptyState icon={Briefcase} title="Aucun dossier" description="Créez votre premier dossier" /> :
+        (!Array.isArray(cases) || cases.length === 0) ? <EmptyState icon={Briefcase} title={t('cases.noCase')} description={t('cases.createFirst')} /> :
         viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {cases.map(c => {
@@ -693,9 +695,9 @@ export function CasesView() {
             const overflowTags = (wc.tags || []).length - 3
             const isPastDue = wc.nextDueDate && isBefore(parseISO(wc.nextDueDate), new Date())
             const outcomeColorMap: Record<string, string> = { gagné: 'bg-[#D1FAE5] text-[#065F46]', perdu: 'bg-[#FEE2E2] text-[#991B1B]', transaction: 'bg-[#FEF3C7] text-[#92400E]', abandonné: 'bg-[#F3F4F6] text-[#6B7280]', en_cours: 'bg-[#E8F0F8] text-[#1E5A8A]' }
-            const outcomeLabelMap: Record<string, string> = { gagné: 'Gagné', perdu: 'Perdu', transaction: 'Transaction', abandonné: 'Abandonné', en_cours: 'En cours' }
+            const outcomeLabelMap: Record<string, string> = { gagné: t('cases.outcome.won'), perdu: t('cases.outcome.lost'), transaction: t('cases.outcome.settled'), abandonné: t('cases.outcome.abandoned'), en_cours: t('cases.outcome.inProgress') }
             const payColorMap: Record<string, string> = { paye: 'bg-[#D1FAE5] text-[#065F46]', partiel: 'bg-[#FEF3C7] text-[#92400E]', non_paye: 'bg-[#FEE2E2] text-[#991B1B]' }
-            const payLabelMap: Record<string, string> = { paye: 'Payé', partiel: 'Partiel', non_paye: 'Non payé' }
+            const payLabelMap: Record<string, string> = { paye: t('invoices.settled'), partiel: t('invoices.partial'), non_paye: t('invoices.unpaid') }
             return (
             <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication'])); setShowInlineNote(false); setShowInlineEvent(false); setTimelineSearch('') }}>
               <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[var(--accent)]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
@@ -703,7 +705,7 @@ export function CasesView() {
                 <p className="text-xs text-jl-secondary"><Users className="size-3 inline mr-1" />{getClientName(c)}</p>
                 {c.adversary && <p className="text-xs text-jl-secondary"><Scale className="size-3 inline mr-1" />Contre : {c.adversary}</p>}
                 {c.jurisdiction && <p className="text-xs text-jl-secondary"><MapPin className="size-3 inline mr-1" />{c.jurisdiction}</p>}
-                {wc.nextDueDate && <p className={cn('text-xs flex items-center gap-1', isPastDue ? 'text-[var(--danger)] font-medium' : 'text-jl-secondary')}><Calendar className="size-3" />Échéance : {fmtDate(wc.nextDueDate)}</p>}
+                {wc.nextDueDate && <p className={cn('text-xs flex items-center gap-1', isPastDue ? 'text-[var(--danger)] font-medium' : 'text-jl-secondary')}><Calendar className="size-3" />{t('cases.nextDeadline')} : {fmtDate(wc.nextDueDate)}</p>}
                 {c.amountInDispute != null && c.amountInDispute > 0 && <p className="text-xs font-medium text-jl-gold"><Banknote className="size-3 inline mr-1" />{fmtMoney(c.amountInDispute)}</p>}
                 {visibleTags.length > 0 && (
                   <div className="flex items-center gap-1 flex-wrap">
@@ -791,32 +793,32 @@ export function CasesView() {
 
       <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) resetForm() }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Modifier le dossier' : 'Nouveau dossier'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? t('cases.editCase') : t('cases.new')}</DialogTitle></DialogHeader>
           {conflicts.length > 0 && <div className="bg-[var(--accent-light)] border border-amber-200 rounded-lg p-3 space-y-1">{conflicts.map((c, i) => <div key={i} className="flex items-start gap-2 text-xs"><AlertTriangle className="size-4 text-jl-gold shrink-0 mt-0.5" /><span className="text-jl-gold">{c.description}</span></div>)}</div>}
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Référence *</Label><Input value={form.reference} onChange={e => setForm(f => ({ ...f, reference: e.target.value }))} placeholder="REF-001" /></div>
-              <div><Label>Client *</Label><Select value={form.clientId} onValueChange={v => setForm(f => ({ ...f, clientId: v }))}><SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger><SelectContent>{(Array.isArray(clients) ? clients : []).map(cl => <SelectItem key={cl.id} value={cl.id}>{cl.fullName}{cl.company ? ` (${cl.company})` : ''}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>{t('cases.reference')} *</Label><Input value={form.reference} onChange={e => setForm(f => ({ ...f, reference: e.target.value }))} placeholder="REF-001" /></div>
+              <div><Label>{t('cases.client')} *</Label><Select value={form.clientId} onValueChange={v => setForm(f => ({ ...f, clientId: v }))}><SelectTrigger><SelectValue placeholder={t('common.select')} /></SelectTrigger><SelectContent>{(Array.isArray(clients) ? clients : []).map(cl => <SelectItem key={cl.id} value={cl.id}>{cl.fullName}{cl.company ? ` (${cl.company})` : ''}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            <div><Label>Titre *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
-            <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+            <div><Label>{t('cases.title')} *</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
+            <div><Label>{t('common.description')}</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
             <div className="grid grid-cols-3 gap-3">
-              <div><Label>Type</Label><Select value={form.caseType} onValueChange={v => setForm(f => ({ ...f, caseType: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="civil">Civil</SelectItem><SelectItem value="penal">Pénal</SelectItem><SelectItem value="commercial">Commercial</SelectItem><SelectItem value="social">Social</SelectItem><SelectItem value="administratif">Administratif</SelectItem></SelectContent></Select></div>
-              <div><Label>Statut</Label><Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="nouveau">Nouveau</SelectItem><SelectItem value="ouvert">Ouvert</SelectItem><SelectItem value="en_cours">En cours</SelectItem><SelectItem value="en_attente">En attente</SelectItem><SelectItem value="clos">Clos</SelectItem></SelectContent></Select></div>
-              <div><Label>Priorité</Label><Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="haute">Haute</SelectItem><SelectItem value="urgente">Urgente</SelectItem></SelectContent></Select></div>
+              <div><Label>{t('common.type')}</Label><Select value={form.caseType} onValueChange={v => setForm(f => ({ ...f, caseType: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="civil">Civil</SelectItem><SelectItem value="penal">Pénal</SelectItem><SelectItem value="commercial">Commercial</SelectItem><SelectItem value="social">Social</SelectItem><SelectItem value="administratif">Administratif</SelectItem></SelectContent></Select></div>
+              <div><Label>{t('common.status')}</Label><Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="nouveau">Nouveau</SelectItem><SelectItem value="ouvert">Ouvert</SelectItem><SelectItem value="en_cours">En cours</SelectItem><SelectItem value="en_attente">En attente</SelectItem><SelectItem value="clos">Clos</SelectItem></SelectContent></Select></div>
+              <div><Label>{t('cases.priority')}</Label><Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="haute">Haute</SelectItem><SelectItem value="urgente">Urgente</SelectItem></SelectContent></Select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Partie adverse</Label><Input value={form.adversary} onChange={e => setForm(f => ({ ...f, adversary: e.target.value }))} placeholder="Nom de la partie adverse" /></div>
-              <div><Label>Juridiction</Label><Input value={form.jurisdiction} onChange={e => setForm(f => ({ ...f, jurisdiction: e.target.value }))} placeholder="TPI de Douala" /></div>
+              <div><Label>{t('cases.adversary')}</Label><Input value={form.adversary} onChange={e => setForm(f => ({ ...f, adversary: e.target.value }))} placeholder="Nom de la partie adverse" /></div>
+              <div><Label>{t('cases.jurisdiction')}</Label><Input value={form.jurisdiction} onChange={e => setForm(f => ({ ...f, jurisdiction: e.target.value }))} placeholder="TPI de Douala" /></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><Label>Montant en jeu</Label><Input type="number" value={form.amountInDispute} onChange={e => setForm(f => ({ ...f, amountInDispute: e.target.value }))} placeholder="0" /></div>
-              <div><Label>Facturation</Label><Select value={form.billingType} onValueChange={v => setForm(f => ({ ...f, billingType: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="forfait">Forfait</SelectItem><SelectItem value="horaire">Horaire</SelectItem><SelectItem value="abonnement">Abonnement</SelectItem><SelectItem value="success_fee">Success fee</SelectItem><SelectItem value="provision">Provision</SelectItem></SelectContent></Select></div>
-              <div><Label>Prochaine échéance</Label><Input type="date" value={form.nextDueDate} onChange={e => setForm(f => ({ ...f, nextDueDate: e.target.value }))} /></div>
+              <div><Label>{t('cases.disputeAmount')}</Label><Input type="number" value={form.amountInDispute} onChange={e => setForm(f => ({ ...f, amountInDispute: e.target.value }))} placeholder="0" /></div>
+              <div><Label>{t('cases.billing')}</Label><Select value={form.billingType} onValueChange={v => setForm(f => ({ ...f, billingType: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="forfait">Forfait</SelectItem><SelectItem value="horaire">Horaire</SelectItem><SelectItem value="abonnement">Abonnement</SelectItem><SelectItem value="success_fee">Success fee</SelectItem><SelectItem value="provision">Provision</SelectItem></SelectContent></Select></div>
+              <div><Label>{t('cases.nextDeadline')}</Label><Input type="date" value={form.nextDueDate} onChange={e => setForm(f => ({ ...f, nextDueDate: e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Résultat</Label><Select value={form.outcome} onValueChange={v => setForm(f => ({ ...f, outcome: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="">—</SelectItem><SelectItem value="gagné">Gagné</SelectItem><SelectItem value="perdu">Perdu</SelectItem><SelectItem value="transaction">Transaction</SelectItem><SelectItem value="abandonné">Abandonné</SelectItem><SelectItem value="en_cours">En cours</SelectItem></SelectContent></Select></div>
-              <div><Label>Statut paiement</Label><Select value={form.paymentStatus} onValueChange={v => setForm(f => ({ ...f, paymentStatus: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="">—</SelectItem><SelectItem value="paye">Payé</SelectItem><SelectItem value="partiel">Partiel</SelectItem><SelectItem value="non_paye">Non payé</SelectItem></SelectContent></Select></div>
+              <div><Label>{t('cases.result')}</Label><Select value={form.outcome} onValueChange={v => setForm(f => ({ ...f, outcome: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="">—</SelectItem><SelectItem value="gagné">Gagné</SelectItem><SelectItem value="perdu">Perdu</SelectItem><SelectItem value="transaction">Transaction</SelectItem><SelectItem value="abandonné">Abandonné</SelectItem><SelectItem value="en_cours">En cours</SelectItem></SelectContent></Select></div>
+              <div><Label>{t('invoices.payments')}</Label><Select value={form.paymentStatus} onValueChange={v => setForm(f => ({ ...f, paymentStatus: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="">—</SelectItem><SelectItem value="paye">Payé</SelectItem><SelectItem value="partiel">Partiel</SelectItem><SelectItem value="non_paye">Non payé</SelectItem></SelectContent></Select></div>
             </div>
             {/* Tags multi-select */}
             <div>
@@ -828,17 +830,17 @@ export function CasesView() {
                     {selectedTagIds.includes(t.id) && <X className="size-2.5" />}
                   </button>
                 ))}
-                {(!caseTags || caseTags.length === 0) && <span className="text-xs text-jl-muted">Aucune étiquette disponible</span>}
+                {(!caseTags || caseTags.length === 0) && <span className="text-xs text-jl-muted">{t('cases.noTags')}</span>}
               </div>
             </div>
             <div className="flex items-center gap-6 mt-2">
               <div className="flex items-center gap-2 cursor-pointer" onClick={() => setForm(f => ({ ...f, isSecret: !f.isSecret }))}>
                 <div className={cn('size-5 rounded border-2 flex items-center justify-center transition-colors', form.isSecret ? 'bg-jl-blue border-jl-blue' : 'border-jl')}>{form.isSecret && <Check className="size-3 text-white" />}</div>
-                <Label className="cursor-pointer text-sm flex items-center gap-1.5"><Lock className="size-3.5" />Dossier confidentiel</Label>
+                <Label className="cursor-pointer text-sm flex items-center gap-1.5"><Lock className="size-3.5" />{t('cases.confidential')}</Label>
               </div>
             </div>
             <div className="mt-3">
-              <Label className="text-xs mb-1.5 block">Collaborateurs du dossier</Label>
+              <Label className="text-xs mb-1.5 block">{t('cases.assignedLawyers')}</Label>
               <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 border rounded-lg bg-jl-page">
                 {Array.isArray(users) && users.map(u => (
                   <label key={u.id} className={cn('flex items-center gap-1 px-2 py-1 rounded-md text-xs cursor-pointer transition-colors', selectedCollabs.includes(u.id) ? 'bg-jl-blue text-white' : 'bg-jl-card border border-jl hover:bg-jl-blue-light')}>
@@ -850,7 +852,7 @@ export function CasesView() {
               </div>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button><Button onClick={handleSubmit} disabled={!form.title.trim() || !form.clientId || createMut.isPending}>{editing ? 'Enregistrer' : 'Créer'}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button><Button onClick={handleSubmit} disabled={!form.title.trim() || !form.clientId || createMut.isPending}>{editing ? t('common.save') : t('common.create')}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -863,7 +865,7 @@ export function CasesView() {
             )}
           </DialogHeader>
           <Tabs defaultValue="resume" className="flex-1 overflow-hidden">
-            <TabsList className="w-full flex-wrap h-auto"><TabsTrigger value="resume">Résumé</TabsTrigger><TabsTrigger value="timeline">Chronologie</TabsTrigger><TabsTrigger value="taches">Tâches</TabsTrigger><TabsTrigger value="events">Événements</TabsTrigger><TabsTrigger value="equipe">Équipe</TabsTrigger><TabsTrigger value="factures">Factures</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger><TabsTrigger value="documents">Documents</TabsTrigger><TabsTrigger value="workflow" className="gap-1"><ClipboardList className="size-3" />Workflow</TabsTrigger>{hasAI.data && <TabsTrigger value="ia" className="gap-1"><Brain className="size-3" />Analyse IA</TabsTrigger>}</TabsList>
+            <TabsList className="w-full flex-wrap h-auto"><TabsTrigger value="resume">{t('cases.tabSummary')}</TabsTrigger><TabsTrigger value="timeline">{t('cases.tabTimeline')}</TabsTrigger><TabsTrigger value="taches">{t('cases.tabTasks')}</TabsTrigger><TabsTrigger value="events">{t('cases.addEvent')}</TabsTrigger><TabsTrigger value="equipe">{t('cases.assignedLawyers')}</TabsTrigger><TabsTrigger value="factures">{t('invoices.title')}</TabsTrigger><TabsTrigger value="notes">{t('cases.tabNotes')}</TabsTrigger><TabsTrigger value="documents">{t('cases.tabDocs')}</TabsTrigger><TabsTrigger value="workflow" className="gap-1"><ClipboardList className="size-3" />Workflow</TabsTrigger>{hasAI.data && <TabsTrigger value="ia" className="gap-1"><Brain className="size-3" />{t('cases.aiSearch')}</TabsTrigger>}</TabsList>
             <TabsContent value="resume" className="mt-4 space-y-3 overflow-y-auto max-h-[50vh]">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-jl-secondary">Client :</span> <span className="font-medium">{caseDetail?.client ? caseDetail.client.fullName : '—'}</span></div>
@@ -890,23 +892,23 @@ export function CasesView() {
               <div className="flex items-center gap-2 mb-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-jl-muted" />
-                  <Input placeholder="Rechercher dans la timeline…" value={timelineSearch} onChange={e => setTimelineSearch(e.target.value)} className="pl-8 h-8 text-xs" />
+                  <Input placeholder={t('cases.timelineSearch')} value={timelineSearch} onChange={e => setTimelineSearch(e.target.value)} className="pl-8 h-8 text-xs" />
                   {timelineSearch && <button onClick={() => setTimelineSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-jl-muted hover:text-jl-secondary"><X className="size-3" /></button>}
                 </div>
                 <button onClick={() => setTimelineSort(s => s === 'desc' ? 'asc' : 'desc')} className={cn('flex items-center gap-1 px-2.5 h-8 rounded-md border text-[11px] font-medium transition-colors', timelineSort === 'asc' ? 'bg-jl-blue/5 border-jl-blue/20 text-jl-blue' : 'bg-jl-card border-jl text-jl-secondary hover:bg-jl-page')}>
-                  <ArrowUpDown className="size-3" />{timelineSort === 'desc' ? 'Récent' : 'Ancien'}
+                  <ArrowUpDown className="size-3" />{timelineSort === 'desc' ? t('cases.recent') : t('cases.older')}
                 </button>
               </div>
               {/* Filter pills */}
               <div className="flex flex-wrap items-center gap-1.5 mb-4 pb-3 border-b border-jl">
-                <span className="text-[10px] font-semibold text-jl-secondary uppercase tracking-wider mr-1">Filtrer :</span>
+                <span className="text-[10px] font-semibold text-jl-secondary uppercase tracking-wider mr-1">{t('common.filter')} :</span>
                 {[
-                  { type: 'event', label: 'Événements', icon: Calendar, color: '#C8A45D' },
-                  { type: 'note', label: 'Notes', icon: MessageSquare, color: '#6366F1' },
-                  { type: 'doc', label: 'Documents', icon: FileText, color: '#059669' },
-                  { type: 'task', label: 'Tâches', icon: ClipboardList, color: '#D97706' },
-                  { type: 'invoice', label: 'Factures', icon: Receipt, color: '#926B2D' },
-                  { type: 'payment', label: 'Paiements', icon: Wallet, color: '#059669' },
+                  { type: 'event', label: t('cases.addEvent'), icon: Calendar, color: '#C8A45D' },
+                  { type: 'note', label: t('cases.tabNotes'), icon: MessageSquare, color: '#6366F1' },
+                  { type: 'doc', label: t('cases.tabDocs'), icon: FileText, color: '#059669' },
+                  { type: 'task', label: t('cases.tabTasks'), icon: ClipboardList, color: '#D97706' },
+                  { type: 'invoice', label: t('invoices.title'), icon: Receipt, color: '#926B2D' },
+                  { type: 'payment', label: t('invoices.payments'), icon: Wallet, color: '#059669' },
                   { type: 'communication', label: 'Comms', icon: MessageCircle, color: '#0891B2' },
                 ].map(f => {
                   const active = timelineFilter.has(f.type)
@@ -924,10 +926,10 @@ export function CasesView() {
               {/* Inline creation */}
               <div className="flex gap-2 mb-4">
                 <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => { setShowInlineNote(v => !v); setShowInlineEvent(false) }}>
-                  <Plus className="size-3" />Note
+                  <Plus className="size-3" />{t('cases.note')}
                 </Button>
                 <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={() => { setShowInlineEvent(v => !v); setShowInlineNote(false) }}>
-                  <CalendarPlus className="size-3" />Événement
+                  <CalendarPlus className="size-3" />{t('cases.addEvent')}
                 </Button>
               </div>
               {/* Inline note form */}
@@ -937,11 +939,11 @@ export function CasesView() {
                 <div className="border border-[#6366F1]/30 bg-[#6366F1]/[0.03] rounded-lg p-3 mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <MessageSquare className="size-4 text-[#6366F1]" />
-                    <span className="text-xs font-semibold text-[#6366F1]">Nouvelle note</span>
+                    <span className="text-xs font-semibold text-[#6366F1]">{t('cases.addNote')}</span>
                   </div>
-                  <Textarea value={inlineNote} onChange={e => setInlineNote(e.target.value)} placeholder="Écrivez votre note…" rows={2} className="text-sm mb-2 resize-none" autoFocus />
+                  <Textarea value={inlineNote} onChange={e => setInlineNote(e.target.value)} placeholder={t('cases.notePlaceholder')} rows={2} className="text-sm mb-2 resize-none" autoFocus />
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setShowInlineNote(false); setInlineNote('') }}>Annuler</Button>
+                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setShowInlineNote(false); setInlineNote('') }}>{t('common.cancel')}</Button>
                     <Button size="sm" className="text-xs h-7 bg-[#6366F1] hover:bg-[#6366F1]/90" disabled={!inlineNote.trim() || createNoteMut.isPending} onClick={() => createNoteMut.mutate({ content: inlineNote })}>{createNoteMut.isPending ? <Loader2 className="size-3 animate-spin" /> : 'Ajouter'}</Button>
                   </div>
                 </div>
@@ -1082,7 +1084,7 @@ export function CasesView() {
                                             setTimeout(() => setDeletingItem(null), 3000)
                                           }
                                         }}
-                                        title={deletingItem === item.id ? 'Cliquez pour confirmer la suppression' : 'Supprimer'}
+                                        title={deletingItem === item.id ? t('cases.confirmDelete') : t('common.delete')}
                                       >
                                         <Trash2 className="size-3" />
                                       </button>
@@ -1159,10 +1161,10 @@ export function CasesView() {
                 <span className="text-xs font-medium text-jl-secondary">{(Array.isArray(caseTasks) ? caseTasks : []).length} tâche{(Array.isArray(caseTasks) ? caseTasks : []).length > 1 ? 's' : ''}</span>
                 <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={handleGenerateWorkflow} disabled={generatingWorkflow}>
                   {generatingWorkflow ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
-                  Générer les tâches
+                  {t('cases.generateTasks')}
                 </Button>
               </div>
-              {(Array.isArray(caseTasks) && caseTasks.length === 0) ? <p className="text-sm text-jl-muted text-center py-8">Aucune tâche — cliquez sur « Générer les tâches » pour créer les tâches recommandées</p> :
+              {(Array.isArray(caseTasks) && caseTasks.length === 0) ? <p className="text-sm text-jl-muted text-center py-8">{t('cases.noTasksHint')}</p> :
               <div className="space-y-2">{(Array.isArray(caseTasks) ? caseTasks : []).map((t: TaskItem) => (
                 <div key={t.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
                   <span className={cn('size-2 rounded-full shrink-0', t.priority === 'urgente' ? 'bg-[var(--danger)]' : t.priority === 'haute' ? 'bg-[var(--accent)]' : 'bg-jl-gold')} />

@@ -80,3 +80,5 @@ export {
 // ═══ Internal Components ═══
 export { EmptyState } from './EmptyState'
 export { ThemeToggle } from './ThemeToggle'
+export { t } from '@/lib/i18n'
+export { statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel } from './helpers'
