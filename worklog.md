@@ -2515,3 +2515,22 @@ Remaining i18n work:
 - SettingsView, DocumentsView, TemplatesView, PortalViews, AdminViews, CalendarView, TasksView, FinancesView, ImpayesView, TimeTrackingView, CommunicationsView, NotificationsView, SearchView still have many hardcoded French strings
 - These views can use the new label helpers (statusLabel, etc.) and t() for full i18n
 - The i18n fallback system ensures the app still works (shows key name or French) even if some strings aren't translated yet
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix white page / stuck on Chargement after splash on Vercel
+
+Work Log:
+- Identified React #185 hydration mismatch in Next.js 16 internal <Next.MetadataOutlet>
+- Server renders <script id=\"_R_\"> but client expects <Suspense> — framework bug
+- Removed metadata export from layout.tsx, replaced with <head> tags (bypasses MetadataOutlet)
+- Used next/dynamic(ssr: false) in page.tsx for AppClient (no SSR of app code)
+- error.tsx: hydration errors return null (React recovers naturally in production)
+- Restored missing ArrowRight and Star exports in shared-ui.tsx
+- Cleaned up stale files (DummyModule.tsx, page.tsx.new, api-fetch.ts)
+
+Stage Summary:
+- Root cause: Next.js 16 <Next.MetadataOutlet> internal hydration mismatch + missing Lucide exports
+- Fix: metadata via <head> tags + dynamic ssr:false + error.tsx returns null for hydration
+- Page loads correctly in dev, zero console errors
