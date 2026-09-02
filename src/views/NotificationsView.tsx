@@ -46,7 +46,7 @@ export function NotificationsView() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   // Fetch notifications
   const { data: notifsData, isLoading } = useQuery({

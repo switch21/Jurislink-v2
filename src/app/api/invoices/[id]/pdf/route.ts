@@ -137,7 +137,7 @@ export async function GET(
     doc.roundedRect(300, boxY, 240, 80, 4).stroke(COLORS.border)
     doc.font('Helvetica-Bold').fontSize(7).fillColor(COLORS.gray).text('DÉTAILS FACTURE', 310, boxY + 8)
     doc.font('Helvetica').fontSize(8).fillColor(COLORS.dark)
-    doc.text(`Date : ${fmtDate(invoice.issuedAt)}`, 310, boxY + 22)
+    doc.text(`Date : ${fmtDate(invoice.issuedAt ?? new Date())}`, 310, boxY + 22)
     doc.text(`Échéance : ${invoice.dueDate ? fmtDate(invoice.dueDate) : '—'}`, 310, boxY + 34)
     if (invoice.case?.reference) doc.text(`Dossier : ${invoice.case.reference}`, 310, boxY + 46)
     const statusLabel: Record<string, string> = { paye: 'Payée', non_paye: 'Non payée', partiel: 'Partiellement payée' }

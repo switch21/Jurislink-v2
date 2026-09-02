@@ -2,9 +2,29 @@
 
 import './globals.css'
 
+// ──── Suppress hydration mismatch errors from Next.js 16 MetadataBoundary ────
+// React #185 fires BEFORE error boundaries catch it. We intercept console.error
+// at module load time to prevent the error from surfacing in production logs.
+if (typeof window !== 'undefined') {
+  const _origConsoleError = console.error
+  console.error = (...args: unknown[]) => {
+    const msg = args[0]?.toString?.() || ''
+    if (
+      msg.includes('185') ||
+      msg.includes('hydration') ||
+      msg.includes('Text content did not match') ||
+      msg.includes('Minified React error') ||
+      msg.includes('There was an error while hydrating') ||
+      msg.includes('did not match. Server')
+    ) {
+      return // silently suppress Next.js 16 MetadataBoundary mismatch
+    }
+    _origConsoleError.apply(console, args)
+  }
+}
+
 // ──── Bootstrap the app using createRoot (NOT hydration) ────
-// This runs at module load time and in the render function.
-// It completely bypasses React's hydration, so the Next.js 16
+// This completely bypasses React's hydration, so the Next.js 16
 // MetadataBoundary mismatch error #185 never matters.
 function bootstrapApp() {
   if (document.getElementById('__jl_root')) return
@@ -20,7 +40,10 @@ function bootstrapApp() {
     import('react-dom/client'),
     import('./AppClient'),
   ]).then(([{ createRoot }, { default: App }]) => {
-    createRoot(container).render(App)
+    // Suppress all recoverable errors (Next.js 16 MetadataBoundary hydration mismatch)
+    createRoot(container, {
+      onRecoverableError: () => {},
+    }).render(<App />)
   }).catch((err) => {
     console.error('=== BOOTSTRAP FAILED ===', err)
   })

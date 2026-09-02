@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon } from './shared-ui'
-import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, PAYMENT_METHOD_LABELS, PAYMENT_METHOD_COLORS } from './constants'
-import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import { queryClient, STATUS_COLORS, PRIORITY_COLORS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, PAYMENT_METHOD_COLORS } from './constants'
+import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, paymentMethodLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== FINANCES VIEW ====================
 export function FinancesView() {
@@ -34,7 +34,7 @@ export function FinancesView() {
   const overdueList = useMemo(() => {
     return overdueInvoices.filter(inv => inv.dueDate && isBefore(parseISO(inv.dueDate), now) && (inv.status === 'non_paye' || inv.status === 'partiel')).map(inv => ({
       ...inv,
-      daysOverdue: differenceInDays(now, parseISO(inv.dueDate)),
+      daysOverdue: differenceInDays(now, parseISO(inv.dueDate as string)),
     }))
   }, [overdueInvoices])
 
@@ -95,7 +95,7 @@ export function FinancesView() {
         p.invoice?.client?.fullName || '',
         p.invoice?.invoiceNumber || '',
         String(p.amount),
-        PAYMENT_METHOD_LABELS[p.method] || p.method,
+        paymentMethodLabel(p.method),
         p.recorder?.fullName || '',
       ])
     }
@@ -202,7 +202,7 @@ export function FinancesView() {
                       <TableCell className="text-sm font-medium">{p.invoice?.client?.fullName || '—'}</TableCell>
                       <TableCell className="hidden sm:table-cell text-xs text-jl-muted">{p.invoice?.invoiceNumber || p.id.slice(0, 8)}</TableCell>
                       <TableCell className="text-sm font-medium text-right">{fmtMoney(p.amount)}</TableCell>
-                      <TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')} /><span className="text-xs text-jl-secondary">{PAYMENT_METHOD_LABELS[p.method] || p.method}</span></div></TableCell>
+                      <TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')} /><span className="text-xs text-jl-secondary">{paymentMethodLabel(p.method)}</span></div></TableCell>
                       <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{p.recorder?.fullName || '—'}</TableCell>
                     </TableRow>
                   ))}
@@ -221,7 +221,7 @@ export function FinancesView() {
                   const pct = filteredTotal > 0 ? (amount / filteredTotal) * 100 : 0
                   return (
                     <div key={method} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm"><div className="flex items-center gap-2"><span className={cn('size-3 rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-jl-page')} /><span className="text-xs font-medium">{PAYMENT_METHOD_LABELS[method] || method}</span></div><span className="text-xs font-semibold">{fmtMoney(amount)}</span></div>
+                      <div className="flex items-center justify-between text-sm"><div className="flex items-center gap-2"><span className={cn('size-3 rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-jl-page')} /><span className="text-xs font-medium">{paymentMethodLabel(method)}</span></div><span className="text-xs font-semibold">{fmtMoney(amount)}</span></div>
                       <div className="h-1.5 bg-jl-page rounded-full overflow-hidden"><div className={cn('h-full rounded-full', PAYMENT_METHOD_COLORS[method] || 'bg-jl-page')} style={{ width: pct + '%' }} /></div>
                     </div>
                   )

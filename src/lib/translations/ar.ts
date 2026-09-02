@@ -180,7 +180,6 @@ const ar: Record<string, string> = {
   'cases.yesterday': 'أمس',
   'cases.draftRestored': 'تم استعادة المسودة',
   'cases.reference': 'المرجع',
-  'cases.jurisdiction': 'الولاية القضائية',
   'cases.amount': 'المبلغ',
   'cases.urgent': 'عاجل',
   'cases.urgentMedium': 'متوسط',
@@ -384,7 +383,6 @@ const ar: Record<string, string> = {
   'invoices.from': 'من',
   'invoices.billingType': 'نوع الفوترة',
   'invoices.noUnbilledTime': 'لا يوجد وقت غير مُفوتر',
-  'invoices.selectClient': 'اختيار عميل',
   'invoices.line': 'بند',
   // === FINANCES ===
   'finances.title': 'المالية',

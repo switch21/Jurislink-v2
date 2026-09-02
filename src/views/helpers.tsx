@@ -4,6 +4,7 @@ import { format, parseISO, differenceInDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { STATUS_COLORS, STATUS_LABELS } from './constants'
 import { t } from '@/lib/i18n'
+export { t }
 
 // ==================== i18n Label Maps ====================
 // These functions return translated labels for DB status/type values

@@ -180,7 +180,6 @@ const sw: Record<string, string> = {
   'cases.yesterday': 'Jana',
   'cases.draftRestored': 'Rasimu imerudishwa',
   'cases.reference': 'Kumbukumbu',
-  'cases.jurisdiction': 'Mamlaka',
   'cases.amount': 'Kiasi',
   'cases.urgent': 'Dharura',
   'cases.urgentMedium': 'Kati',
@@ -384,7 +383,6 @@ const sw: Record<string, string> = {
   'invoices.from': 'Kutoka',
   'invoices.billingType': 'Aina ya malipo',
   'invoices.noUnbilledTime': 'Hakuna wakati usiohainishwa',
-  'invoices.selectClient': 'Chagua mteja',
   'invoices.line': 'Mstari',
   // === FINANCES ===
   'finances.title': 'Fedha',

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
-import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, INVOICE_TYPE_LABELS, INVOICE_TYPE_COLORS, PAYMENT_METHOD_LABELS, PAYMENT_METHOD_COLORS } from './constants'
-import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import { queryClient, STATUS_COLORS, PRIORITY_COLORS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, INVOICE_TYPE_COLORS, PAYMENT_METHOD_COLORS } from './constants'
+import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, statusLabel, invoiceTypeLabel, paymentMethodLabel } from './helpers'
 import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/useFormDraft'
 import { t } from '@/lib/i18n'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
@@ -164,11 +164,11 @@ export function InvoicesView() {
               return (
                 <TableRow key={inv.id} className={cn(i % 2 === 1 && 'bg-jl-page', 'cursor-pointer')} onClick={() => openDetail(inv)}>
                   <TableCell className="font-medium text-sm">{inv.invoiceNumber || '—'}</TableCell>
-                  <TableCell className="hidden sm:table-cell"><Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[inv.type] || 'bg-jl-page text-white')}>{INVOICE_TYPE_LABELS[inv.type] || inv.type}</Badge></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[inv.type] || 'bg-jl-page text-white')}>{invoiceTypeLabel(inv.type)}</Badge></TableCell>
                   <TableCell className="text-sm text-jl-secondary">{inv.client?.fullName || '—'}</TableCell>
                   <TableCell className="text-sm font-medium text-right">{fmtMoney(invTotal, inv.currency?.code || 'XAF')}</TableCell>
                   <TableCell className="hidden md:table-cell"><div className="text-right"><p className="text-xs font-medium">{fmtMoney(invPaid, inv.currency?.code || 'XAF')}</p>{inv.status === 'partiel' && <div className="w-16 h-1.5 bg-jl-page rounded-full mt-1 ml-auto"><div className="h-full rounded-full bg-jl-gold" style={{ width: invPercent + '%' }} /></div>}</div></TableCell>
-                  <TableCell><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[inv.status])}>{STATUS_LABELS[inv.status] || inv.status}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[inv.status])}>{statusLabel(inv.status)}</Badge></TableCell>
                   <TableCell className="hidden lg:table-cell text-sm text-jl-secondary">{fmtDate(inv.dueDate)}</TableCell>
                   <TableCell><Button variant="ghost" size="icon" className="size-7" onClick={e => { e.stopPropagation(); openDetail(inv) }}><Eye className="size-3.5" /></Button></TableCell>
                 </TableRow>
@@ -275,11 +275,11 @@ export function InvoicesView() {
                 {tenant?.niu && <p className="text-xs text-jl-muted">NIU : {tenant.niu}</p>}
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xl font-bold text-jl-blue">{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || 'FACTURE'}</p>
+                <p className="text-xl font-bold text-jl-blue">{invoiceTypeLabel(invoiceDetail?.type || '') || 'FACTURE'}</p>
                 <p className="text-sm font-mono font-semibold text-jl-primary mt-1">{invoiceDetail?.invoiceNumber || '—'}</p>
                 <div className="flex items-center gap-2 justify-end mt-2">
-                  <Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[invoiceDetail?.type || ''] || 'bg-jl-page text-white')}>{INVOICE_TYPE_LABELS[invoiceDetail?.type || ''] || invoiceDetail?.type}</Badge>
-                  <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[invoiceDetail?.status || ''])}>{STATUS_LABELS[invoiceDetail?.status || ''] || invoiceDetail?.status}</Badge>
+                  <Badge className={cn('text-[10px]', INVOICE_TYPE_COLORS[invoiceDetail?.type || ''] || 'bg-jl-page text-white')}>{invoiceTypeLabel(invoiceDetail?.type || '')}</Badge>
+                  <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[invoiceDetail?.status || ''])}>{statusLabel(invoiceDetail?.status || '')}</Badge>
                 </div>
               </div>
             </div>
@@ -400,10 +400,10 @@ export function InvoicesView() {
                 <div className="space-y-2">
                   {(invoiceDetail?.payments || []).map((p: Payment) => (
                     <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
-                      <div className={cn('size-8 rounded-lg flex items-center justify-center shrink-0', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')}><span className="text-white text-xs font-bold">{(PAYMENT_METHOD_LABELS[p.method] || '?')[0]}</span></div>
+                      <div className={cn('size-8 rounded-lg flex items-center justify-center shrink-0', PAYMENT_METHOD_COLORS[p.method] || 'bg-jl-page')}><span className="text-white text-xs font-bold">{(paymentMethodLabel(p.method) || '?')[0]}</span></div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium font-mono">{fmtMoney(p.amount, curCode)}</p>
-                        <p className="text-[10px] text-jl-muted">{PAYMENT_METHOD_LABELS[p.method] || p.method}{p.reference ? ` • ${p.reference}` : ''} • {p.recorder?.fullName || '—'}</p>
+                        <p className="text-[10px] text-jl-muted">{paymentMethodLabel(p.method)}{p.reference ? ` • ${p.reference}` : ''} • {p.recorder?.fullName || '—'}</p>
                       </div>
                       <span className="text-xs text-jl-muted shrink-0">{fmtDate(p.paidAt)}</span>
                     </div>

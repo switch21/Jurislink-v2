@@ -51,7 +51,7 @@ export function CalendarView() {
       if (generateTasks && data?.id) {
         fetch('/api/workflow/generate-tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.id, tenantId: user?.tenantId }) }).then(r => r.json()).then(res => {
           if (res.createdCount > 0) toast.success(`${res.createdCount} tâches générées automatiquement`)
-          else toast('Aucune nouvelle tâche générée')
+          else toast({ title: 'Aucune nouvelle tâche générée' })
           qc.invalidateQueries({ queryKey: ['tasks'] })
         }).catch(() => {})
       }
@@ -188,7 +188,7 @@ export function CalendarView() {
               try {
                 const res = await fetch('/api/workflow/generate-tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: editing.id, tenantId: user?.tenantId }) }).then(r => r.json())
                 if (res.createdCount > 0) toast.success(`${res.createdCount} tâches générées automatiquement`)
-                else toast('Aucune nouvelle tâche générée')
+                else toast({ title: 'Aucune nouvelle tâche générée' })
                 qc.invalidateQueries({ queryKey: ['tasks'] })
               } catch { toast.error('Erreur') }
             }}><ZapIcon className="size-3.5 mr-1" />Générer les tâches</Button></div>}

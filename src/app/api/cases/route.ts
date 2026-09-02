@@ -270,7 +270,7 @@ export async function POST(request: Request) {
       : caze
 
     // Auto-generate workflow tasks if requested
-    let workflowResult = null
+    let workflowResult: { taskCount: number; templateName: string } | null = null
     if (generateWorkflow) {
       const template = getWorkflowTemplate(caseData.caseType)
       if (template) {

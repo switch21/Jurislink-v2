@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     })
 
     const allDocs = await db.document.findMany({
-      where: { tenantId },
+      where: { tenantId: auth.tenantId! },
       select: { tags: true },
     })
     const tagSet = new Set<string>()

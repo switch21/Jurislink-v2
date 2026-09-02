@@ -54,8 +54,6 @@ const RESOURCE_ALIASES: Record<string, string> = {
   // Direct new resource names → fallback to existing resources
   time_entry: 'task',
   document_template: 'document',
-  payment: 'invoice',
-  communication: 'message',
   subscription: 'setting',
   audit_log: 'audit',
 }

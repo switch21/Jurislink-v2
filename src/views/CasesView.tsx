@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, SlidersHorizontal, Table2, EmptyState } from './shared-ui'
 import { t } from '@/lib/i18n'
-import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS, BILLING_LABELS } from './constants'
-import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
+import { queryClient, STATUS_COLORS, PRIORITY_COLORS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TASK_STATUS_MAP } from './constants'
+import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress, statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel } from './helpers'
 import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/useFormDraft'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData, CaseTag, CaseWithDetails, CasesListResponse } from './types'
 
@@ -80,7 +80,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       </div>
 
       {/* Résumé */}
-      {analysis.resume && (
+      {!!analysis.resume && (
         <Card className="border-jl-blue/20 bg-jl-blue/[0.03]">
           <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold text-jl-blue flex items-center gap-1.5"><FileText className="size-3.5" />{t('cases.tabSummary')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3"><p className="text-sm text-jl-secondary leading-relaxed">{String(analysis.resume)}</p></CardContent>
@@ -88,7 +88,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       )}
 
       {/* Chronologie */}
-      {analysis.chronologie && (
+      {!!analysis.chronologie && (
         <Card className="border-jl-gold/20 bg-jl-gold/[0.03]">
           <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold text-jl-gold flex items-center gap-1.5"><History className="size-3.5" />{t('cases.tabTimeline')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3"><ReactMarkdown>{String(analysis.chronologie)}</ReactMarkdown></CardContent>
@@ -96,7 +96,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
       )}
 
       {/* Parties */}
-      {analysis.parties && (
+      {!!analysis.parties && (
         <Card className="border-jl">
           <CardHeader className="pb-2 pt-3 px-4"><CardTitle className="text-xs font-semibold flex items-center gap-1.5"><Scale className="size-3.5" />{t('cases.subtitle')}</CardTitle></CardHeader>
           <CardContent className="px-4 pb-3"><ReactMarkdown>{String(analysis.parties)}</ReactMarkdown></CardContent>
@@ -211,7 +211,7 @@ export function CasesView() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [editing, setEditing] = useState<CaseItem | null>(null)
-  const [selectedCase, setSelectedCase] = useState<CaseItem | null>(null)
+  const [selectedCase, setSelectedCase] = useState<CaseWithDetails | null>(null)
   const [conflicts, setConflicts] = useState<ConflictResult[]>([])
   const [form, setForm] = useState({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', outcome: '', paymentStatus: '', isSecret: false })
   const { restoredDraft: caseRestoredDraft, isDirty: caseIsDirty, clearDraft: clearCaseDraft, getDraft: getCaseDraft } = useFormDraft('case-form', form as unknown as Record<string, unknown>, { enabled: dialogOpen })
@@ -557,9 +557,9 @@ export function CasesView() {
   }
 
   const resetForm = () => { setForm({ title: '', description: '', caseType: 'civil', status: 'nouveau', priority: 'normal', clientId: '', reference: '', adversary: '', jurisdiction: '', amountInDispute: '', billingType: '', nextDueDate: '', outcome: '', paymentStatus: '', isSecret: false }); setEditing(null); setConflicts([]); setSelectedCollabs([]); setSelectedTagIds([]) }
-  const openEdit = (c: CaseItem) => {
+  const openEdit = (c: CaseItem | CaseWithDetails) => {
     const wc = c as CaseWithDetails
-    setEditing(c)
+    setEditing(c as CaseItem)
     setForm({ title: c.title, description: c.description || '', caseType: c.caseType, status: c.status, priority: c.priority, clientId: c.clientId, reference: c.reference, adversary: c.adversary || '', jurisdiction: c.jurisdiction || '', amountInDispute: c.amountInDispute?.toString() || '', billingType: c.billingType || '', nextDueDate: wc.nextDueDate?.slice(0, 10) || '', outcome: wc.outcome || '', paymentStatus: wc.paymentStatus || '', isSecret: c.isSecret || false })
     setSelectedCollabs(c.assignments?.map(a => a.userId) || [])
     setSelectedTagIds((wc.tags || []).map((t: CaseTag) => t.id))
@@ -630,7 +630,7 @@ export function CasesView() {
     })
   }
 
-  const getClientName = (c: CaseItem) => c.client ? c.client.fullName : '—'
+  const getClientName = (c: CaseItem | CaseWithDetails) => c.client ? c.client.fullName : '—'
 
   return (
     <div className="p-4 md:p-6 space-y-4">
@@ -700,7 +700,7 @@ export function CasesView() {
             const payLabelMap: Record<string, string> = { paye: t('invoices.settled'), partiel: t('invoices.partial'), non_paye: t('invoices.unpaid') }
             return (
             <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setSelectedCase(c); setDetailOpen(true); setTimelineFilter(new Set(['event', 'note', 'doc', 'task', 'payment', 'invoice', 'communication'])); setShowInlineNote(false); setShowInlineEvent(false); setTimelineSearch('') }}>
-              <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[var(--accent)]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
+              <CardHeader className="pb-2"><div className="flex items-start justify-between"><div className="flex items-center gap-1.5"><CardTitle className="text-sm font-semibold">{c.reference}</CardTitle>{c.isSecret && <Lock className="size-3 text-[var(--accent)]" />}</div><div className="flex items-center gap-1"><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{statusLabel(c.status)}</Badge></div></div><CardDescription className="text-xs mt-1 line-clamp-2">{c.title}</CardDescription></CardHeader>
               <CardContent className="p-4 pt-0 space-y-2">
                 <p className="text-xs text-jl-secondary"><Users className="size-3 inline mr-1" />{getClientName(c)}</p>
                 {c.adversary && <p className="text-xs text-jl-secondary"><Scale className="size-3 inline mr-1" />Contre : {c.adversary}</p>}
@@ -716,8 +716,8 @@ export function CasesView() {
                   </div>
                 )}
                 <div className="flex items-center flex-wrap gap-1">
-                  <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[c.caseType] || c.caseType}</Badge>
-                  {c.billingType && <Badge variant="secondary" className="text-[10px]">{BILLING_LABELS[c.billingType] || c.billingType}</Badge>}
+                  <Badge variant="outline" className="text-[10px]">{typeLabel(c.caseType)}</Badge>
+                  {c.billingType && <Badge variant="secondary" className="text-[10px]">{billingLabel(c.billingType)}</Badge>}
                   {wc.outcome && <Badge variant="outline" className={cn('text-[10px]', outcomeColorMap[wc.outcome])}>{outcomeLabelMap[wc.outcome] || wc.outcome}</Badge>}
                   {wc.paymentStatus && <Badge variant="outline" className={cn('text-[10px]', payColorMap[wc.paymentStatus])}>{payLabelMap[wc.paymentStatus] || wc.paymentStatus}</Badge>}
                 </div>
@@ -756,8 +756,8 @@ export function CasesView() {
                   <TableCell className="text-xs font-mono whitespace-nowrap">{c.reference || c.id.slice(0, 8)}</TableCell>
                   <TableCell className="text-xs max-w-[180px] truncate"><div className="flex items-center gap-1.5">{c.isSecret && <Lock className="size-3 text-[var(--accent)] shrink-0" />}<span className="truncate">{c.title}</span></div></TableCell>
                   <TableCell className="text-xs hidden sm:table-cell whitespace-nowrap">{getClientName(c)}</TableCell>
-                  <TableCell><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge></TableCell>
-                  <TableCell className="hidden md:table-cell"><Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[c.priority])}>{PRIORITY_LABELS[c.priority] || c.priority}</Badge></TableCell>
+                  <TableCell><Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[c.status])}>{statusLabel(c.status)}</Badge></TableCell>
+                  <TableCell className="hidden md:table-cell"><Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[c.priority])}>{priorityLabel(c.priority)}</Badge></TableCell>
                   <TableCell className="text-xs hidden lg:table-cell whitespace-nowrap">{wc.nextDueDate ? <span className={cn(isPastDue && 'text-[var(--danger)] font-medium')}>{fmtDate(wc.nextDueDate)}</span> : '—'}</TableCell>
                   <TableCell className="hidden xl:table-cell"><div className="flex items-center gap-1 flex-wrap">{(wc.tags || []).slice(0, 2).map((t: CaseTag) => <span key={t.id} className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ backgroundColor: t.color + '18', color: t.color }}>{t.name}</span>)}{(wc.tags || []).length > 2 && <span className="text-[9px] text-jl-muted">+{(wc.tags || []).length - 2}</span>}</div></TableCell>
                   <TableCell className="text-xs hidden md:table-cell text-right font-medium whitespace-nowrap">{c.amountInDispute != null && c.amountInDispute > 0 ? fmtMoney(c.amountInDispute) : '—'}</TableCell>
@@ -869,13 +869,13 @@ export function CasesView() {
             <TabsContent value="resume" className="mt-4 space-y-3 overflow-y-auto max-h-[50vh]">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-jl-secondary">Client :</span> <span className="font-medium">{caseDetail?.client ? caseDetail.client.fullName : '—'}</span></div>
-                <div><span className="text-jl-secondary">Type :</span> <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[caseDetail?.caseType || ''] || caseDetail?.caseType}</Badge></div>
-                <div><span className="text-jl-secondary">Statut :</span> <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[caseDetail?.status || ''])}>{STATUS_LABELS[caseDetail?.status || ''] || caseDetail?.status}</Badge></div>
-                <div><span className="text-jl-secondary">Priorité :</span> <Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[caseDetail?.priority || ''])}>{PRIORITY_LABELS[caseDetail?.priority || ''] || caseDetail?.priority}</Badge></div>
+                <div><span className="text-jl-secondary">Type :</span> <Badge variant="outline" className="text-[10px]">{typeLabel(caseDetail?.caseType || '')}</Badge></div>
+                <div><span className="text-jl-secondary">Statut :</span> <Badge variant="outline" className={cn('text-[10px]', STATUS_COLORS[caseDetail?.status || ''])}>{statusLabel(caseDetail?.status || '')}</Badge></div>
+                <div><span className="text-jl-secondary">Priorité :</span> <Badge variant="outline" className={cn('text-[10px]', PRIORITY_COLORS[caseDetail?.priority || ''])}>{priorityLabel(caseDetail?.priority || '')}</Badge></div>
                 {caseDetail?.adversary && <div className="col-span-2"><span className="text-jl-secondary">Partie adverse :</span> <span className="font-medium">{caseDetail.adversary}</span></div>}
                 {caseDetail?.jurisdiction && <div className="col-span-2"><span className="text-jl-secondary">Juridiction :</span> <span className="font-medium">{caseDetail.jurisdiction}</span></div>}
                 {caseDetail?.amountInDispute != null && <div><span className="text-jl-secondary">Montant en jeu :</span> <span className="font-medium">{fmtMoney(caseDetail.amountInDispute)}</span></div>}
-                {caseDetail?.billingType && <div><span className="text-jl-secondary">Facturation :</span> <Badge variant="secondary" className="text-[10px]">{BILLING_LABELS[caseDetail.billingType] || caseDetail.billingType}</Badge></div>}
+                {caseDetail?.billingType && <div><span className="text-jl-secondary">Facturation :</span> <Badge variant="secondary" className="text-[10px]">{billingLabel(caseDetail.billingType)}</Badge></div>}
                 {caseDetail?.nextDueDate && (() => {
                   const dd = caseDetail.nextDueDate
                   const days = differenceInDays(parseISO(dd), new Date())
@@ -1189,7 +1189,7 @@ export function CasesView() {
                 <div key={e.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
                   <Calendar className="size-4 text-jl-gold shrink-0" />
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-[10px] text-jl-muted">{fmtDateTime(e.startTime)}{e.description ? ` • ${e.description}` : ''}</p></div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">{EVENT_TYPE_LABELS[e.eventType] || e.eventType}</Badge>
+                  <Badge variant="outline" className="text-[10px] shrink-0">{eventTypeLabel(e.eventType)}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
@@ -1198,7 +1198,7 @@ export function CasesView() {
               <div className="space-y-2">{(caseDetail?.assignments || []).map((a: CaseAssignment) => (
                 <div key={a.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
                   <Avatar className="size-8"><AvatarFallback className="text-[10px] bg-jl-blue text-white">{a.user?.fullName ? initials(a.user.fullName) : 'U'}</AvatarFallback></Avatar>
-                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{a.user?.fullName || '—'}</p><p className="text-[10px] text-jl-muted">{ROLE_LABELS[a.user?.role || ''] || a.user?.role || ''}</p></div>
+                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{a.user?.fullName || '—'}</p><p className="text-[10px] text-jl-muted">{roleLabel(a.user?.role || '') || ''}</p></div>
                 </div>
               ))}</div>}
             </TabsContent>
@@ -1244,7 +1244,7 @@ export function CasesView() {
                   <Receipt className="size-4 text-jl-gold shrink-0" />
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium">{inv.id.slice(0,8)}</p><p className="text-[10px] text-jl-muted">{fmtDate(inv.createdAt)}{inv.dueDate ? ` • Échéance: ${fmtDate(inv.dueDate)}` : ''}</p></div>
                   <span className="text-sm font-semibold shrink-0">{fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</span>
-                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[inv.status])}>{STATUS_LABELS[inv.status] || inv.status}</Badge>
+                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[inv.status])}>{statusLabel(inv.status)}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>

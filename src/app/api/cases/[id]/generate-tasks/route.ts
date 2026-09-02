@@ -26,7 +26,7 @@ export async function POST(
         title: true,
         assignments: {
           select: { userId: true },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { id: 'asc' },
         },
       },
     })

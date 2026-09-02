@@ -114,8 +114,8 @@ export async function POST(
       clientName: invoice.client?.fullName || 'Client',
       clientCompany: invoice.client?.company,
       invoiceNumber: invoice.invoiceNumber || id.slice(0, 8),
-      amountFormatted: formatCurrency(invoice.amount, invoice.currency?.code),
-      remainingFormatted: formatCurrency(remaining, invoice.currency?.code),
+      amountFormatted: formatCurrency(invoice.amount, invoice.currencyId),
+      remainingFormatted: formatCurrency(remaining, invoice.currencyId),
       dueDateFormatted: dueDate ? formatDateFR(dueDate) : 'N/A',
       daysOverdue,
       tenantName: invoice.tenant?.name || 'Notre cabinet',
@@ -165,7 +165,7 @@ export async function POST(
     await db.notification.create({
       data: {
         title: `${config.label} envoyée`,
-        message: `${config.label} pour la facture ${data.invoiceNumber} (${data.clientName}) — ${formatCurrency(remaining, invoice.currency?.code)} — ${daysOverdue}j de retard`,
+        message: `${config.label} pour la facture ${data.invoiceNumber} (${data.clientName}) — ${formatCurrency(remaining, invoice.currencyId)} — ${daysOverdue}j de retard`,
         category: 'facture',
         resourceType: 'invoice',
         resourceId: id,

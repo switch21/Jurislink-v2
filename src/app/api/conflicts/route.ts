@@ -58,11 +58,11 @@ export async function POST(request: Request) {
               type: 'adversary_as_client',
               case: {
                 id: caze.id,
-                reference: caze.reference,
+                reference: caze.reference || '',
                 title: caze.title,
                 clientName: c.fullName,
               },
-              description: `La partie adverse "${adversary}" correspond à un client existant (${c.fullName}) dans le dossier ${caze.reference}`,
+              description: `La partie adverse "${adversary}" correspond à un client existant (${c.fullName}) dans le dossier ${caze.reference || ''}`,
             })
           }
         }
@@ -90,11 +90,11 @@ export async function POST(request: Request) {
               type: 'client_as_adversary',
               case: {
                 id: caze.id,
-                reference: caze.reference,
+                reference: caze.reference || '',
                 title: caze.title,
                 clientName: caze.client.fullName,
               },
-              description: `La partie adverse "${adversary}" apparaît déjà comme partie adverse dans le dossier ${caze.reference}`,
+              description: `La partie adverse "${adversary}" apparaît déjà comme partie adverse dans le dossier ${caze.reference || ''}`,
             })
           }
         }
@@ -127,11 +127,11 @@ export async function POST(request: Request) {
               type: 'client_as_adversary',
               case: {
                 id: caze.id,
-                reference: caze.reference,
+                reference: caze.reference || '',
                 title: caze.title,
                 clientName: caze.client.fullName,
               },
-              description: `Le client ${client.fullName} est listé comme partie adverse dans le dossier ${caze.reference}`,
+              description: `Le client ${client.fullName} est listé comme partie adverse dans le dossier ${caze.reference || ''}`,
             })
           }
         }

@@ -41,7 +41,7 @@ export const toast = new Proxy(function () {}, {
     }
   },
   apply(_, _thisArg, args) {
-    if (__toast) return __toast(...(args as any))
-    sonnerPromise?.then(m => m.toast(...(args as any)))
+    if (__toast) return (__toast as any)(...args)
+    sonnerPromise?.then(m => (m.toast as any)(...args))
   },
 }) as unknown as typeof import('sonner').toast

@@ -169,24 +169,20 @@ function toast({ ...props }: Toast) {
 }
 
 // Sonner-compatible API
-// @ts-expect-error -- assigning to function object
 toast.success = (message: string, opts?: Partial<Toast>) =>
   toast({ title: message, variant: "success", ...opts })
 
-// @ts-expect-error -- assigning to function object
 toast.error = (message: string, opts?: Partial<Toast>) =>
   toast({ title: message, variant: "destructive", ...opts })
 
-// @ts-expect-error -- assigning to function object
 toast.info = (message: string, opts?: Partial<Toast>) =>
   toast({ title: message, variant: "default", ...opts })
 
-// @ts-expect-error -- assigning to function object
 toast.warning = (message: string, opts?: Partial<Toast>) =>
   toast({ title: message, variant: "warning", ...opts })
 
-// @ts-expect-error -- assigning to function object
 toast.dismiss = () => dispatch({ type: "DISMISS_TOAST" })
+
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)

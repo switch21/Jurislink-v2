@@ -1,5 +1,8 @@
 // Auto-extracted types from page.tsx split
 // ==================== Types ====================
+
+// Re-export from appStore for convenience
+export type { ViewName, PortalViewName } from '@/store/appStore'
 export interface Client {
   id: string; fullName: string; company?: string | null;
   clientType?: string; niu?: string | null; email?: string | null;
@@ -13,7 +16,7 @@ export interface CaseItem {
   status: string; priority: string; isSecret: boolean;
   createdAt: string; tenantId: string; clientId: string;
   adversary?: string | null; jurisdiction?: string | null; amountInDispute?: number | null;
-  billingType?: string | null;
+  billingType?: string | null; closingDate?: string | null;
   client?: Client; assignments?: CaseAssignment[]; notes?: CaseNote[]; documents?: Doc[]; events?: EventItem[];
 }
 export interface CaseAssignment { id: string; userId: string; caseId: string; user?: UserItem }
@@ -22,7 +25,7 @@ export interface Doc {
   id: string; fileName: string; fileSize: number; filePath: string;
   version: number; folder?: string | null; tags?: string | null;
   documentType?: string | null; mimeType?: string | null;
-  description?: string | null;
+  description?: string | null; status?: string | null;
   createdAt: string; updatedAt?: string | null;
   tenantId: string; caseId?: string | null;
   case?: CaseItem;
@@ -74,7 +77,7 @@ export interface UserItem {
 }
 export interface TenantItem {
   id: string; name: string; slug: string; plan: string; maxUsers: number; maxStorageGb: number;
-  isActive: boolean; createdAt: string; phone?: string | null; email?: string | null; address?: string | null; city?: string | null; country?: string | null; niu?: string | null; logoUrl?: string | null;
+  isActive: boolean; createdAt: string; phone?: string | null; email?: string | null; address?: string | null; city?: string | null; country?: string | null; niu?: string | null; logoUrl?: string | null; currencyCode?: string | null;
   _count?: { users: number; clients: number; cases: number; invoices?: number; documents?: number; events?: number; tasks?: number; payments?: number; notifications?: number; auditLogs?: number };
 }
 export interface AdminDashboardData {
@@ -115,6 +118,9 @@ export interface DashboardStats {
   pendingDocumentsCount?: number;
   casesWithoutDeadlines?: Array<{ id: string; reference: string; title: string; clientName: string | null; status: string; updatedAt: string; pendingTasksCount: number }>;
   casesWithoutDeadlinesCount?: number;
+  financial?: { revenueThisMonth: number; revenueLastMonth: number; collectedThisMonth: number; collectedLastMonth: number; toRecover: number; overdueInvoicesCount: number };
+  todayEventsCount?: number;
+  todayEvents?: Array<{ id: string; title: string; startTime: string; eventType: string; criticality: string; caseReference: string | null; assignments: Array<{ userName: string }> }>;
 }
 export interface ConflictResult {
   type: string; case: { id: string; reference: string; title: string; clientName: string }; description: string;
@@ -212,10 +218,11 @@ export interface CaseTag {
   _count?: { taggings: number }
 }
 
-export interface CaseWithDetails extends CaseItem {
+export interface CaseWithDetails extends Omit<CaseItem, 'assignments' | 'client' | '_count'> {
   nextDueDate?: string | null
   outcome?: string | null
   paymentStatus?: string | null
+  closingDate?: string | null
   tags: CaseTag[]
   _count: {
     tasks: number

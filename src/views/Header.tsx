@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useAppStore, cn, Button, Badge, ScrollArea, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Search, Bell, LogOut, MessageSquare, Menu, X, Briefcase, Receipt, ClipboardList, FileText, Calendar, MessageCircle, ExternalLink, ThemeToggle, Globe } from './shared-ui'
 import { usePollingNotifications } from '@/hooks/use-polling-notifications'
-import { relativeTime } from './helpers'
+import { relativeTime, t } from './helpers'
 import { NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants'
 import { useLocale, LOCALE_NAMES, LOCALE_FLAGS, SUPPORTED_LOCALES } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
@@ -66,7 +66,8 @@ export function Header() {
   const [dropdownFilter, setDropdownFilter] = useState('all')
   const prevUnreadRef = useRef(0)
   const [badgePulse, setBadgePulse] = useState(false)
-  const viewLabel = NAV_ITEMS.find(n => n.view === currentView)?.label || ADMIN_NAV_ITEMS.find(n => n.view === currentView)?.label || 'JurisLink'
+  const viewLabelKey = NAV_ITEMS.find(n => n.view === currentView)?.label || ADMIN_NAV_ITEMS.find(n => n.view === currentView)?.label || ''
+  const viewLabel = t(viewLabelKey)
 
   // Polling hook — 30s interval, auto-pauses when unauthenticated
   const { notifications, unreadCount, refetchNow } = usePollingNotifications(!!user?.tenantId)

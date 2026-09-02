@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       tenantId, userId: auth.id,
       title: 'Facture créée depuis les temps',
       message: `Facture ${invoiceNumber} (${entries.length} entrées) pour ${invoice.client.fullName}`,
-      category: 'facture', resourceType: 'invoice', resourceId: invoice.id,
+      type: 'facture', resourceType: 'invoice', resourceId: invoice.id,
     })
 
     return NextResponse.json(invoice, { status: 201 })

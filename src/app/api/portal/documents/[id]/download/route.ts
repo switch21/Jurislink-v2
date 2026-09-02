@@ -14,21 +14,27 @@ export async function GET(
   const db = getDb()
   try {
     const { id } = await params
+
+    // Look up portal account and verify access via client relation
+    const portalAccount = await db.clientPortal.findUnique({
+      where: { id: portalUserId },
+      select: { clientId: true, tenantId: true, isActive: true },
+    })
+    if (!portalAccount || !portalAccount.isActive) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
     const doc = await db.document.findUnique({
       where: { id },
       include: {
-        case: {
-          include: {
-            client: { select: { portalUserId: true } },
-          },
-        },
+        case: { select: { clientId: true } },
       },
     })
     if (!doc) {
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
     }
 
-    if (doc.case?.client?.portalUserId !== portalUserId) {
+    if (doc.case?.clientId !== portalAccount.clientId) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -50,7 +56,7 @@ export async function GET(
     }
     const contentType = doc.mimeType || mimeMap[ext || ''] || 'application/octet-stream'
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="${encodeURIComponent(doc.fileName)}"`,

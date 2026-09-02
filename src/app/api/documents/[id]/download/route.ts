@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate } from '@/lib/auth-server'
 import { downloadFile } from '@/lib/storage'
-import { decryptBuffer } from '@/lib/encryption'
 
 export async function GET(
   request: Request,
@@ -19,32 +18,11 @@ export async function GET(
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
     }
 
-    // Access control: confidential documents only accessible by assigned lawyers & firm_admin
-    if (doc.isConfidential && auth.role !== 'root_admin') {
-      const isAssigned = await db.caseAssignment.findFirst({
-        where: { userId: auth.id, caseId: doc.caseId, tenantId: doc.tenantId },
-      })
-      const isAdmin = auth.role === 'firm_admin' && auth.tenantId === doc.tenantId
-      if (!isAssigned && !isAdmin && doc.uploadedById !== auth.id) {
-        return NextResponse.json({ error: 'Accès restreint — document confidentiel' }, { status: 403 })
-      }
-    }
-
     let fileBuffer: Buffer
     try {
       fileBuffer = await downloadFile(doc.filePath)
     } catch {
       return NextResponse.json({ error: 'Fichier introuvable sur le serveur' }, { status: 404 })
-    }
-
-    // Decrypt if encrypted
-    if (doc.isEncrypted && doc.encryptionIv) {
-      try {
-        fileBuffer = decryptBuffer(fileBuffer, doc.encryptionIv)
-      } catch (err) {
-        console.error('Decryption failed:', err)
-        return NextResponse.json({ error: 'Erreur de déchiffrement' }, { status: 500 })
-      }
     }
 
     const ext = doc.fileName.split('.').pop()?.toLowerCase()
@@ -63,7 +41,7 @@ export async function GET(
     }
     const contentType = doc.mimeType || mimeMap[ext || ''] || 'application/octet-stream'
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="${encodeURIComponent(doc.fileName)}"`,

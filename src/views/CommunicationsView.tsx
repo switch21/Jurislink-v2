@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
-import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, COMM_TYPE_LABELS, COMM_TYPE_COLORS, COMM_STATUS_LABELS, COMM_STATUS_COLORS, QUICK_TEMPLATES } from './constants'
-import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
+import { queryClient, STATUS_COLORS, PRIORITY_COLORS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, COMM_TYPE_COLORS, COMM_STATUS_COLORS, QUICK_TEMPLATES } from './constants'
+import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, commTypeLabel, commStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== COMMUNICATIONS VIEW ====================
 export function CommunicationsView() {
@@ -121,10 +121,10 @@ export function CommunicationsView() {
             {(comms || []).map((c: Communication) => (
               <TableRow key={c.id}>
                 <TableCell className="text-xs text-jl-secondary">{fmtDateTime(c.sentAt || c.createdAt)}</TableCell>
-                <TableCell><Badge className={cn('text-[10px]', COMM_TYPE_COLORS[c.type])}><span className="flex items-center gap-1">{typeIcon(c.type)}{COMM_TYPE_LABELS[c.type] || c.type}</span></Badge></TableCell>
+                <TableCell><Badge className={cn('text-[10px]', COMM_TYPE_COLORS[c.type])}><span className="flex items-center gap-1">{typeIcon(c.type)}{commTypeLabel(c.type)}</span></Badge></TableCell>
                 <TableCell className="text-sm">{c.client?.fullName || c.recipientEmail || c.recipientPhone || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-sm text-jl-secondary truncate max-w-[200px]">{c.subject || c.content.slice(0, 50)}</TableCell>
-                <TableCell><Badge className={cn('text-[10px]', COMM_STATUS_COLORS[c.status])}>{COMM_STATUS_LABELS[c.status] || c.status}</Badge></TableCell>
+                <TableCell><Badge className={cn('text-[10px]', COMM_STATUS_COLORS[c.status])}>{commStatusLabel(c.status)}</Badge></TableCell>
                 <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{c.sentBy?.fullName || '—'}</TableCell>
                 <TableCell><Button variant="ghost" size="icon" className="size-7" onClick={() => deleteMut.mutate(c.id)}><Trash2 className="size-3.5 text-red-500" /></Button></TableCell>
               </TableRow>
@@ -141,7 +141,7 @@ export function CommunicationsView() {
               {(['email', 'sms', 'whatsapp'] as const).map(t => (
                 <Button key={t} variant={form.type === t ? 'default' : 'outline'} size="sm" className="flex-1 h-9 text-xs" onClick={() => setForm(f => ({ ...f, type: t }))}>
                   {t === 'email' && <Mail className="size-3.5 mr-1" />}{t === 'sms' && <MessageCircle className="size-3.5 mr-1" />}{t === 'whatsapp' && <Phone className="size-3.5 mr-1" />}
-                  {COMM_TYPE_LABELS[t]}
+                  {commTypeLabel(t)}
                 </Button>
               ))}
             </div>

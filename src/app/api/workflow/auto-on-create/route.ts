@@ -125,7 +125,12 @@ export async function POST(request: Request) {
         },
       })
 
-      createdTasks.push(task)
+      createdTasks.push({
+        id: task.id,
+        title: task.title,
+        priority: task.priority,
+        dueDate: task.dueDate as Date,
+      })
 
       // Create notification
       await db.notification.create({

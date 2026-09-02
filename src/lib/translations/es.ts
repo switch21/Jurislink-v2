@@ -180,7 +180,6 @@ const es: Record<string, string> = {
   'cases.yesterday': 'Ayer',
   'cases.draftRestored': 'Borrador restaurado',
   'cases.reference': 'Referencia',
-  'cases.jurisdiction': 'Jurisdicción',
   'cases.amount': 'Importe',
   'cases.urgent': 'Urgente',
   'cases.urgentMedium': 'Medio',
@@ -384,7 +383,6 @@ const es: Record<string, string> = {
   'invoices.from': 'De',
   'invoices.billingType': 'Tipo de facturación',
   'invoices.noUnbilledTime': 'Sin tiempo sin facturar',
-  'invoices.selectClient': 'Seleccionar un cliente',
   'invoices.line': 'Línea',
   // === FINANCES ===
   'finances.title': 'Finanzas',

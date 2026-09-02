@@ -63,6 +63,7 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = { especes: 'Espèce
 export const PAYMENT_METHOD_COLORS: Record<string, string> = { especes: 'bg-[#059669]', virement: 'bg-[#1E5A8A]', mobile_money: 'bg-[#C8A45D]', carte: 'bg-[#7C3AED]', cheque: 'bg-[#6B7280]' }
 export const CHART_COLORS = ['#1E5A8A', '#C8A45D', '#059669', '#DC2626', '#6B7280', '#F59E0B']
 export const CHART_COLORS_DARK = ['#4A8FCA', '#E0C87A', '#34D399', '#FB7185', '#9CA3AF', '#FBBF24']
+export const TASK_STATUS_MAP: Record<string, string> = { todo: 'a_faire', in_progress: 'en_cours', done: 'terminee', en_cours: 'en_cours', a_faire: 'a_faire', terminee: 'terminee' }
 export const CASE_STATUS_LABELS: Record<string, string> = { nouveau: 'Nouveau', ouvert: 'Ouvert', en_cours: 'En cours', en_attente: 'En attente', clos: 'Clos', archive: 'Archivé' }
 export const INVOICE_STATUS_LABELS: Record<string, string> = { non_paye: 'Non payé', partiel: 'Partiel', paye: 'Payé', annule: 'Annulé' }
 export const COMM_TYPE_LABELS: Record<string, string> = { email: 'Email', sms: 'SMS', whatsapp: 'WhatsApp' }
@@ -79,30 +80,30 @@ export const QUICK_TEMPLATES = [
 ]
 
 export const NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType; adminOnly?: boolean; permission?: { resource: string; action: string } }[] = [
-  { view: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { view: 'cases', label: 'Dossiers', icon: Briefcase, permission: { resource: 'case', action: 'view' } },
-  { view: 'clients', label: 'Clients', icon: Users, permission: { resource: 'client', action: 'view' } },
-  { view: 'tasks', label: 'Tâches', icon: ClipboardList, permission: { resource: 'task', action: 'view' } },
-  { view: 'documents', label: 'Documents', icon: FileText, permission: { resource: 'document', action: 'view' } },
-  { view: 'calendar', label: 'Calendrier', icon: Calendar, permission: { resource: 'event', action: 'view' } },
-  { view: 'invoices', label: 'Factures', icon: Receipt, permission: { resource: 'invoice', action: 'view' } },
-  { view: 'finances', label: 'Finances', icon: TrendingUp, permission: { resource: 'invoice', action: 'view' } },
-  { view: 'impayes', label: 'Impayés', icon: AlertOctagon, permission: { resource: 'invoice', action: 'view' } },
-  { view: 'time-tracking', label: 'Temps', icon: Timer, permission: { resource: 'task', action: 'view' } },
-  { view: 'communications', label: 'Communications', icon: SendHorizontal, permission: { resource: 'message', action: 'view' } },
-  { view: 'templates', label: 'Modèles', icon: FileCode2, permission: { resource: 'document', action: 'view' } },
-  { view: 'messages', label: 'Messages', icon: MessageSquare, permission: { resource: 'message', action: 'view' } },
-  { view: 'reports', label: 'Rapports', icon: BarChart3, permission: { resource: 'report', action: 'view' } },
-  { view: 'notifications', label: 'Notifications', icon: Bell, permission: { resource: 'notification', action: 'view' } },
-  { view: 'search', label: 'Recherche', icon: Search },
-  { view: 'audit-logs', label: "Journal d'audit", icon: Shield, adminOnly: true, permission: { resource: 'audit', action: 'view' } },
-  { view: 'settings', label: 'Paramètres', icon: Settings },
+  { view: 'dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
+  { view: 'cases', label: 'nav.cases', icon: Briefcase, permission: { resource: 'case', action: 'view' } },
+  { view: 'clients', label: 'nav.clients', icon: Users, permission: { resource: 'client', action: 'view' } },
+  { view: 'tasks', label: 'nav.tasks', icon: ClipboardList, permission: { resource: 'task', action: 'view' } },
+  { view: 'documents', label: 'nav.documents', icon: FileText, permission: { resource: 'document', action: 'view' } },
+  { view: 'calendar', label: 'nav.calendar', icon: Calendar, permission: { resource: 'event', action: 'view' } },
+  { view: 'invoices', label: 'nav.invoices', icon: Receipt, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'finances', label: 'nav.finances', icon: TrendingUp, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'impayes', label: 'nav.impayes', icon: AlertOctagon, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'time-tracking', label: 'nav.timeTracking', icon: Timer, permission: { resource: 'task', action: 'view' } },
+  { view: 'communications', label: 'nav.communications', icon: SendHorizontal, permission: { resource: 'message', action: 'view' } },
+  { view: 'templates', label: 'nav.templates', icon: FileCode2, permission: { resource: 'document', action: 'view' } },
+  { view: 'messages', label: 'nav.messages', icon: MessageSquare, permission: { resource: 'message', action: 'view' } },
+  { view: 'reports', label: 'nav.reports', icon: BarChart3, permission: { resource: 'report', action: 'view' } },
+  { view: 'notifications', label: 'nav.notifications', icon: Bell, permission: { resource: 'notification', action: 'view' } },
+  { view: 'search', label: 'nav.search', icon: Search },
+  { view: 'audit-logs', label: 'nav.auditLogs', icon: Shield, adminOnly: true, permission: { resource: 'audit', action: 'view' } },
+  { view: 'settings', label: 'nav.settings', icon: Settings },
 ]
 
 export const ADMIN_NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType }[] = [
-  { view: 'admin-dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { view: 'admin-cabinets', label: 'Cabinets', icon: BuildingIcon },
-  { view: 'admin-users', label: 'Utilisateurs', icon: UsersRound },
-  { view: 'admin-plans', label: 'Abonnements', icon: CreditCardIcon },
-  { view: 'settings', label: 'Paramètres', icon: Settings },
+  { view: 'admin-dashboard', label: 'nav.admin.dashboard', icon: LayoutDashboard },
+  { view: 'admin-cabinets', label: 'nav.admin.cabinets', icon: BuildingIcon },
+  { view: 'admin-users', label: 'nav.admin.users', icon: UsersRound },
+  { view: 'admin-plans', label: 'nav.admin.plans', icon: CreditCardIcon },
+  { view: 'settings', label: 'nav.settings', icon: Settings },
 ]
