@@ -32,7 +32,7 @@ export function MessagesView() {
   const sendMut = useMutation({
     mutationFn: (content: string) => fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content, tenantId: user?.tenantId, senderId: user?.id, receiverId: selectedContact }) }).then(r => r.json()),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['messages'] }); setNewMessage('') },
-    onError: () => toast.error("Erreur d'envoi"),
+    onError: () => toast.error(t('messages.sendError')),
   })
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -50,7 +50,7 @@ export function MessagesView() {
       <h2 className="text-lg font-semibold">Messages</h2>
       <Card className="overflow-hidden"><div className="flex h-[500px]">
         <div className="w-64 border-r flex-shrink-0 overflow-y-auto hidden sm:block">
-          {contactList.length === 0 ? <p className="text-xs text-jl-muted p-4 text-center">Aucun contact</p> :
+          {contactList.length === 0 ? <p className="text-xs text-jl-muted p-4 text-center">{t('common.noContact')}</p> :
             contactList.map((c: UserItem) => (
               <button key={c.id} className={cn('w-full flex items-center gap-2 p-3 hover:bg-jl-page text-left transition-colors', selectedContact === c.id && 'bg-jl-blue-light')} onClick={() => setSelectedContact(c.id)}>
                 <Avatar className="size-8"><AvatarFallback className="text-[10px] bg-jl-page">{initials(c.fullName)}</AvatarFallback></Avatar>
@@ -59,11 +59,11 @@ export function MessagesView() {
             ))}
         </div>
         <div className="flex-1 flex flex-col">
-          {!selectedContact ? <div className="flex-1 flex items-center justify-center"><EmptyState icon={MessageSquare} title="Sélectionnez une conversation" description="Choisissez un contact pour commencer" /></div> : (
+          {!selectedContact ? <div className="flex-1 flex items-center justify-center"><EmptyState icon={MessageSquare} title={t('messages.selectConversation')} description={t('messages.chooseContact')} /></div> : (
             <>
               <div className="p-3 border-b"><p className="text-sm font-semibold">{(contacts || []).find((c: UserItem) => c.id === selectedContact)?.fullName || ''}</p></div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {chatMessages.length === 0 && <p className="text-xs text-jl-muted text-center py-8">Aucun message</p>}
+                {chatMessages.length === 0 && <p className="text-xs text-jl-muted text-center py-8">{t('common.noMessage')}</p>}
                 {chatMessages.map((m: Message) => {
                   const isMine = m.senderId === user?.id
                   return (
@@ -78,7 +78,7 @@ export function MessagesView() {
                 <div ref={messagesEndRef} />
               </div>
               <div className="p-3 border-t flex gap-2">
-                <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Écrire un message..." className="text-sm" onKeyDown={e => e.key === 'Enter' && handleSend()} />
+                <Input value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder={t('messages.writeMessage')} className="text-sm" onKeyDown={e => e.key === 'Enter' && handleSend()} />
                 <Button size="icon" onClick={handleSend} disabled={!newMessage.trim() || sendMut.isPending}><Send className="size-4" /></Button>
               </div>
             </>

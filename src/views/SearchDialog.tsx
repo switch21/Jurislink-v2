@@ -112,7 +112,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <div className="flex items-center border-b px-3 pb-2">
         <CommandInput
-          placeholder="Rechercher dossiers, clients, tâches, documents..."
+          placeholder={t('search.placeholderFull')}
           value={query}
           onValueChange={setQuery}
           className="flex-1 border-0 p-0"

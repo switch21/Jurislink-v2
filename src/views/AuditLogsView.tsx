@@ -21,30 +21,30 @@ export function AuditLogsView() {
     enabled: isAdmin,
   })
 
-  if (!isAdmin) return <div className="p-6"><EmptyState icon={Shield} title="Accès restreint" description="Cette section est réservée aux administrateurs" /></div>
+  if (!isAdmin) return <div className="p-6"><EmptyState icon={Shield} title={t('audit.restricted')} description={t('audit.restrictedDesc')} /></div>
 
   return (
     <div className="p-4 md:p-6 space-y-4">
       <h2 className="text-lg font-semibold">Journal d'audit</h2>
       <Select value={resourceType} onValueChange={setResourceType}>
-        <SelectTrigger className="w-[180px] h-9 text-xs"><SelectValue placeholder="Type de ressource" /></SelectTrigger>
-        <SelectContent><SelectItem value="all">Tous</SelectItem><SelectItem value="Case">Dossier</SelectItem><SelectItem value="Client">Client</SelectItem><SelectItem value="User">Utilisateur</SelectItem><SelectItem value="Invoice">Facture</SelectItem><SelectItem value="Document">Document</SelectItem><SelectItem value="Task">Tâche</SelectItem></SelectContent>
+        <SelectTrigger className="w-[180px] h-9 text-xs"><SelectValue placeholder={t('audit.resourceType')} /></SelectTrigger>
+        <SelectContent><SelectItem value="all">{t('common.all')}</SelectItem><SelectItem value="Case">{t('audit.typeCase')}</SelectItem><SelectItem value="Client">{t('audit.typeClient')}</SelectItem><SelectItem value="User">{t('audit.typeUser')}</SelectItem><SelectItem value="Invoice">{t('audit.typeInvoice')}</SelectItem><SelectItem value="Document">{t('audit.typeDocument')}</SelectItem><SelectItem value="Task">{t('audit.typeTask')}</SelectItem></SelectContent>
       </Select>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (Array.isArray(logs) && logs.length === 0) ? <EmptyState icon={Shield} title="Aucune entrée" /> :
+        (Array.isArray(logs) && logs.length === 0) ? <EmptyState icon={Shield} title={t('audit.noEntry')} /> :
         <Card><CardContent className="p-0"><div className="max-h-[500px] overflow-y-auto">
           <Table><TableHeader><TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Utilisateur</TableHead>
-            <TableHead>Action</TableHead>
-            <TableHead className="hidden md:table-cell">Ressource</TableHead>
+            <TableHead>{t('common.date')}</TableHead>
+            <TableHead>{t('common.user')}</TableHead>
+            <TableHead>{t('audit.action')}</TableHead>
+            <TableHead className="hidden md:table-cell">{t('common.resource')}</TableHead>
             <TableHead className="hidden lg:table-cell">IP</TableHead>
           </TableRow></TableHeader><TableBody>
             {(Array.isArray(logs) ? logs : []).map((log: AuditLogItem) => (
               <TableRow key={log.id}>
                 <TableCell className="text-xs text-jl-secondary">{fmtDateTime(log.timestamp)}</TableCell>
-                <TableCell className="text-sm">{log.user?.fullName || 'Système'}</TableCell>
+                <TableCell className="text-sm">{log.user?.fullName || t('common.system')}</TableCell>
                 <TableCell className="text-sm font-medium">{log.action}</TableCell>
                 <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{log.resourceType || '—'}</Badge></TableCell>
                 <TableCell className="hidden lg:table-cell text-xs text-jl-muted">{log.ipAddress || '—'}</TableCell>

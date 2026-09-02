@@ -17,7 +17,7 @@ export function ArchivesView() {
     <div className="p-4 md:p-6 space-y-4">
       <h2 className="text-lg font-semibold">Archives</h2>
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (Array.isArray(cases) && cases.length === 0) ? <EmptyState icon={Archive} title="Aucun dossier archivé" /> :
+        (Array.isArray(cases) && cases.length === 0) ? <EmptyState icon={Archive} title={t('archives.noArchive')} /> :
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
           {(Array.isArray(cases) ? cases : []).map((c: CaseItem) => (
             <Card key={c.id} className="opacity-80">

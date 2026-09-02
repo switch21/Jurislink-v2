@@ -164,7 +164,7 @@ export function TrialBanner() {
                   'size-7 rounded-md flex items-center justify-center transition-colors',
                   'text-amber-600 hover:bg-amber-200/50 dark:text-amber-400 dark:hover:bg-amber-800/30'
                 )}
-                aria-label="Fermer"
+                aria-label={t('trial.close')}
               >
                 <X className="size-3.5" />
               </button>

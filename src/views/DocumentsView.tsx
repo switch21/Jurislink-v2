@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon } from './shared-ui'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, t } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP } from './constants'
-import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress } from './helpers'
+import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel, uploadWithProgress, statusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 
 // ==================== DOCUMENTS VIEW ====================
@@ -93,15 +93,15 @@ export function DocumentsView() {
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => fetch(`/api/documents/${id}`, { method: 'DELETE' }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast.success('Document supprimé') },
-    onError: () => toast.error('Erreur lors de la suppression'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast.success(t('documents.deleted')) },
+    onError: () => toast.error(t('documents.errorModify')),
   })
 
   const editMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: typeof editForm }) =>
       fetch(`/api/documents/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast.success('Document modifié'); setEditDoc(null) },
-    onError: () => toast.error('Erreur lors de la modification'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast.success(t('documents.updated2')); setEditDoc(null) },
+    onError: () => toast.error(t('documents.errorModify')),
   })
 
   const bulkMut = useMutation({
@@ -133,10 +133,10 @@ export function DocumentsView() {
       fd.append('documentType', uploadForm.documentType)
       if (uploadForm.description) fd.append('description', uploadForm.description)
       await uploadWithProgress('/api/documents', fd, setUploadProgress)
-      toast.success('Document ajouté')
+      toast.success(t('documents.added'))
       qc.invalidateQueries({ queryKey: ['documents'] })
       setUploadOpen(false); setSelectedFile(null); setUploadForm({ caseId: '', folder: 'Général', tags: '', documentType: 'autre', description: '' })
-    } catch (err: any) { toast.error(err?.message || 'Erreur lors du téléchargement') } finally { setUploading(false); setUploadProgress(0) }
+    } catch (err: any) { toast.error(err?.message || t('documents.errorDownload')) } finally { setUploading(false); setUploadProgress(0) }
   }
 
   const handleUploadVersion = async () => {
@@ -151,7 +151,7 @@ export function DocumentsView() {
       qc.invalidateQueries({ queryKey: ['documents'] })
       qc.invalidateQueries({ queryKey: ['doc-versions'] })
       setVersionUploadOpen(false); setVersionFile(null); setVersionNote('')
-    } catch (err: any) { toast.error(err?.message || 'Erreur lors du téléchargement') } finally { setVersionUploading(false); setVersionProgress(0) }
+    } catch (err: any) { toast.error(err?.message || t('documents.errorDownload')) } finally { setVersionUploading(false); setVersionProgress(0) }
   }
 
   // Edit dialog handlers
@@ -205,6 +205,7 @@ export function DocumentsView() {
     }
   }, [])
 
+  const folderKeys: Record<string, string> = { 'Général': 'documents.general', 'Procédure': 'documents.procedure', 'Contrats': 'documents.contracts', 'Pièces client': 'documents.clientPieces', 'Correspondances': 'documents.correspondences' }
   const folders = ['Général', 'Procédure', 'Contrats', 'Pièces client', 'Correspondances', 'Décisions', 'Factures', 'Archives']
   const docTypes = [{ value: 'contrat', label: 'Contrat' }, { value: 'conclusion', label: 'Conclusion' }, { value: 'assignation', label: 'Assignation' }, { value: 'jugement', label: 'Jugement' }, { value: 'correspondance', label: 'Correspondance' }, { value: 'autre', label: 'Autre' }]
 
@@ -272,15 +273,15 @@ export function DocumentsView() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted" />
-          <Input placeholder="Rechercher un document..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+          <Input placeholder={t('documents.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
           {search && <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-jl-muted hover:text-jl-secondary"><X className="size-4" /></button>}
         </div>
         <Select value={caseFilter} onValueChange={setCaseFilter}>
-          <SelectTrigger className="w-full sm:w-[200px] h-9 text-xs"><SelectValue placeholder="Filtrer par dossier" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[200px] h-9 text-xs"><SelectValue placeholder={t('documents.filterFolder')} /></SelectTrigger>
           <SelectContent><SelectItem value="all">Tous les dossiers</SelectItem>{(Array.isArray(cases) ? cases : []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={sortBy} onValueChange={v => setSortBy(v)}>
-          <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs"><SelectValue placeholder="Trier par" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs"><SelectValue placeholder={t('documents.sortBy')} /></SelectTrigger>
           <SelectContent>{sortOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
         </Select>
         <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" className="size-9 shrink-0" onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}>{sortOrder === 'desc' ? <ArrowDown className="size-4" /> : <ArrowUp className="size-4" />}</Button></TooltipTrigger><TooltipContent>{sortOrder === 'desc' ? 'Décroissant' : 'Croissant'}</TooltipContent></Tooltip></TooltipProvider>
@@ -321,7 +322,7 @@ export function DocumentsView() {
               <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={toggleSelectAll}>{selectedIds.size === documents.length ? 'Tout désélectionner' : 'Tout sélectionner'}</Button>
               <Separator orientation="vertical" className="h-5" />
               <Select value={bulkAction || ''} onValueChange={v => { setBulkAction(v); setBulkDeleteConfirm(false); setBulkValue('') }}>
-                <SelectTrigger className="h-7 w-[130px] text-[10px]"><SelectValue placeholder="Action groupée" /></SelectTrigger>
+                <SelectTrigger className="h-7 w-[130px] text-[10px]"><SelectValue placeholder={t('documents.bulkAction')} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="delete">Supprimer</SelectItem>
                   <SelectItem value="folder">Changer répertoire</SelectItem>
@@ -331,18 +332,18 @@ export function DocumentsView() {
               </Select>
               {bulkAction === 'folder' && (
                 <Select value={bulkValue} onValueChange={setBulkValue}>
-                  <SelectTrigger className="h-7 w-[140px] text-[10px]"><SelectValue placeholder="Répertoire" /></SelectTrigger>
-                  <SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                  <SelectTrigger className="h-7 w-[140px] text-[10px]"><SelectValue placeholder={t('documents.folder')} /></SelectTrigger>
+                  <SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] || f}</SelectItem>)}</SelectContent>
                 </Select>
               )}
               {bulkAction === 'status' && (
                 <Select value={bulkValue} onValueChange={setBulkValue}>
-                  <SelectTrigger className="h-7 w-[120px] text-[10px]"><SelectValue placeholder="Statut" /></SelectTrigger>
-                  <SelectContent><SelectItem value="actif">Actif</SelectItem><SelectItem value="archivé">Archivé</SelectItem></SelectContent>
+                  <SelectTrigger className="h-7 w-[120px] text-[10px]"><SelectValue placeholder={t('common.status')} /></SelectTrigger>
+                  <SelectContent><SelectItem value="actif">{t('common.active')}</SelectItem><SelectItem value="archivé">{t('documents.archived')}</SelectItem></SelectContent>
                 </Select>
               )}
               {bulkAction === 'tags' && (
-                <Input value={bulkValue} onChange={e => setBulkValue(e.target.value)} placeholder="tags, séparés, virgules" className="h-7 w-[180px] text-[10px]" />
+                <Input value={bulkValue} onChange={e => setBulkValue(e.target.value)} placeholder={t('documents.tagsHint')} className="h-7 w-[180px] text-[10px]" />
               )}
               {bulkAction && (
                 <Button size="sm" className="h-7 text-[10px]" disabled={bulkLoading || (bulkAction !== 'delete' && !bulkValue)} onClick={executeBulk}>
@@ -394,8 +395,8 @@ export function DocumentsView() {
                     {/* Tags & folder */}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {d.folder && <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-jl"><Folder className="size-2 mr-0.5" />{d.folder}</Badge>}
-                      {d.tags && d.tags.split(',').slice(0, 2).map((t, i) => <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0 border-jl"><Tag className="size-2 mr-0.5" />{t.trim()}</Badge>)}
-                      {d.status === 'archivé' && <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-jl-page">Archivé</Badge>}
+                      {d.tags && d.tags.split(',').slice(0, 2).map((tg, i) => <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0 border-jl"><Tag className="size-2 mr-0.5" />{tg.trim()}</Badge>)}
+                      {d.status === 'archivé' && <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-jl-page">{t('documents.archived')}</Badge>}
                     </div>
                   </CardContent>
                   <CardFooter className="px-4 py-2.5 border-t border-jl text-[10px] text-jl-muted">
@@ -418,10 +419,10 @@ export function DocumentsView() {
                       <div className="shrink-0" onClick={e => e.stopPropagation()}><Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => toggleSelect(d.id)} className="size-4" /></div>
                       <div className="shrink-0 p-1.5 rounded bg-jl-page">{docTypeIcon(d.mimeType, d.documentType)}</div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2"><p className="text-sm font-medium truncate" title={d.fileName}>{d.fileName}</p>{d.version > 1 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-jl-blue border-jl-blue/30 shrink-0">v{d.version}</Badge>}{d.status === 'archivé' && <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-jl-page shrink-0">Archivé</Badge>}</div>
+                        <div className="flex items-center gap-2"><p className="text-sm font-medium truncate" title={d.fileName}>{d.fileName}</p>{d.version > 1 && <Badge variant="outline" className="text-[9px] px-1 py-0 text-jl-blue border-jl-blue/30 shrink-0">v{d.version}</Badge>}{d.status === 'archivé' && <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-jl-page shrink-0">{t('documents.archived')}</Badge>}</div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-[10px] text-jl-muted">{fmtFileSize(d.fileSize)}</span>
-                          {d.tags && d.tags.split(',').map((t, i) => <Badge key={i} variant="outline" className="text-[9px] px-1 py-0 border-jl text-jl-secondary"><Tag className="size-2 mr-0.5" />{t.trim()}</Badge>)}
+                          {d.tags && d.tags.split(',').map((tg, i) => <Badge key={i} variant="outline" className="text-[9px] px-1 py-0 border-jl text-jl-secondary"><Tag className="size-2 mr-0.5" />{tg.trim()}</Badge>)}
                         </div>
                       </div>
                       {d.case && <span className="text-[10px] text-jl-blue truncate max-w-[150px] hidden lg:block" title={d.case.reference}>{d.case.reference}</span>}
@@ -474,13 +475,13 @@ export function DocumentsView() {
               {selectedFile ? <><FileUp className="size-8 mx-auto text-jl-blue mb-2" /><p className="text-sm font-medium truncate">{selectedFile.name}</p><p className="text-xs text-jl-muted">{fmtFileSize(selectedFile.size)}</p></> : <><Upload className="size-8 mx-auto text-jl-muted mb-2" /><p className="text-sm font-medium">Cliquez pour sélectionner un fichier</p><p className="text-xs text-jl-muted">PDF, DOC, XLS, JPG, PNG, et plus</p></>}
             </div>
             {uploading && <div className="space-y-1"><div className="flex justify-between text-xs"><span className="text-jl-secondary">Téléchargement...</span><span className="font-medium">{uploadProgress}%</span></div><Progress value={uploadProgress} className="h-1.5" /></div>}
-            <div><Label className="text-xs">Dossier lié</Label><Select value={uploadForm.caseId} onValueChange={v => setUploadForm(f => ({ ...f, caseId: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue placeholder="Aucun" /></SelectTrigger><SelectContent>{(Array.isArray(cases) ? cases : []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label className="text-xs">Dossier lié</Label><Select value={uploadForm.caseId} onValueChange={v => setUploadForm(f => ({ ...f, caseId: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue placeholder={t('common.none')} /></SelectTrigger><SelectContent>{(Array.isArray(cases) ? cases : []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Répertoire</Label><Select value={uploadForm.folder} onValueChange={v => setUploadForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-xs">Répertoire</Label><Select value={uploadForm.folder} onValueChange={v => setUploadForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] || f}</SelectItem>)}</SelectContent></Select></div>
               <div><Label className="text-xs">Type de document</Label><Select value={uploadForm.documentType} onValueChange={v => setUploadForm(f => ({ ...f, documentType: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{docTypes.map(dt => <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div><Label className="text-xs">Tags (séparés par des virgules)</Label><Input value={uploadForm.tags} onChange={e => setUploadForm(f => ({ ...f, tags: e.target.value }))} placeholder="contrat, urgent, v1" className="h-9 mt-1" /></div>
-            <div><Label className="text-xs">Description</Label><Textarea value={uploadForm.description} onChange={e => setUploadForm(f => ({ ...f, description: e.target.value }))} placeholder="Description du document..." className="mt-1 min-h-[60px] text-sm" /></div>
+            <div><Label className="text-xs">Description</Label><Textarea value={uploadForm.description} onChange={e => setUploadForm(f => ({ ...f, description: e.target.value }))} placeholder={t('documents.descriptionPlaceholder')} className="mt-1 min-h-[60px] text-sm" /></div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setUploadOpen(false)}>Annuler</Button><Button onClick={() => handleUpload()} disabled={!selectedFile || uploading}><Upload className="size-4 mr-1" />{uploading ? 'Téléchargement...' : 'Téléverser'}</Button></DialogFooter>
         </DialogContent>
@@ -492,13 +493,13 @@ export function DocumentsView() {
           <DialogHeader><DialogTitle>Modifier le document</DialogTitle><DialogDescription>Modifiez les métadonnées du document</DialogDescription></DialogHeader>
           <div className="space-y-3">
             <div><Label className="text-xs">Nom du fichier</Label><Input value={editForm.fileName} onChange={e => setEditForm(f => ({ ...f, fileName: e.target.value }))} className="h-9 mt-1" /></div>
-            <div><Label className="text-xs">Description</Label><Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder="Description du document..." className="mt-1 min-h-[60px] text-sm" /></div>
+            <div><Label className="text-xs">Description</Label><Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder={t('documents.descriptionPlaceholder')} className="mt-1 min-h-[60px] text-sm" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Répertoire</Label><Select value={editForm.folder} onValueChange={v => setEditForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-xs">Répertoire</Label><Select value={editForm.folder} onValueChange={v => setEditForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] || f}</SelectItem>)}</SelectContent></Select></div>
               <div><Label className="text-xs">Type de document</Label><Select value={editForm.documentType} onValueChange={v => setEditForm(f => ({ ...f, documentType: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{docTypes.map(dt => <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Statut</Label><Select value={editForm.status} onValueChange={v => setEditForm(f => ({ ...f, status: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="actif">Actif</SelectItem><SelectItem value="archivé">Archivé</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-xs">Statut</Label><Select value={editForm.status} onValueChange={v => setEditForm(f => ({ ...f, status: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="actif">{t('common.active')}</SelectItem><SelectItem value="archivé">{t('documents.archived')}</SelectItem></SelectContent></Select></div>
             </div>
             <div><Label className="text-xs">Tags (séparés par des virgules)</Label><Input value={editForm.tags} onChange={e => setEditForm(f => ({ ...f, tags: e.target.value }))} placeholder="contrat, urgent" className="h-9 mt-1" /></div>
           </div>
@@ -518,7 +519,7 @@ export function DocumentsView() {
           <DialogHeader className="px-4 pt-4 pb-2 shrink-0"><DialogTitle className="text-sm truncate">{previewDoc?.fileName}</DialogTitle><DialogDescription className="text-xs">{previewDoc ? `${fmtFileSize(previewDoc.fileSize)} • Version ${previewDoc.version}` : ''}</DialogDescription></DialogHeader>
           <div className="flex-1 min-h-0">
             {previewDoc && isPdf(previewDoc.mimeType) && (
-              <iframe src={`/api/documents/${previewDoc.id}/download`} className="w-full h-full border-0" title="Aperçu PDF" />
+              <iframe src={`/api/documents/${previewDoc.id}/download`} className="w-full h-full border-0" title={t('documents.pdfPreview')} />
             )}
             {previewDoc && isImage(previewDoc.mimeType) && (
               <div className="flex items-center justify-center h-full bg-jl-page p-4"><img src={`/api/documents/${previewDoc.id}/download`} alt={previewDoc.fileName} className="max-w-full max-h-full object-contain rounded" /></div>
@@ -572,7 +573,7 @@ export function DocumentsView() {
                   {versionFile ? <p className="text-sm font-medium">{versionFile.name}</p> : <p className="text-xs text-jl-secondary">Sélectionner le fichier de la nouvelle version</p>}
                 </div>
                 {versionUploading && <div className="space-y-1"><div className="flex justify-between text-xs"><span>Envoi...</span><span>{versionProgress}%</span></div><Progress value={versionProgress} className="h-1.5" /></div>}
-                <Input value={versionNote} onChange={e => setVersionNote(e.target.value)} placeholder="Note de modification (optionnel)" className="h-8 text-xs" />
+                <Input value={versionNote} onChange={e => setVersionNote(e.target.value)} placeholder={t('documents.editNote')} className="h-8 text-xs" />
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" className="flex-1" onClick={() => { setVersionUploadOpen(false); setVersionFile(null); setVersionNote('') }}>Annuler</Button>
                   <Button size="sm" className="flex-1" onClick={handleUploadVersion} disabled={!versionFile || versionUploading}><Upload className="size-3.5 mr-1" />Créer v{versionsDoc ? versionsDoc.version + 1 : '?'}</Button>

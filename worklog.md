@@ -2546,3 +2546,76 @@ Stage Summary:
 Remaining work:
 - Replace hardcoded French strings in remaining views (Settings, Documents, Calendar, Tasks, Finances, Admin, Portal, Templates, Communications, Notifications, Search, Login) using Edit tool (NOT sed)
 - The label helpers are ready and exported — views just need to import and use them
+
+---
+Task ID: i18n-ct
+Agent: i18n subagent
+Task: i18n ClientsView + TemplatesView
+
+Work Log:
+- Replaced all hardcoded French strings in ClientsView.tsx with t() calls
+- Replaced all hardcoded French strings in TemplatesView.tsx with t() calls
+- Used riskLabel() instead of inline risk mappings (table row + detail dialog + form select)
+- Used ti alias for i18n t() inside map callbacks where t is shadowed by template variable
+- Added t to shared-ui import, riskLabel/typeLabel/statusLabel to helpers import
+
+Stage Summary:
+- 2 view files fully internationalized
+---
+Task ID: i18n-large
+Agent: i18n subagent
+Task: i18n DocumentsView + InvoicesView + SettingsView + AdminViews + PortalViews
+
+Work Log:
+- Replaced all hardcoded French strings with t() calls in 5 files
+- Replaced direct LABELS[] access with helper functions
+- Added `t` to shared-ui imports in all 5 files
+- Added helper functions (roleLabel, statusLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, billingLabel) to helpers imports where needed
+- Fixed INVOICE_typeLabel(inv.type) bug → invoiceTypeLabel(inv.type) in InvoicesView
+- Removed separate `import { t } from '@/lib/i18n'` from InvoicesView (now comes from shared-ui)
+- Renamed `t` loop variable conflicts to `tg`/`tn` in .map callbacks and TenantRow to avoid shadowing i18n `t`
+- Created folderKeys mapping in DocumentsView for translated folder labels
+- Replaced ROLE_LABELS[x] → roleLabel(x) throughout SettingsView and AdminViews
+
+Stage Summary:
+- 5 view files fully internationalized
+- ROLE_LABELS[x] → roleLabel(x) throughout
+- INVOICE_TYPE_LABELS[x] → invoiceTypeLabel(x)
+- INVOICE_STATUS_LABELS[x] → invoiceStatusLabel(x)
+- All French toasts, labels, placeholders, badges replaced with t() calls
+- t variable shadowing resolved in all .map callbacks and component params
+---
+Task ID: i18n-final
+Agent: Super Z (main) + 2 subagents
+Task: i18n completion for all remaining views
+
+Work Log:
+- Added ~180 new translation keys to fr.ts (common, settings, documents, templates, timeTracking, messages, audit, portal, invoices, clients, admin, search, login, trial)
+- Synced all new keys to 6 other language files (en, es, sw, ar, it, de)
+- Edited 14 view files to replace hardcoded French strings with t() calls:
+  - AuditLogsView.tsx (5 strings)
+  - MessagesView.tsx (5 strings)
+  - TimeTrackingView.tsx (20+ strings)
+  - SearchDialog.tsx (1 string)
+  - ArchivesView.tsx (1 string)
+  - TrialBanner.tsx (1 string)
+  - ClientsView.tsx (30+ strings, via subagent)
+  - TemplatesView.tsx (40+ strings, via subagent)
+  - DocumentsView.tsx (14+ strings, via subagent)
+  - InvoicesView.tsx (8 strings, via subagent)
+  - SettingsView.tsx (15+ strings, via subagent + direct)
+  - AdminViews.tsx (10+ strings, via subagent)
+  - PortalViews.tsx (4 strings, via subagent)
+  - ReportsView.tsx (8 LABELS access + table headers)
+  - TasksView.tsx (1 PRIORITY_LABELS access)
+- Replaced all direct STATUS_LABELS[x], PRIORITY_LABELS[x], TYPE_LABELS[x], INVOICE_TYPE_LABELS[x], INVOICE_STATUS_LABELS[x], PAYMENT_METHOD_LABELS[x], ROLE_LABELS[x] access with helper functions (statusLabel, priorityLabel, typeLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, roleLabel)
+- Removed unused LABELS imports from TasksView.tsx and ReportsView.tsx
+- Fixed LoginPage.tsx parsing error (missing quote, duplicate closing tags)
+- Lint: 0 errors (1 pre-existing warning in seed.ts)
+
+Stage Summary:
+- 14 view files fully internationalized
+- 13 instances of direct LABELS[x] access replaced with helper functions
+- 180+ new translation keys added to 7 language files
+- 0 remaining hardcoded user-visible French strings (except brand name, sample names, and API values)
+

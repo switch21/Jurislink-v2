@@ -87,7 +87,7 @@ export function LoginPage() {
         body: JSON.stringify({ userId: mfaPending.userId, mfaToken: mfaPending.mfaToken, code: mfaCode }),
       })
       const data = await res.json()
-      if (!res.ok) { toast.error(data.error || t('login.errorInvalid')); setMfaCode('); return }
+      if (!res.ok) { toast.error(data.error || t('login.errorInvalid')); setMfaCode(''); return }
       login(data); toast.success(`Bienvenue, ${data.fullName} !`)
     } catch { toast.error(t('common.error')) } finally { setMfaLoading(false) }
   }
@@ -160,15 +160,13 @@ export function LoginPage() {
                     <div className="flex items-center justify-center gap-2 text-sm">
                       <Clock className="size-3.5 text-[var(--text-muted)]" />
                       <span className={cn('font-mono', mfaTimeLeft <= 60 ? 'text-red-500' : 'text-[var(--text-muted)]')}>{mfaTimeLeft > 0 ? formatTimer(mfaTimeLeft) : t('login.mfaTimerExpired')}</span>
-                    </span>
                     </div>
                     <Button type="submit" className="w-full h-11 bg-[var(--primary)] hover:bg-jl-blue text-white rounded-lg font-medium" disabled={mfaLoading || mfaCode.length !== 6 || mfaTimeLeft <= 0}>
                       {mfaLoading ? <RefreshCw className="size-4 animate-spin" /> : <ShieldCheck className="size-4 mr-2" />}
-                      {mfaLoading ? t('login.mfaVerify') : t('login.mfaVerify')}
+                      {t('login.mfaVerify')}
                     </Button>
                     <Button type="button" variant="ghost" className="w-full h-10 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" onClick={resetMfa}>
                       <ArrowLeft className="size-3.5 mr-2" />{t('common.back')}</Button>
-                    </Button>
                   </form>
                 </CardContent>
                 <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-[var(--text-muted)]">{t('login.mfaTimer')}</p></CardFooter>
