@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, motion, AnimatePresence, useAppStore, cn, Button, Check, Crown, Star, Zap, Shield, ArrowRight, Building2, Users, FileText, BarChart3, Brain } from './shared-ui'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, motion, AnimatePresence, useAppStore, cn, Button, Check, Crown, Star, Zap, Shield, ArrowRight, Building2, Users, FileText, BarChart3, Brain , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS } from './shared-ui'
 import { t } from '@/lib/i18n'
 
 // ══════════════════════════════════════════════════════════════

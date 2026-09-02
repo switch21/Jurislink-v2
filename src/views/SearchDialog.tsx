@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo, useAppStore, cn, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator, Badge, Loader2, Sparkles, Briefcase, Users, ClipboardList, FileText, Receipt, MessageSquare, Calendar, Mail, type ViewName , t } from './shared-ui'
+import { useState, useEffect, useCallback, useRef, useMemo, useAppStore, cn, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator, Badge, Loader2, Sparkles, Briefcase, Users, ClipboardList, FileText, Receipt, MessageSquare, Calendar, Mail, type ViewName , t , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS } from './shared-ui'
 
 interface SearchResult {
   _type: string
