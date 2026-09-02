@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle } from 'lucide-react'
 
@@ -11,22 +11,25 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const retried = useRef(false)
+
   useEffect(() => {
     console.error('App error:', error)
-    // Hydration mismatch errors are harmless in SPA mode — auto-reload
-    const msg = error?.message || ''
-    if (msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')) {
-      // Small delay to avoid rapid reload loops
-      const timer = setTimeout(() => window.location.reload(), 100)
-      return () => clearTimeout(timer)
-    }
   }, [error])
 
-  // Don't show error UI for hydration mismatches — just a blank page that will auto-reload
+  // For hydration errors, silently retry once then give up
   const msg = error?.message || ''
-  if (msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')) {
-    return null
-  }
+  const isHydration = msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')
+
+  useEffect(() => {
+    if (isHydration && !retried.current) {
+      retried.current = true
+      const timer = setTimeout(reset, 0)
+      return () => clearTimeout(timer)
+    }
+  }, [isHydration, reset])
+
+  if (isHydration) return null
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-4">
