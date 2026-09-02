@@ -1,11 +1,11 @@
 'use client'
 
 // ════════════════════════════════════════════════════════════════════════════
-// JurisLink v3.8.73 — Orchestrator
+// JurisLink v3.8.71 — Orchestrator
 // Phase 7: UI/UX Polish — Dark Mode, Animations, Responsive
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
+import React, { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, CardTitle, CardDescription, CardFooter, Button, Building2, Skeleton, cn, initAuthFetch, motion, AnimatePresence } from '@/views/shared-ui'
 import { queryClient } from '@/views/constants'
 import { SearchDialog } from '@/views/SearchDialog'
@@ -87,7 +87,7 @@ function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--border)] py-4 px-6 flex items-center justify-between text-xs text-[var(--text-muted)] transition-colors duration-300">
       <span className="flex items-center gap-1.5"><img src="/icon.png" alt="" className="size-3.5 rounded-sm" />JurisLink</span>
-      <span>v3.8.73</span>
+      <span>v3.8.71</span>
     </footer>
   )
 }
@@ -256,29 +256,57 @@ function AppInner() {
   )
 }
 
+// ──── Client-side meta tags (avoids Next.js 16 MetadataOutlet hydration bug) ────
+function useDocumentMeta() {
+  useEffect(() => {
+    document.title = 'JurisLink — Gestion Juridique Intelligente'
+    const setMeta = (name: string, content: string, isProperty = false) => {
+      const attr = isProperty ? 'property' : 'name'
+      let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el) }
+      el.setAttribute('content', content)
+    }
+    setMeta('description', 'Plateforme de gestion de cabinet juridique. Dossiers, clients, factures, calendrier et plus.')
+    setMeta('keywords', 'JurisLink, juridique, cabinet, avocat, gestion, dossiers, SaaS')
+    setMeta('author', 'JurisLink')
+    setMeta('og:title', 'JurisLink', true)
+    setMeta('og:description', 'Gestion Juridique Intelligente', true)
+    setMeta('og:image', '/splash.png', true)
+    // Favicon
+    let link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link) }
+    link.href = '/icon.png'; link.sizes = '1024x1024'; link.type = 'image/png'
+    // Inter font
+    if (!document.querySelector("link[href*='fonts.googleapis.com']")) {
+      const pre1 = document.createElement('link'); pre1.rel = 'preconnect'; pre1.href = 'https://fonts.googleapis.com'; document.head.appendChild(pre1)
+      const pre2 = document.createElement('link'); pre2.rel = 'preconnect'; pre2.href = 'https://fonts.gstatic.com'; pre2.crossOrigin = 'anonymous'; document.head.appendChild(pre2)
+      const font = document.createElement('link'); font.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'; font.rel = 'stylesheet'; document.head.appendChild(font)
+    }
+  }, [])
+}
+
 export default function App() {
   const [mounted, setMounted] = useState(false)
+  useDocumentMeta()
   useEffect(() => { initAuthFetch(); const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id) }, [])
   return (
-    <>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <div className='min-h-screen flex flex-col bg-[var(--bg-page)] transition-colors duration-300'>
-            <a href='#main-content' className='skip-link'>Aller au contenu principal</a>
-            <div className='flex-1 flex flex-col'>
-              {!mounted ? (
-                <div className='flex-1 flex items-center justify-center bg-[var(--bg-page)]'>
-                  <div className='flex flex-col items-center gap-3 animate-fade-in'>
-                    <img src='/splash.png' alt='JurisLink' className='h-12 w-auto object-contain animate-pulse' />
-                    <p className='text-sm text-[var(--text-muted)]'>Chargement…</p>
-                  </div>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <div className='min-h-screen flex flex-col bg-[var(--bg-page)] transition-colors duration-300'>
+          <a href='#main-content' className='skip-link'>Aller au contenu principal</a>
+          <div className='flex-1 flex flex-col'>
+            {!mounted ? (
+              <div className='flex-1 flex items-center justify-center bg-[var(--bg-page)]'>
+                <div className='flex flex-col items-center gap-3 animate-fade-in'>
+                  <img src='/splash.png' alt='JurisLink' className='h-12 w-auto object-contain animate-pulse' />
+                  <p className='text-sm text-[var(--text-muted)]'>Chargement…</p>
                 </div>
-              ) : <AppInner />}
-            </div>
+              </div>
+            ) : <AppInner />}
           </div>
-        </TooltipProvider>
-      </QueryClientProvider>
-      <Toaster />
-    </>
+        </div>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
   )
 }
