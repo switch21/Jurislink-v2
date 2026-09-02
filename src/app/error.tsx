@@ -13,7 +13,20 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error('App error:', error)
+    // Hydration mismatch errors are harmless in SPA mode — auto-reload
+    const msg = error?.message || ''
+    if (msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')) {
+      // Small delay to avoid rapid reload loops
+      const timer = setTimeout(() => window.location.reload(), 100)
+      return () => clearTimeout(timer)
+    }
   }, [error])
+
+  // Don't show error UI for hydration mismatches — just a blank page that will auto-reload
+  const msg = error?.message || ''
+  if (msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')) {
+    return null
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-4">
@@ -23,7 +36,7 @@ export default function Error({
         </div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Une erreur est survenue</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {error?.message || 'Erreur inconnue'}
+          {msg || 'Erreur inconnue'}
         </p>
         {error?.digest && (
           <p className="text-xs text-slate-400">Code: {error.digest}</p>

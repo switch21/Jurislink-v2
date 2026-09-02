@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+
 export default function GlobalError({
   error,
   reset,
@@ -7,6 +9,20 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    console.error('Global error:', error)
+    const msg = error?.message || ''
+    if (msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')) {
+      const timer = setTimeout(() => window.location.reload(), 100)
+      return () => clearTimeout(timer)
+    }
+  }, [error])
+
+  const msg = error?.message || ''
+  if (msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')) {
+    return null
+  }
+
   return (
     <html lang="fr">
       <body className="bg-[#F9FAFB]">
@@ -16,7 +32,7 @@ export default function GlobalError({
               <span className="text-rose-600 text-xl font-bold">!</span>
             </div>
             <p className="text-sm font-medium text-gray-700">Une erreur est survenue</p>
-            <p className="text-xs text-gray-500">{error?.message || 'Erreur inconnue'}</p>
+            <p className="text-xs text-gray-500">{msg}</p>
             <button
               onClick={reset}
               className="px-5 py-2 bg-[#1E5A8A] hover:bg-[#144570] text-white rounded-lg text-sm font-medium transition-colors"
