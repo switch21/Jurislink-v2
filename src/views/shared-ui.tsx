@@ -75,7 +75,7 @@ export {
   Building2 as BuildingIcon, CreditCard as CreditCardIcon, Zap as ZapIcon,
   QrCode, KeyRound as Key,
   SlidersHorizontal, Table2,
-  Unplug, Info
+  Unplug, Info, Star, ArrowRight
 } from 'lucide-react'
 // ═══ Internal Components ═══
 export { EmptyState } from './EmptyState'
