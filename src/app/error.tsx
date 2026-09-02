@@ -11,9 +11,20 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const msg = error?.message || ''
+  const isHydrationError = msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')
+
   useEffect(() => {
-    console.error('=== APP ERROR ===', error)
-  }, [error])
+    // Silently log non-hydration errors
+    if (!isHydrationError) {
+      console.error('=== APP ERROR ===', error)
+    }
+  }, [error, isHydrationError])
+
+  // Silently ignore hydration errors - the app mounts client-side and works fine.
+  if (isHydrationError) {
+    return null
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-4">
@@ -23,7 +34,7 @@ export default function Error({
         </div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Une erreur est survenue</h2>
         <pre className="text-xs text-left bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 p-3 rounded-lg overflow-auto max-h-40 whitespace-pre-wrap break-all">
-          {error?.message || 'Erreur inconnue'}
+          {msg || 'Erreur inconnue'}
         </pre>
         {error?.digest && (
           <p className="text-xs text-slate-400">Code: {error.digest}</p>

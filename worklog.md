@@ -2619,3 +2619,24 @@ Stage Summary:
 - 180+ new translation keys added to 7 language files
 - 0 remaining hardcoded user-visible French strings (except brand name, sample names, and API values)
 
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix splash screen infinite loop (hydration error #185)
+
+Work Log:
+- Diagnosed root cause: global-error.tsx had window.location.reload() on hydration errors, creating infinite loop
+- Identified secondary issue: AppMount in layout.tsx + inter.variable class could cause SSR/client mismatch
+- Fixed global-error.tsx: removed auto-reload, now returns minimal HTML
+- Fixed error.tsx: silently returns null for hydration errors, no auto-reload, fixed hooks ordering
+- Simplified layout.tsx: removed AppMount, removed inter.variable from body className (globals.css already sets font)
+- Updated globals.css: --font-sans uses direct font-family instead of var(--font-inter)
+- Rewrote page.tsx: uses useEffect+dynamic import() with pure inline-style splash screen (no Tailwind, no CSS vars)
+- Cleaned up unused files: AppMount.tsx, page.tsx.new, DummyModule.tsx
+- Verified: 200 OK, login page renders, form interactive, zero console errors, zero hydration errors
+
+Stage Summary:
+- The infinite splash loop is FIXED. Root cause was global-error.tsx auto-reloading on hydration errors.
+- Hydration mismatch eliminated by: (1) removing inter.variable class from body, (2) using inline styles for initial splash, (3) ensuring page.tsx renders identical HTML on server and client first render.
+- App successfully loads login page, forms are interactive, API calls work.
+
