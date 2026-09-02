@@ -1,11 +1,17 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-
-const App = dynamic(() => import('./AppClient'), {
-  ssr: false,
-})
+import { useState, useEffect } from 'react'
 
 export default function Page() {
-  return <App />
+  const [AppComponent, setAppComponent] = useState<React.ComponentType | null>(null)
+
+  useEffect(() => {
+    // Client-only: import the full app after mount
+    import('./AppClient').then(mod => {
+      setAppComponent(() => mod.default)
+    })
+  }, [])
+
+  if (!AppComponent) return null
+  return <AppComponent />
 }
