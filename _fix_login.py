@@ -1,7 +1,0 @@
-import re, sys
-with open('src/views/LoginPage.tsx','r',encoding='utf-8') as f:
-    content=f.read()
-    reps=[('Veuillez entrer votre email',"t('login.errorFields')"),('Veuillez entrer votre mot de passe',"t('login.errorFields')"),('Erreur de connexion',"t('login.errorInvalid')"),('Code invalide',"t('login.errorInvalid')"),('Erreur de connexion au serveur',"t('login.errorServer')"),('Erreur lors de la vérification',"t('common.error')"),('Erreur de connexion au portail',"t('portal.loginError')"),('Adresse e-mail',"t('login.email')"),('Mot de passe',"t('login.password')"),('Le système d\'exploitation de votre cabinet',"t('login.subtitle')"),("Entrez le code à 6 chiffres générés par votre application d'authentification",'"t('login.mfaDescription')"),('Code de vérification',"t('login.mfaCode')"),('Vérification...',"t('login.mfaVerify')"),('Retour',"t('common.back')"),('Accéder à mon espace',"t('portal.login')"),('Vérifier',"t('login.mfaVerify')"),('Code valide pendant 5 minutes',"t('login.mfaTimer')"),('Fonctionnalité bientôt disponible',"t('login.forgotPassword')"),('Mot de passe oublié ?',"t('login.forgotPassword')"),('Espace réservé aux clients',"t('portal.portal')"),('© 2025 JurisLink — Tous droits réservés',"t('login.copyright')"),('Voir les forfaits et tarifs →',"t('login.viewPricing')")]
-for old,new in reps:content=content.replace(old,new,1)
-with open('src/views/LoginPage.tsx','w',encoding='utf-8') as f:f.write(content)
-print(f'Fixed {len(reps)} strings',{len(content)} chars total)
