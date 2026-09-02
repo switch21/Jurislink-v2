@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, QrCode, Key, Unplug, Info, t   , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS } from './shared-ui'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon, QrCode, Key, Unplug, Info } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, ROLE_LABELS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
@@ -59,8 +59,8 @@ export function SettingsView() {
   const savePermissions = useMutation({
     mutationFn: (body: { roleId: string; permissions: Record<string, boolean> }) =>
       fetch('/api/permissions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { toast.success(t('settings.permissionsUpdated')); setLocalMatrix({}); qc.invalidateQueries({ queryKey: ['permissions'] }) },
-    onError: () => toast.error(t('settings.errorUpdateSub')),
+    onSuccess: () => { toast.success('Permissions mises à jour'); setLocalMatrix({}); qc.invalidateQueries({ queryKey: ['permissions'] }) },
+    onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
   // Subscription data
@@ -77,20 +77,20 @@ export function SettingsView() {
   })
 
   const [billingPeriod, setBillingPeriod] = useState<'monthly'|'quarterly'|'semi_annual'|'annual'>('annual')
-  const periodLabels: Record<string, string> = { monthly: t('settings.monthly'), quarterly: t('settings.quarterly'), semi_annual: t('settings.semiAnnual'), annual: t('settings.annual') }
+  const periodLabels: Record<string, string> = { monthly: 'Mensuel', quarterly: 'Trimestriel', semi_annual: 'Semestriel', annual: 'Annuel' }
   const periodPriceKey: Record<string, string> = { monthly: 'priceMonthly', quarterly: 'priceQuarterly', semi_annual: 'priceSemiAnnual', annual: 'priceAnnual' }
 
   const changeSubscription = useMutation({
     mutationFn: (body: { tenantId: string; planId: string; billingPeriod: string }) =>
       fetch('/api/subscriptions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { toast.success(t('settings.subUpdated2')); qc.invalidateQueries({ queryKey: ['subscription'] }) },
+    onSuccess: () => { toast.success('Abonnement mis à jour'); qc.invalidateQueries({ queryKey: ['subscription'] }) },
     onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
   const updateTenant = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch(`/api/tenants/${user?.tenantId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { toast.success(t('settings.cabinetUpdated2')); qc.invalidateQueries({ queryKey: ['tenant'] }) },
-    onError: () => toast.error(t('settings.errorUpdateCabinet')),
+    onSuccess: () => { toast.success('Cabinet mis à jour'); qc.invalidateQueries({ queryKey: ['tenant'] }) },
+    onError: () => toast.error('Erreur lors de la mise à jour du cabinet'),
   })
 
   const uploadLogo = useMutation({
@@ -100,8 +100,8 @@ export function SettingsView() {
       fd.append('tenantId', user!.tenantId!)
       return fetch('/api/tenants/logo', { method: 'POST', body: fd }).then(r => r.json())
     },
-    onSuccess: () => { toast.success(t('settings.logoUpdated')); qc.invalidateQueries({ queryKey: ['tenant'] }) },
-    onError: () => toast.error(t('settings.errorUpload')),
+    onSuccess: () => { toast.success('Logo mis à jour'); qc.invalidateQueries({ queryKey: ['tenant'] }) },
+    onError: () => toast.error('Erreur lors de l\'upload du logo'),
   })
 
   const [cabinetForm, setCabinetForm] = useState({ name: '', email: '', phone: '', address: '', city: '', country: '', niu: '', language: 'fr', timezone: 'Africa/Douala', currencyCode: 'XAF' })
@@ -114,9 +114,9 @@ export function SettingsView() {
         if (typeof window !== 'undefined') localStorage.setItem('jurislink_user', JSON.stringify(updated))
         useAppStore.setState({ user: updated })
       }
-      toast.success(t('settings.profileUpdated2')); qc.invalidateQueries({ queryKey: ['tenant'] })
+      toast.success('Profil mis à jour'); qc.invalidateQueries({ queryKey: ['tenant'] })
     },
-    onError: () => toast.error(t('common.error')),
+    onError: () => toast.error('Erreur'),
   })
 
   const changePassword = useMutation({
@@ -305,7 +305,7 @@ export function SettingsView() {
             <Card className="lg:col-span-2"><CardHeader><CardTitle className="text-sm font-semibold">Informations personnelles</CardTitle></CardHeader><CardContent className="space-y-3">
               <div className="flex items-center gap-4 mb-4">
                 <Avatar className="size-14"><AvatarFallback className="bg-jl-blue text-white text-lg">{user?.fullName ? initials(user.fullName) : 'U'}</AvatarFallback></Avatar>
-                <div><p className="font-semibold">{user?.fullName}</p><p className="text-xs text-jl-secondary">{user?.email}</p><Badge variant="outline" className="mt-1 text-[10px]">{roleLabel(user?.role)}</Badge></div>
+                <div><p className="font-semibold">{user?.fullName}</p><p className="text-xs text-jl-secondary">{user?.email}</p><Badge variant="outline" className="mt-1 text-[10px]">{ROLE_LABELS[user?.role || ''] || user?.role}</Badge></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5"><Label className="text-xs">Nom complet</Label><Input value={profileForm.fullName} onChange={e => setProfileForm(f => ({ ...f, fullName: e.target.value }))} className="h-10" /></div>
@@ -323,7 +323,7 @@ export function SettingsView() {
                 {showPwForm && <div className="mt-3 space-y-3 p-4 bg-jl-page rounded-lg border border-jl">
                   <div className="space-y-1.5"><Label className="text-xs">Mot de passe actuel</Label><Input type="password" value={pwForm.currentPassword} onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))} placeholder="••••••••" className="h-10" autoComplete="current-password" /></div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5"><Label className="text-xs">Nouveau mot de passe</Label><Input type="password" value={pwForm.newPassword} onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))} placeholder={t('settings.minChars')} className="h-10" autoComplete="new-password" /></div>
+                    <div className="space-y-1.5"><Label className="text-xs">Nouveau mot de passe</Label><Input type="password" value={pwForm.newPassword} onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))} placeholder="Min. 6 caractères" className="h-10" autoComplete="new-password" /></div>
                     <div className="space-y-1.5"><Label className="text-xs">Confirmer le mot de passe</Label><Input type="password" value={pwForm.confirmPassword} onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))} placeholder="••••••••" className="h-10" autoComplete="new-password" /></div>
                   </div>
                   {pwForm.newPassword && pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && <p className="text-xs text-[var(--danger)]">Les mots de passe ne correspondent pas</p>}
@@ -404,7 +404,7 @@ export function SettingsView() {
             <Card><CardHeader><CardTitle className="text-sm font-semibold">Logo du cabinet</CardTitle></CardHeader><CardContent className="space-y-4">
               <div className="flex items-center justify-center p-6 border-2 border-dashed border-jl rounded-xl">
                 {tenantInfo.logoUrl ? (
-                  <img src={tenantInfo.logoUrl} alt={t('settings.logo')} className="max-h-32 max-w-full object-contain" />
+                  <img src={tenantInfo.logoUrl} alt="Logo" className="max-h-32 max-w-full object-contain" />
                 ) : (
                   <div className="text-center"><Building2 className="size-12 mx-auto text-jl-muted mb-2" /><p className="text-xs text-jl-muted">Aucun logo</p></div>
                 )}
@@ -425,14 +425,14 @@ export function SettingsView() {
 
         {/* EQUIPE */}
         {isAdmin && <TabsContent value="equipe">
-          <Card><CardHeader className="flex flex-row items-center justify-between pb-3"><div><CardTitle className="text-sm font-semibold">Membres de l'équipe</CardTitle><CardDescription className="text-xs text-jl-secondary">{currentUserCount} sur {maxUsers} utilisateurs</CardDescription></div><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => setShowNewUser(true)}><Plus className="size-3.5 mr-1" />{t('settings.add')}</Button></CardHeader>
+          <Card><CardHeader className="flex flex-row items-center justify-between pb-3"><div><CardTitle className="text-sm font-semibold">Membres de l'équipe</CardTitle><CardDescription className="text-xs text-jl-secondary">{currentUserCount} sur {maxUsers} utilisateurs</CardDescription></div><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => setShowNewUser(true)}><Plus className="size-3.5 mr-1" />Ajouter</Button></CardHeader>
           <CardContent>
-            <div className="mb-4"><div className="flex items-center justify-between text-xs mb-1"><span className="text-jl-secondary">{t('settings.usage')}</span><span className={cn('font-medium', usagePercent >= 90 ? 'text-[var(--danger)]' : 'text-jl-secondary')}>{currentUserCount}/{maxUsers}</span></div><div className="h-2 bg-jl-page rounded-full overflow-hidden"><div className={cn('h-full rounded-full transition-all', usagePercent >= 90 ? 'bg-[var(--danger)]' : usagePercent >= 70 ? 'bg-jl-gold' : 'bg-jl-blue')} style={{ width: usagePercent + '%' }} /></div></div>
-            {showNewUser && <div className="border border-jl rounded-lg p-4 mb-4 space-y-3 bg-jl-page"><p className="text-xs font-semibold text-jl-primary">{t('admin.newUser')}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">{t('common.fullName')}</Label><Input value={newUser.fullName} onChange={e => setNewUser(u => ({ ...u, fullName: e.target.value }))} placeholder="Jean Dupont" /></div><div className="space-y-1.5"><Label className="text-xs">{t('common.email')}</Label><Input type="email" value={newUser.email} onChange={e => setNewUser(u => ({ ...u, email: e.target.value }))} placeholder="jean@jurislink.com" /></div><div className="space-y-1.5"><Label className="text-xs">{t('settings.role')}</Label><Select value={newUser.role} onValueChange={v => setNewUser(u => ({ ...u, role: v }))}><SelectTrigger className="h-10"><SelectValue placeholder={t('settings.selectPhoto')} /></SelectTrigger><SelectContent>{(permData?.roles || []).filter((r: { isSystem: boolean }) => r.isSystem).map((r: { id: string; name: string; label: string }) => <SelectItem key={r.id} value={r.name}>{r.label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-1.5"><Label className="text-xs">{t('settings.password')}</Label><Input type="password" value={newUser.password} onChange={e => setNewUser(u => ({ ...u, password: e.target.value }))} placeholder="••••••••" /></div></div><div className="flex gap-2 pt-1"><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => createUserMut.mutate({ ...newUser, tenantId: user?.tenantId })} disabled={!newUser.fullName || !newUser.email || !newUser.password}>{t('admin.newUser')}</Button><Button size="sm" variant="outline" onClick={() => setShowNewUser(false)}>{t('common.cancel')}</Button></div></div>}
+            <div className="mb-4"><div className="flex items-center justify-between text-xs mb-1"><span className="text-jl-secondary">Utilisation</span><span className={cn('font-medium', usagePercent >= 90 ? 'text-[var(--danger)]' : 'text-jl-secondary')}>{currentUserCount}/{maxUsers}</span></div><div className="h-2 bg-jl-page rounded-full overflow-hidden"><div className={cn('h-full rounded-full transition-all', usagePercent >= 90 ? 'bg-[var(--danger)]' : usagePercent >= 70 ? 'bg-jl-gold' : 'bg-jl-blue')} style={{ width: usagePercent + '%' }} /></div></div>
+            {showNewUser && <div className="border border-jl rounded-lg p-4 mb-4 space-y-3 bg-jl-page"><p className="text-xs font-semibold text-jl-primary">Nouvel utilisateur</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">Nom complet</Label><Input value={newUser.fullName} onChange={e => setNewUser(u => ({ ...u, fullName: e.target.value }))} placeholder="Jean Dupont" /></div><div className="space-y-1.5"><Label className="text-xs">Email</Label><Input type="email" value={newUser.email} onChange={e => setNewUser(u => ({ ...u, email: e.target.value }))} placeholder="jean@jurislink.com" /></div><div className="space-y-1.5"><Label className="text-xs">Rôle</Label><Select value={newUser.role} onValueChange={v => setNewUser(u => ({ ...u, role: v }))}><SelectTrigger className="h-10"><SelectValue placeholder="Sélectionner" /></SelectTrigger><SelectContent>{(permData?.roles || []).filter((r: { isSystem: boolean }) => r.isSystem).map((r: { id: string; name: string; label: string }) => <SelectItem key={r.id} value={r.name}>{r.label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-1.5"><Label className="text-xs">Mot de passe</Label><Input type="password" value={newUser.password} onChange={e => setNewUser(u => ({ ...u, password: e.target.value }))} placeholder="••••••••" /></div></div><div className="flex gap-2 pt-1"><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => createUserMut.mutate({ ...newUser, tenantId: user?.tenantId })} disabled={!newUser.fullName || !newUser.email || !newUser.password}>Créer l'utilisateur</Button><Button size="sm" variant="outline" onClick={() => setShowNewUser(false)}>Annuler</Button></div></div>}
             <div className="max-h-96 overflow-y-auto rounded-lg border border-jl">
-              <Table><TableHeader><TableRow className="bg-jl-page hover:bg-jl-page"><TableHead className="text-xs">{t('settings.users')}</TableHead><TableHead className="text-xs hidden sm:table-cell">Rôle</TableHead><TableHead className="text-xs hidden md:table-cell">{t('common.status')}</TableHead><TableHead className="text-xs text-right">Actions</TableHead></TableRow></TableHeader><TableBody>
+              <Table><TableHeader><TableRow className="bg-jl-page hover:bg-jl-page"><TableHead className="text-xs">Membre</TableHead><TableHead className="text-xs hidden sm:table-cell">Rôle</TableHead><TableHead className="text-xs hidden md:table-cell">Statut</TableHead><TableHead className="text-xs text-right">Actions</TableHead></TableRow></TableHeader><TableBody>
                 {(usersList || []).map((u: UserItem) => (
-                  <TableRow key={u.id}><TableCell><div className="flex items-center gap-2.5"><Avatar className="size-8"><AvatarFallback className={cn('text-[10px]', u.isActive ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary')}>{initials(u.fullName)}</AvatarFallback></Avatar><div><p className="text-sm font-medium">{u.fullName}</p><p className="text-[11px] text-jl-muted">{u.email}</p></div></div></TableCell><TableCell className="hidden sm:table-cell"><Badge variant="outline" className="text-[10px]">{roleLabel(u.role)}</Badge></TableCell><TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><div className={cn('size-1.5 rounded-full', u.isActive ? 'bg-[var(--success)]' : 'bg-jl-page')} /><span className="text-xs">{u.isActive ? t('common.active') : t('common.inactive')}</span></div></TableCell><TableCell className="text-right"><Button size="sm" variant="ghost" className="size-7 text-jl-muted hover:text-jl-secondary"><MoreHorizontal className="size-3.5" /></Button></TableCell></TableRow>
+                  <TableRow key={u.id}><TableCell><div className="flex items-center gap-2.5"><Avatar className="size-8"><AvatarFallback className={cn('text-[10px]', u.isActive ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary')}>{initials(u.fullName)}</AvatarFallback></Avatar><div><p className="text-sm font-medium">{u.fullName}</p><p className="text-[11px] text-jl-muted">{u.email}</p></div></div></TableCell><TableCell className="hidden sm:table-cell"><Badge variant="outline" className="text-[10px]">{ROLE_LABELS[u.role] || u.role}</Badge></TableCell><TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><div className={cn('size-1.5 rounded-full', u.isActive ? 'bg-[var(--success)]' : 'bg-jl-page')} /><span className="text-xs">{u.isActive ? 'Actif' : 'Inactif'}</span></div></TableCell><TableCell className="text-right"><Button size="sm" variant="ghost" className="size-7 text-jl-muted hover:text-jl-secondary"><MoreHorizontal className="size-3.5" /></Button></TableCell></TableRow>
                 ))}
                 {(!usersList || usersList.length === 0) && <TableRow><TableCell colSpan={4} className="text-center py-8 text-xs text-jl-muted">Aucun membre dans l'équipe</TableCell></TableRow>}
               </TableBody></Table>
@@ -550,8 +550,8 @@ export function SettingsView() {
         </TabsContent>}
 
         {/* DEVISES */}
-        {user?.tenantId && <TabsContent value="devises"><Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle className="text-sm font-semibold">Devises disponibles</CardTitle><Button size="sm" variant="outline" onClick={() => setShowNewCurrency(true)}><Plus className="size-3.5 mr-1" />{t('settings.add')}</Button></CardHeader><CardContent>
-          {showNewCurrency && <div className="border border-jl rounded-lg p-4 mb-4 space-y-3 bg-jl-page"><p className="text-xs font-semibold text-jl-primary">{t('settings.newCurrency')}</p><div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div className="space-y-1.5"><Label className="text-xs">{t('settings.code')}</Label><Input value={newCurrency.code} onChange={e => setNewCurrency(c => ({ ...c, code: e.target.value }))} placeholder="XAF" /></div><div className="space-y-1.5"><Label className="text-xs">{t('settings.name')}</Label><Input value={newCurrency.name} onChange={e => setNewCurrency(c => ({ ...c, name: e.target.value }))} placeholder={t('settings.frcfa')} /></div><div className="space-y-1.5"><Label className="text-xs">{t('settings.symbol')}</Label><Input value={newCurrency.symbol} onChange={e => setNewCurrency(c => ({ ...c, symbol: e.target.value }))} placeholder="FCFA" /></div></div><div className="flex gap-2"><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => createCurrencyMut.mutate(newCurrency)} disabled={createCurrencyMut.isPending || !newCurrency.code || !newCurrency.name}>{createCurrencyMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Plus className="size-3.5 mr-1" />}Ajouter</Button><Button size="sm" variant="outline" onClick={() => setShowNewCurrency(false)}>{t('common.cancel')}</Button></div></div>}
+        {user?.tenantId && <TabsContent value="devises"><Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle className="text-sm font-semibold">Devises disponibles</CardTitle><Button size="sm" variant="outline" onClick={() => setShowNewCurrency(true)}><Plus className="size-3.5 mr-1" />Ajouter</Button></CardHeader><CardContent>
+          {showNewCurrency && <div className="border border-jl rounded-lg p-4 mb-4 space-y-3 bg-jl-page"><p className="text-xs font-semibold text-jl-primary">Nouvelle devise</p><div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div className="space-y-1.5"><Label className="text-xs">Code</Label><Input value={newCurrency.code} onChange={e => setNewCurrency(c => ({ ...c, code: e.target.value }))} placeholder="XAF" /></div><div className="space-y-1.5"><Label className="text-xs">Nom</Label><Input value={newCurrency.name} onChange={e => setNewCurrency(c => ({ ...c, name: e.target.value }))} placeholder="Franc CFA" /></div><div className="space-y-1.5"><Label className="text-xs">Symbole</Label><Input value={newCurrency.symbol} onChange={e => setNewCurrency(c => ({ ...c, symbol: e.target.value }))} placeholder="FCFA" /></div></div><div className="flex gap-2"><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => createCurrencyMut.mutate(newCurrency)} disabled={createCurrencyMut.isPending || !newCurrency.code || !newCurrency.name}>{createCurrencyMut.isPending ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <Plus className="size-3.5 mr-1" />}Ajouter</Button><Button size="sm" variant="outline" onClick={() => setShowNewCurrency(false)}>Annuler</Button></div></div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {(currencies || []).map((c: CurrencyItem) => {
               const isGlobal = !c.tenantId
@@ -562,8 +562,8 @@ export function SettingsView() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 mb-1"><span className="font-semibold text-sm">{c.code}</span><Badge variant="outline" className="text-[10px]">{c.symbol}</Badge></div>
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1"><Label className="text-[10px]">{t('settings.name')}</Label><Input className="h-8 text-xs" value={editingCurrency.name} onChange={e => setEditingCurrency(ed => ({ ...ed, name: e.target.value }))} /></div>
-                        <div className="space-y-1"><Label className="text-[10px]">{t('settings.symbol')}</Label><Input className="h-8 text-xs" value={editingCurrency.symbol} onChange={e => setEditingCurrency(ed => ({ ...ed, symbol: e.target.value }))} /></div>
+                        <div className="space-y-1"><Label className="text-[10px]">Nom</Label><Input className="h-8 text-xs" value={editingCurrency.name} onChange={e => setEditingCurrency(ed => ({ ...ed, name: e.target.value }))} /></div>
+                        <div className="space-y-1"><Label className="text-[10px]">Symbole</Label><Input className="h-8 text-xs" value={editingCurrency.symbol} onChange={e => setEditingCurrency(ed => ({ ...ed, symbol: e.target.value }))} /></div>
                       </div>
                       <div className="flex gap-1.5">
                         <Button size="sm" className="h-7 text-[10px] bg-jl-blue hover:bg-jl-blue" disabled={updateCurrencyMut.isPending || !editingCurrency.name} onClick={() => updateCurrencyMut.mutate({ id: c.id, name: editingCurrency.name, symbol: editingCurrency.symbol })}>{updateCurrencyMut.isPending ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}Enregistrer</Button>
@@ -720,7 +720,7 @@ export function SettingsView() {
             <div className="space-y-4">
               <div className="flex justify-center">
                 {mfaSetupData.qrDataUrl ? (
-                  <img src={mfaSetupData.qrDataUrl} alt={t('settings.qrMfa')} className="size-48 rounded-lg" />
+                  <img src={mfaSetupData.qrDataUrl} alt="QR Code MFA" className="size-48 rounded-lg" />
                 ) : (
                   <div className="size-48 rounded-lg bg-jl-page border border-jl flex items-center justify-center"><QrCode className="size-12 text-jl-muted" /></div>
                 )}

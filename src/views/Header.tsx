@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useAppStore, cn, Button, Badge, ScrollArea, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Search, Bell, LogOut, MessageSquare, Menu, X, Briefcase, Receipt, ClipboardList, FileText, Calendar, MessageCircle, ExternalLink, ThemeToggle, Globe , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS, t } from './shared-ui'
+import { useState, useEffect, useRef, useAppStore, cn, Button, Badge, ScrollArea, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Search, Bell, LogOut, MessageSquare, Menu, X, Briefcase, Receipt, ClipboardList, FileText, Calendar, MessageCircle, ExternalLink, ThemeToggle, Globe } from './shared-ui'
 import { usePollingNotifications } from '@/hooks/use-polling-notifications'
 import { relativeTime } from './helpers'
 import { NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants'
@@ -66,7 +66,7 @@ export function Header() {
   const [dropdownFilter, setDropdownFilter] = useState('all')
   const prevUnreadRef = useRef(0)
   const [badgePulse, setBadgePulse] = useState(false)
-  const viewLabel = (() => { const item = NAV_ITEMS.find(n => n.view === currentView) || ADMIN_NAV_ITEMS.find(n => n.view === currentView); return item?.labelKey ? t(item.labelKey) : item?.label || 'JurisLink' })()
+  const viewLabel = NAV_ITEMS.find(n => n.view === currentView)?.label || ADMIN_NAV_ITEMS.find(n => n.view === currentView)?.label || 'JurisLink'
 
   // Polling hook — 30s interval, auto-pauses when unauthenticated
   const { notifications, unreadCount, refetchNow } = usePollingNotifications(!!user?.tenantId)

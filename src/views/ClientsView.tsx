@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState, t   , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS } from './shared-ui'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek, isSameMonth, differenceInDays, isBefore, addDays, fr, toast, useTheme, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Checkbox, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Avatar, AvatarImage, AvatarFallback, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, ScrollArea, Separator, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Skeleton, Progress, Switch, LayoutDashboard, Briefcase, Users, FileText, Calendar, Receipt, MessageSquare, BarChart3, Shield, Settings, Menu, X, Search, Bell, LogOut, User, ChevronDown, ChevronRight, ChevronLeft, Plus, Edit, Trash2, Eye, EyeOff, Lock, Clock, Send, ArrowLeft, Download, Filter, MoreHorizontal, Archive, AlertTriangle, CheckCircle2, Circle, Phone, Mail, Building2, RefreshCw, TrendingUp, DollarSign, FileCheck, FileWarning, Activity, Sun, Moon, Inbox, FolderOpen, Scale, ClipboardList, Zap, AlertOctagon, ChevronUp, ExternalLink, Timer, Target, Flag, Folder, Tag, MapPin, Banknote, Gavel, UserCheck, Check, CircleDot, ArrowUpRight, ArrowDownRight, Minus, AlertCircle, Wallet, Brain, Save, Upload, CalendarPlus, CheckCheck, UserCircle, FileUp, CreditCard, Printer, FileCode2, SendHorizontal, Play, Pause, Square, Copy, Sparkles, MailCheck, MessageCircle, Hash, BookOpen, Crown, UsersRound, ShieldCheck, UserPlus, ArrowUpDown, FileSpreadsheet, ArrowDown, ArrowUp, SearchX, Loader2, FileImage, List, LayoutGrid, History, Globe, ShieldUser, FileDown, MessageCircleReply, UserCog, BuildingIcon, CreditCardIcon, ZapIcon , EmptyState } from './shared-ui'
 import { queryClient, STATUS_COLORS, STATUS_LABELS, PRIORITY_COLORS, PRIORITY_LABELS, EVENT_TYPE_LABELS, CRIT_COLORS, CHART_COLORS, TYPE_LABELS, TASK_STATUS_MAP, RISK_COLORS } from './constants'
 import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fmtDuration, taskStatusColor, taskStatusLabel } from './helpers'
 import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/useFormDraft'
@@ -42,20 +42,20 @@ export function ClientsView() {
 
   const createMut = useMutation({
     mutationFn: (body: Record<string, unknown>) => fetch('/api/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success(t('clients.created')); setDialogOpen(false); resetForm(); clearClientDraft() },
-    onError: () => toast.error(t('clients.errorCreate')),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success('Client créé'); setDialogOpen(false); resetForm(); clearClientDraft() },
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const updateMut = useMutation({
     mutationFn: ({ id, ...body }: Record<string, unknown>) => fetch(`/api/clients/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success(t('clients.updated')); setDialogOpen(false); resetForm(); clearClientDraft() },
-    onError: () => toast.error(t('clients.errorUpdate')),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success('Client mis à jour'); setDialogOpen(false); resetForm(); clearClientDraft() },
+    onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => fetch(`/api/clients/${id}`, { method: 'DELETE' }).then(r => r.json()),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success(t('clients.deleted')) },
-    onError: () => toast.error(t('clients.errorDelete')),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); toast.success('Client supprimé') },
+    onError: () => toast.error('Erreur lors de la suppression'),
   })
 
   const resetForm = () => { setForm({ fullName: '', company: '', email: '', phone: '', address: '', city: '', country: 'Cameroun', notes: '', clientType: 'particulier', niu: '', riskLevel: 'faible', source: '', isActive: true }); setEditing(null) }
@@ -72,23 +72,23 @@ export function ClientsView() {
         <h2 className="text-lg font-semibold">Clients</h2>
         <Button onClick={() => {
           const draft = getClientDraft()
-          if (draft && draft.fullName) { setForm(draft as typeof form); toast.info(t('common.draftRestored')) } else { resetForm() }
+          if (draft && draft.fullName) { setForm(draft as typeof form); toast.info('Brouillon restauré') } else { resetForm() }
           setDialogOpen(true)
-        }} size="sm"><Plus className="size-4 mr-1" />{t('clients.newClient')}{clientHasDraft && <span className="ml-1 size-2 rounded-full bg-amber-400 inline-block" title={t('common.draftSaved')} />}</Button>
+        }} size="sm"><Plus className="size-4 mr-1" />Nouveau client{clientHasDraft && <span className="ml-1 size-2 rounded-full bg-amber-400 inline-block" title="Brouillon enregistré" />}</Button>
       </div>
 
-      <div className="relative max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder={t('clients.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-xs" /></div>
+      <div className="relative max-w-xs"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-jl-muted" /><Input placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-9 text-xs" /></div>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :
-        (Array.isArray(clients) && clients.length === 0) ? <EmptyState icon={Users} title={t('clients.noClient')} description={t('clients.addFirst')} /> :
+        (Array.isArray(clients) && clients.length === 0) ? <EmptyState icon={Users} title="Aucun client" description="Ajoutez votre premier client" /> :
         <Card><CardContent className="p-0"><div className="max-h-[500px] overflow-y-auto">
           <Table><TableHeader><TableRow>
-            <TableHead>{t('common.name')}</TableHead>
-            <TableHead className="hidden md:table-cell">{t('common.clientType')}</TableHead>
-            <TableHead className="hidden lg:table-cell">{t('common.city')}</TableHead>
-            <TableHead className="hidden md:table-cell">{t('common.riskLevel')}</TableHead>
-            <TableHead className="hidden sm:table-cell">{t('nav.cases')}</TableHead>
-            <TableHead className="w-24">{t('common.actions')}</TableHead>
+            <TableHead>Nom</TableHead>
+            <TableHead className="hidden md:table-cell">Type</TableHead>
+            <TableHead className="hidden lg:table-cell">Ville</TableHead>
+            <TableHead className="hidden md:table-cell">Risque</TableHead>
+            <TableHead className="hidden sm:table-cell">Dossiers</TableHead>
+            <TableHead className="w-24">Actions</TableHead>
           </TableRow></TableHeader><TableBody>
             {(Array.isArray(clients) ? clients : []).map((c: Client, i: number) => (
               <TableRow key={c.id} className={cn(i % 2 === 1 && 'bg-jl-page', 'cursor-pointer')} onClick={() => { setSelectedClient(c); setDetailOpen(true) }}>
@@ -98,9 +98,9 @@ export function ClientsView() {
                     <div><p className="text-sm font-medium">{c.fullName}</p>{c.company && <p className="text-[10px] text-jl-muted">{c.company}</p>}</div>
                   </div>
                 </TableCell>
-                <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{c.clientType === 'entreprise' ? t('common.entreprise') : t('common.particulier')}</Badge></TableCell>
+                <TableCell className="hidden md:table-cell"><Badge variant="outline" className="text-[10px]">{c.clientType === 'entreprise' ? 'Entreprise' : 'Particulier'}</Badge></TableCell>
                 <TableCell className="hidden lg:table-cell text-sm text-jl-secondary">{c.city || '—'}</TableCell>
-                <TableCell className="hidden md:table-cell"><Badge variant="outline" className={cn('text-[10px]', RISK_COLORS[c.riskLevel || 'faible'])}>{riskLabel(c.riskLevel)}</Badge></TableCell>
+                <TableCell className="hidden md:table-cell"><Badge variant="outline" className={cn('text-[10px]', RISK_COLORS[c.riskLevel || 'faible'])}>{c.riskLevel === 'eleve' ? 'Élevé' : c.riskLevel === 'moyen' ? 'Moyen' : 'Faible'}</Badge></TableCell>
                 <TableCell className="hidden sm:table-cell text-sm text-jl-secondary">{c._count?.cases || 0}</TableCell>
                 <TableCell>
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
@@ -115,30 +115,30 @@ export function ClientsView() {
 
       <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) resetForm() }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? t('clients.editClient') : t('clients.newClient')}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Modifier le client' : 'Nouveau client'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>{t('common.fullName')} *</Label><Input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} /></div>
-            <div><Label>{t('common.company')}</Label><Input value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} /></div>
+            <div><Label>Nom complet *</Label><Input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} /></div>
+            <div><Label>Société</Label><Input value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t('common.email')}</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-              <div><Label>{t('common.phone')}</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
+              <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+              <div><Label>Téléphone</Label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
             </div>
-            <div><Label>{t('common.address')}</Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
+            <div><Label>Adresse</Label><Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t('common.city')}</Label><Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} /></div>
-              <div><Label>{t('common.country')}</Label><Input value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t('common.clientType')}</Label><Select value={form.clientType} onValueChange={v => setForm(f => ({ ...f, clientType: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="particulier">{t('common.particulier')}</SelectItem><SelectItem value="entreprise">{t('common.entreprise')}</SelectItem></SelectContent></Select></div>
-              <div><Label>{t('common.niu')}</Label><Input value={form.niu} onChange={e => setForm(f => ({ ...f, niu: e.target.value }))} placeholder={t('clients.niuPlaceholder')} /></div>
+              <div><Label>Ville</Label><Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} /></div>
+              <div><Label>Pays</Label><Input value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t('common.riskLevel')}</Label><Select value={form.riskLevel} onValueChange={v => setForm(f => ({ ...f, riskLevel: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="faible">{riskLabel('faible')}</SelectItem><SelectItem value="moyen">{riskLabel('moyen')}</SelectItem><SelectItem value="eleve">{riskLabel('eleve')}</SelectItem></SelectContent></Select></div>
-              <div><Label>{t('common.source')}</Label><Select value={form.source} onValueChange={v => setForm(f => ({ ...f, source: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="bouche_a_oreille">{t('clients.sourceWordOfMouth')}</SelectItem><SelectItem value="internet">{t('clients.sourceInternet')}</SelectItem><SelectItem value="recommandation">{t('clients.sourceReferral')}</SelectItem><SelectItem value="autre">{t('clients.sourceOther')}</SelectItem></SelectContent></Select></div>
+              <div><Label>Type</Label><Select value={form.clientType} onValueChange={v => setForm(f => ({ ...f, clientType: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="particulier">Particulier</SelectItem><SelectItem value="entreprise">Entreprise</SelectItem></SelectContent></Select></div>
+              <div><Label>NIU</Label><Input value={form.niu} onChange={e => setForm(f => ({ ...f, niu: e.target.value }))} placeholder="Numéro d'Identification Unique" /></div>
             </div>
-            <div><Label>{t('common.notes')}</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Niveau de risque</Label><Select value={form.riskLevel} onValueChange={v => setForm(f => ({ ...f, riskLevel: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="faible">Faible</SelectItem><SelectItem value="moyen">Moyen</SelectItem><SelectItem value="eleve">Élevé</SelectItem></SelectContent></Select></div>
+              <div><Label>Source</Label><Select value={form.source} onValueChange={v => setForm(f => ({ ...f, source: v }))}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger><SelectContent><SelectItem value="bouche_a_oreille">Bouche à oreille</SelectItem><SelectItem value="internet">Internet</SelectItem><SelectItem value="recommandation">Recommandation</SelectItem><SelectItem value="autre">Autre</SelectItem></SelectContent></Select></div>
+            </div>
+            <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button><Button onClick={handleSubmit} disabled={!form.fullName.trim() || createMut.isPending || updateMut.isPending}>{editing ? t('common.save') : t('common.create')}</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button><Button onClick={handleSubmit} disabled={!form.fullName.trim() || createMut.isPending || updateMut.isPending}>{editing ? 'Enregistrer' : 'Créer'}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -148,7 +148,7 @@ export function ClientsView() {
             <DialogTitle className="flex items-center gap-3">
               <Avatar className="size-10"><AvatarFallback className="bg-jl-blue text-white text-sm">{initials(selectedClient?.fullName || '')}</AvatarFallback></Avatar>
               <div><div>{selectedClient?.fullName}{selectedClient?.company && <span className="text-jl-secondary font-normal"> — {selectedClient.company}</span>}</div>
-              <div className="flex items-center gap-2 mt-1"><Badge variant="outline" className="text-[10px]">{selectedClient?.clientType === 'entreprise' ? t('common.entreprise') : t('common.particulier')}</Badge><Badge variant="outline" className={cn('text-[10px]', RISK_COLORS[selectedClient?.riskLevel || 'faible'])}>{riskLabel(selectedClient?.riskLevel)}</Badge></div></div>
+              <div className="flex items-center gap-2 mt-1"><Badge variant="outline" className="text-[10px]">{selectedClient?.clientType === 'entreprise' ? 'Entreprise' : 'Particulier'}</Badge><Badge variant="outline" className={cn('text-[10px]', RISK_COLORS[selectedClient?.riskLevel || 'faible'])}>{selectedClient?.riskLevel === 'eleve' ? 'Élevé' : selectedClient?.riskLevel === 'moyen' ? 'Moyen' : 'Faible'}</Badge></div></div>
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-2 text-xs text-jl-secondary px-1 py-2">
@@ -156,34 +156,34 @@ export function ClientsView() {
             {selectedClient?.phone && <div className="flex items-center gap-1.5"><Phone className="size-3" />{selectedClient.phone}</div>}
             {selectedClient?.address && <div className="flex items-center gap-1.5"><MapPin className="size-3" />{selectedClient.address}</div>}
             {selectedClient?.city && <div className="flex items-center gap-1.5"><MapPin className="size-3" />{selectedClient.city}{selectedClient?.country ? `, ${selectedClient.country}` : ''}</div>}
-            {selectedClient?.niu && <div className="flex items-center gap-1.5"><Building2 className="size-3" />{t('common.niu')}: {selectedClient.niu}</div>}
+            {selectedClient?.niu && <div className="flex items-center gap-1.5"><Building2 className="size-3" />NIU: {selectedClient.niu}</div>}
           </div>
           <Tabs defaultValue="dossiers" className="flex-1 overflow-hidden">
-            <TabsList className="w-full"><TabsTrigger value="dossiers">{t('nav.cases')} ({(clientDetail?.cases || []).length})</TabsTrigger><TabsTrigger value="factures">{t('common.invoice')} ({(clientDetail?.invoices || []).length})</TabsTrigger><TabsTrigger value="notes">{t('common.notes')}</TabsTrigger></TabsList>
+            <TabsList className="w-full"><TabsTrigger value="dossiers">Dossiers ({(clientDetail?.cases || []).length})</TabsTrigger><TabsTrigger value="factures">Factures ({(clientDetail?.invoices || []).length})</TabsTrigger><TabsTrigger value="notes">Notes</TabsTrigger></TabsList>
             <TabsContent value="dossiers" className="mt-3 overflow-y-auto max-h-[45vh]">
-              {(clientDetail?.cases || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">{t('common.noCase')}</p> :
+              {(clientDetail?.cases || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucun dossier</p> :
               <div className="space-y-2">{(clientDetail?.cases || []).map((c: CaseItem) => (
                 <div key={c.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl hover:bg-jl-page cursor-pointer" onClick={() => { setDetailOpen(false); setCurrentView('cases') }}>
                   <Briefcase className="size-4 text-jl-gold shrink-0" />
-                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{c.reference} — {c.title}</p><p className="text-[10px] text-jl-muted">{typeLabel(c.caseType)} • {t('common.createdOn')} {fmtDate(c.createdAt)}</p></div>
-                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[c.status])}>{statusLabel(c.status)}</Badge>
+                  <div className="min-w-0 flex-1"><p className="text-sm font-medium">{c.reference} — {c.title}</p><p className="text-[10px] text-jl-muted">{TYPE_LABELS[c.caseType] || c.caseType} • Créé le {fmtDate(c.createdAt)}</p></div>
+                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[c.status])}>{STATUS_LABELS[c.status] || c.status}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
             <TabsContent value="factures" className="mt-3 overflow-y-auto max-h-[45vh]">
-              {(clientDetail?.invoices || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">{t('common.noInvoice')}</p> :
+              {(clientDetail?.invoices || []).length === 0 ? <p className="text-sm text-jl-muted text-center py-8">Aucune facture</p> :
               <div className="space-y-2">{(clientDetail?.invoices || []).map((inv: Invoice) => (
                 <div key={inv.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl hover:bg-jl-page cursor-pointer" onClick={() => { setDetailOpen(false); setCurrentView('invoices') }}>
                   <Receipt className="size-4 text-jl-gold shrink-0" />
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium">{inv.id.slice(0,8)}{inv.case?.reference ? ` — ${inv.case.reference}` : ''}</p><p className="text-[10px] text-jl-muted">{fmtDate(inv.createdAt)}</p></div>
                   <span className="text-sm font-semibold shrink-0">{fmtMoney(inv.amount, inv.currency?.code || 'XAF')}</span>
-                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[inv.status])}>{statusLabel(inv.status)}</Badge>
+                  <Badge variant="outline" className={cn('text-[10px] shrink-0', STATUS_COLORS[inv.status])}>{STATUS_LABELS[inv.status] || inv.status}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
             <TabsContent value="notes" className="mt-3 overflow-y-auto max-h-[45vh]">
               <div className="p-4 border rounded-lg bg-jl-page">
-                <p className="text-sm text-jl-secondary whitespace-pre-wrap">{selectedClient?.notes || clientDetail?.notes || t('common.noNote')}</p>
+                <p className="text-sm text-jl-secondary whitespace-pre-wrap">{selectedClient?.notes || clientDetail?.notes || 'Aucune note'}</p>
               </div>
             </TabsContent>
           </Tabs>

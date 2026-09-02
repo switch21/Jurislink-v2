@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useQuery, motion, AnimatePresence, useAppStore, cn, Button, X, Clock, ArrowRight, Crown , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS } from './shared-ui'
+import { useState, useEffect, useQuery, motion, AnimatePresence, useAppStore, cn, Button, X, Clock, ArrowRight, Crown } from './shared-ui'
+import { t } from '@/lib/i18n'
 
 // ══════════════════════════════════════════════════════════════
 // Trial Banner — shows when user is in trial period
@@ -163,7 +164,7 @@ export function TrialBanner() {
                   'size-7 rounded-md flex items-center justify-center transition-colors',
                   'text-amber-600 hover:bg-amber-200/50 dark:text-amber-400 dark:hover:bg-amber-800/30'
                 )}
-                aria-label={t('trial.close')}
+                aria-label="Fermer"
               >
                 <X className="size-3.5" />
               </button>

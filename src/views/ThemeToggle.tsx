@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, AnimatePresence, Sun, Moon, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, useTheme , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS } from './shared-ui'
+import { motion, AnimatePresence, Sun, Moon, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, useTheme } from './shared-ui'
 
 // ==================== Theme Toggle ====================
 export function ThemeToggle() {

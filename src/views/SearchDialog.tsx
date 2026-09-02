@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo, useAppStore, cn, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator, Badge, Loader2, Sparkles, Briefcase, Users, ClipboardList, FileText, Receipt, MessageSquare, Calendar, Mail, type ViewName , t , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS } from './shared-ui'
+import { useState, useEffect, useCallback, useRef, useMemo, useAppStore, cn, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator, Badge, Loader2, Sparkles, Briefcase, Users, ClipboardList, FileText, Receipt, MessageSquare, Calendar, Mail, type ViewName } from './shared-ui'
 
 interface SearchResult {
   _type: string
@@ -112,7 +112,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <div className="flex items-center border-b px-3 pb-2">
         <CommandInput
-          placeholder={t('search.placeholderFull')}
+          placeholder="Rechercher dossiers, clients, tâches, documents..."
           value={query}
           onValueChange={setQuery}
           className="flex-1 border-0 p-0"

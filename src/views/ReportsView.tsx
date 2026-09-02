@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, subMonths, isBefore, fr, toast, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, ScrollArea, Separator, Skeleton, Switch, BarChart3, TrendingUp, Users, Clock, Briefcase, Activity, Download, Printer, ArrowUpRight, ArrowDownRight, Minus, DollarSign, FileText, CheckCircle2, AlertCircle, Loader2, ChevronUp, ChevronDown , t   , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS } from './shared-ui'
-import { queryClient, CHART_COLORS, STATUS_COLORS, PRIORITY_LABELS, RISK_COLORS, BILLING_LABELS } from './constants'
+import { useState, useEffect, useCallback, useMemo, useRef, useQuery, useMutation, useQueryClient, motion, AnimatePresence, format, parseISO, startOfMonth, endOfMonth, subMonths, isBefore, fr, toast, useAppStore, cn, initAuthFetch, Button, Input, Label, Textarea, Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction, CardFooter, Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, ScrollArea, Separator, Skeleton, Switch, BarChart3, TrendingUp, Users, Clock, Briefcase, Activity, Download, Printer, ArrowUpRight, ArrowDownRight, Minus, DollarSign, FileText, CheckCircle2, AlertCircle, Loader2, ChevronUp, ChevronDown } from './shared-ui'
+import { t } from '@/lib/i18n'
+import { queryClient, CHART_COLORS, STATUS_COLORS, STATUS_LABELS, TYPE_LABELS, INVOICE_TYPE_LABELS, INVOICE_STATUS_LABELS, PAYMENT_METHOD_LABELS, PRIORITY_LABELS, RISK_COLORS, BILLING_LABELS } from './constants'
 import { fmtDate, fmtMoney, fmtDuration } from './helpers'
 
 // ==================== HELPER COMPONENTS ====================
@@ -135,17 +136,17 @@ export function ReportsView() {
 
   const finByType = useMemo(() => {
     if (!finData?.byType) return []
-    return Object.entries(finData.byType).map(([t, d]: [string, any]) => ({ label: invoiceTypeLabel(t), value: d.amount }))
+    return Object.entries(finData.byType).map(([t, d]: [string, any]) => ({ label: INVOICE_TYPE_LABELS[t] || t, value: d.amount }))
   }, [finData])
 
   const finByStatus = useMemo(() => {
     if (!finData?.byStatus) return []
-    return Object.entries(finData.byStatus).map(([s, d]: [string, any]) => ({ label: invoiceStatusLabel(s), value: d.amount }))
+    return Object.entries(finData.byStatus).map(([s, d]: [string, any]) => ({ label: INVOICE_STATUS_LABELS[s] || s, value: d.amount }))
   }, [finData])
 
   const finByMethod = useMemo(() => {
     if (!finData?.byMethod) return []
-    return Object.entries(finData.byMethod).map(([m, d]: [string, any]) => ({ label: paymentMethodLabel(m), value: d.amount }))
+    return Object.entries(finData.byMethod).map(([m, d]: [string, any]) => ({ label: PAYMENT_METHOD_LABELS[m] || m, value: d.amount }))
   }, [finData])
 
   if (isLoading && tab !== 'financier') return <div className="p-6 space-y-4"><Skeleton className="h-8 w-48" /><div className="grid grid-cols-2 md:grid-cols-4 gap-4"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div></div>
@@ -240,16 +241,16 @@ export function ReportsView() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">{t('reports.byStatus')}</CardTitle></CardHeader><CardContent>
-                {caseData?.byStatus && <ReportHBar items={Object.entries(caseData.byStatus).map(([s, c]: [string, any]) => ({ label: statusLabel(s), value: c }))} valueKey="value" labelKey="label" />}
+                {caseData?.byStatus && <ReportHBar items={Object.entries(caseData.byStatus).map(([s, c]: [string, any]) => ({ label: STATUS_LABELS[s] || s, value: c }))} valueKey="value" labelKey="label" />}
               </CardContent></Card>
-              <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">{t('reports.byType')}</CardTitle></CardHeader><CardContent>
-                {caseData?.byType && <ReportHBar items={Object.entries(caseData.byType).map(([t, c]: [string, any]) => ({ label: typeLabel(t), value: c }))} valueKey="value" labelKey="label" />}
+              <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Par type</CardTitle></CardHeader><CardContent>
+                {caseData?.byType && <ReportHBar items={Object.entries(caseData.byType).map(([t, c]: [string, any]) => ({ label: TYPE_LABELS[t] || t, value: c }))} valueKey="value" labelKey="label" />}
               </CardContent></Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">{t('reports.byPriority')}</CardTitle></CardHeader><CardContent>
-                {caseData?.byPriority && <ReportHBar items={Object.entries(caseData.byPriority).map(([p, c]: [string, any]) => ({ label: priorityLabel(p), value: c }))} valueKey="value" labelKey="label" />}
+                {caseData?.byPriority && <ReportHBar items={Object.entries(caseData.byPriority).map(([p, c]: [string, any]) => ({ label: PRIORITY_LABELS[p] || p, value: c }))} valueKey="value" labelKey="label" />}
               </CardContent></Card>
               <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">{t('reports.byLawyer')}</CardTitle></CardHeader><CardContent>
                 {caseData?.byLawyer && <ReportHBar items={caseData.byLawyer} valueKey="count" labelKey="name" />}
@@ -257,9 +258,9 @@ export function ReportsView() {
             </div>
 
             {/* Case details table */}
-            {caseData?.caseDetails && <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-semibold">{t('reports.caseDetails')}</CardTitle><Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => exportCSV('rapport_dossiers', [['Réf', 'Titre', 'Client', 'Type', 'Statut', 'Facturé', 'Payé', 'Temps', 'Tâches'], ...caseData.caseDetails.map((c: any) => [c.reference || '', c.title, c.clientName(c.caseType)(c.status), String(c.totalInvoiced), String(c.totalPaid), fmtDuration(c.totalTimeSeconds), String(c.taskCount)])])}><Download className="size-3 mr-1" />CSV</Button></div></CardHeader><CardContent>
-              <div className="max-h-96 overflow-y-auto"><Table><TableHeader><TableRow><TableHead>{t('cases.reference')}</TableHead><TableHead>{t('cases.title')}</TableHead><TableHead className="hidden md:table-cell">{t('cases.client')}</TableHead><TableHead className="hidden lg:table-cell">{t('common.type')}</TableHead><TableHead>{t('common.status')}</TableHead><TableHead className="text-right hidden sm:table-cell">{t('invoices.billed')}</TableHead><TableHead className="text-right hidden lg:table-cell">{t('common.duration')}</TableHead></TableRow></TableHeader><TableBody>
-                {caseData.caseDetails.map((c: any) => <TableRow key={c.id}><TableCell className="text-xs font-mono text-jl-muted">{c.reference || '—'}</TableCell><TableCell className="text-sm font-medium max-w-[200px] truncate">{c.title}</TableCell><TableCell className="hidden md:table-cell text-xs text-jl-secondary">{c.clientName}</TableCell><TableCell className="hidden lg:table-cell text-xs">{typeLabel(c.caseType)}</TableCell><TableCell><Badge className={cn('text-[10px]', STATUS_COLORS[c.status] || '')}>{statusLabel(c.status)}</Badge></TableCell><TableCell className="text-sm text-right hidden sm:table-cell">{fmtMoney(c.totalInvoiced, 'XAF', true)}</TableCell><TableCell className="text-xs text-right hidden lg:table-cell">{fmtDuration(c.totalTimeSeconds)}</TableCell></TableRow>)}
+            {caseData?.caseDetails && <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-semibold">{t('reports.caseDetails')}</CardTitle><Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => exportCSV('rapport_dossiers', [['Réf', 'Titre', 'Client', 'Type', 'Statut', 'Facturé', 'Payé', 'Temps', 'Tâches'], ...caseData.caseDetails.map((c: any) => [c.reference || '', c.title, c.clientName, TYPE_LABELS[c.caseType] || c.caseType, STATUS_LABELS[c.status] || c.status, String(c.totalInvoiced), String(c.totalPaid), fmtDuration(c.totalTimeSeconds), String(c.taskCount)])])}><Download className="size-3 mr-1" />CSV</Button></div></CardHeader><CardContent>
+              <div className="max-h-96 overflow-y-auto"><Table><TableHeader><TableRow><TableHead>Réf</TableHead><TableHead>Titre</TableHead><TableHead className="hidden md:table-cell">Client</TableHead><TableHead className="hidden lg:table-cell">Type</TableHead><TableHead>Statut</TableHead><TableHead className="text-right hidden sm:table-cell">Facturé</TableHead><TableHead className="text-right hidden lg:table-cell">Temps</TableHead></TableRow></TableHeader><TableBody>
+                {caseData.caseDetails.map((c: any) => <TableRow key={c.id}><TableCell className="text-xs font-mono text-jl-muted">{c.reference || '—'}</TableCell><TableCell className="text-sm font-medium max-w-[200px] truncate">{c.title}</TableCell><TableCell className="hidden md:table-cell text-xs text-jl-secondary">{c.clientName}</TableCell><TableCell className="hidden lg:table-cell text-xs">{TYPE_LABELS[c.caseType] || c.caseType}</TableCell><TableCell><Badge className={cn('text-[10px]', STATUS_COLORS[c.status] || '')}>{STATUS_LABELS[c.status] || c.status}</Badge></TableCell><TableCell className="text-sm text-right hidden sm:table-cell">{fmtMoney(c.totalInvoiced, 'XAF', true)}</TableCell><TableCell className="text-xs text-right hidden lg:table-cell">{fmtDuration(c.totalTimeSeconds)}</TableCell></TableRow>)}
               </TableBody></Table></div>
             </CardContent></Card>}
           </>}

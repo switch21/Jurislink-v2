@@ -21,14 +21,10 @@ export function usePollingNotifications(enabled: boolean = true): PollingNotifRe
   const query = useQuery({
     queryKey: ['polling-notifications', user?.tenantId],
     queryFn: () =>
-      fetch(`/api/notifications?tenantId=${user!.tenantId}&unreadOnly=true`).then(async r => {
-        if (!r.ok) throw new Error(`Erreur ${r.status}`)
-        return r.json()
-      }),
+      fetch(`/api/notifications?tenantId=${user!.tenantId}&unreadOnly=true`).then(r => r.json()),
     enabled: !!user?.tenantId && enabled,
     refetchInterval: 30000,
     staleTime: 15000,
-    retry: 1,
   })
 
   // Extract data — API returns { count, notifications } when unreadOnly=true, or raw array as fallback

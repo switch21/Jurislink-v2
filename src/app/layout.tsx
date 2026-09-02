@@ -1,4 +1,32 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "JurisLink — Gestion Juridique Intelligente",
+  description: "Plateforme de gestion de cabinet juridique. Dossiers, clients, factures, calendrier et plus.",
+  keywords: ["JurisLink", "juridique", "cabinet", "avocat", "gestion", "dossiers", "SaaS"],
+  authors: [{ name: "JurisLink" }],
+  icons: {
+    icon: [
+      { url: '/icon.png', sizes: '1024x1024', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icon.png', sizes: '1024x1024', type: 'image/png' },
+    ],
+  },
+  openGraph: {
+    title: 'JurisLink',
+    description: 'Gestion Juridique Intelligente',
+    images: ['/splash.png'],
+  },
+};
 
 export default function RootLayout({
   children,
@@ -7,18 +35,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <head>
-        <title>JurisLink — Gestion Juridique Intelligente</title>
-        <link rel="icon" href="/icon.png" sizes="1024x1024" type="image/png" />
-        <link rel="apple-touch-icon" href="/icon.png" sizes="1024x1024" />
-        <meta name="description" content="Plateforme de gestion de cabinet juridique. Dossiers, clients, factures, calendrier et plus." />
-        <meta name="keywords" content="JurisLink, juridique, cabinet, avocat, gestion, dossiers, SaaS" />
-        <meta property="og:title" content="JurisLink" />
-        <meta property="og:description" content="Gestion Juridique Intelligente" />
-        <meta property="og:image" content="/splash.png" />
-      </head>
-      <body suppressHydrationWarning>
+      <body className={`${inter.variable} antialiased`}>
         {children}
+        <Toaster />
       </body>
     </html>
   );
