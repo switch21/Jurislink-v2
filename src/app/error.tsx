@@ -12,20 +12,14 @@ export default function Error({
   reset: () => void
 }) {
   const msg = error?.message || ''
-  const isHydrationError = msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')
 
   useEffect(() => {
-    // Silently log non-hydration errors
-    if (!isHydrationError) {
-      console.error('=== APP ERROR ===', error)
-    }
-  }, [error, isHydrationError])
+    console.error('=== APP ERROR ===', error)
+  }, [error])
 
-  // Silently ignore hydration errors - the app mounts client-side and works fine.
-  if (isHydrationError) {
-    return null
-  }
-
+  // Always show the error UI so the user can report it.
+  // Never return null — that causes blank/white pages.
+  // Never auto-reload — that causes infinite loops.
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-4">
       <div className="max-w-lg w-full text-center space-y-4">
