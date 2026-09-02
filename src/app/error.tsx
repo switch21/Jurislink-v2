@@ -1,10 +1,7 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { useEffect } from 'react'
-
-// Load the full app client-side only — zero hydration surface
-const App = dynamic(() => import('./AppClient'), { ssr: false })
+import App from './AppClient'
 
 export default function Error({
   error,
@@ -22,8 +19,7 @@ export default function Error({
     }
   }, [error, isHydration])
 
-  // Hydration error → render the app directly (no error UI, no reset needed)
-  // The error boundary unmounts the mismatched tree and renders this fresh client-only tree
+  // Hydration error → render the app directly (direct import, no dynamic → no loading loop)
   if (isHydration) {
     return <App />
   }

@@ -1,10 +1,7 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import App from './AppClient'
 import './globals.css'
-
-// Load the full app client-side only — zero hydration surface
-const App = dynamic(() => import('./AppClient'), { ssr: false })
 
 export default function GlobalError({
   error,
@@ -13,9 +10,21 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  // Always render the app. This catches:
-  // - Layout-level hydration errors (MetadataBoundary, etc.)
-  // - Any unhandled errors that bypass error.tsx
+  // If global-error re-triggers (e.g. <html> hydration mismatch),
+  // sessionStorage flag prevents re-rendering the app → breaks the loop
+  const alreadyRecovered = typeof window !== 'undefined' && sessionStorage.getItem('__jl_global_err') === '1'
+  if (typeof window !== 'undefined') sessionStorage.setItem('__jl_global_err', '1')
+
+  if (alreadyRecovered) {
+    return (
+      <html lang="fr" suppressHydrationWarning>
+        <body className="antialiased" suppressHydrationWarning>
+          <div id="__jl_root" style={{ minHeight: '100vh' }} />
+        </body>
+      </html>
+    )
+  }
+
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
