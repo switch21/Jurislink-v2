@@ -11,6 +11,7 @@ import { queryClient } from '@/views/constants'
 import { SearchDialog } from '@/views/SearchDialog'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { TrialBanner } from '@/views/TrialBanner'
+import { Toaster } from '@/components/ui/toaster'
 
 // ──── Lazy-loaded guard (non-critical, loads after mount) ────
 const LazyBeforeUnloadGuard = lazy(() => import('@/components/BeforeUnloadGuard').then(m => ({ default: m.BeforeUnloadGuard })))
@@ -259,22 +260,25 @@ export default function App() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { initAuthFetch(); const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id) }, [])
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className='min-h-screen flex flex-col bg-[var(--bg-page)] transition-colors duration-300'>
-          <a href='#main-content' className='skip-link'>Aller au contenu principal</a>
-          <div className='flex-1 flex flex-col'>
-            {!mounted ? (
-              <div className='flex-1 flex items-center justify-center bg-[var(--bg-page)]'>
-                <div className='flex flex-col items-center gap-3 animate-fade-in'>
-                  <img src='/splash.png' alt='JurisLink' className='h-12 w-auto object-contain animate-pulse' />
-                  <p className='text-sm text-[var(--text-muted)]'>Chargement…</p>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <div className='min-h-screen flex flex-col bg-[var(--bg-page)] transition-colors duration-300'>
+            <a href='#main-content' className='skip-link'>Aller au contenu principal</a>
+            <div className='flex-1 flex flex-col'>
+              {!mounted ? (
+                <div className='flex-1 flex items-center justify-center bg-[var(--bg-page)]'>
+                  <div className='flex flex-col items-center gap-3 animate-fade-in'>
+                    <img src='/splash.png' alt='JurisLink' className='h-12 w-auto object-contain animate-pulse' />
+                    <p className='text-sm text-[var(--text-muted)]'>Chargement…</p>
+                  </div>
                 </div>
-              </div>
-            ) : <AppInner />}
+              ) : <AppInner />}
+            </div>
           </div>
-        </div>
-      </TooltipProvider>
-    </QueryClientProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+      <Toaster />
+    </>
   )
 }
