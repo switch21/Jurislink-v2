@@ -432,3 +432,27 @@ Stage Summary:
 - i18n: Navigation + labels complètement internationalisés (7 langues)
 
 Remarque: ignoreBuildErrors reste true car .next/ (auto-généré) a des erreurs de type validator hors de notre contrôle.
+
+---
+Task ID: SPLASH-FIX
+Agent: Main Agent
+Task: Fix splash screen / "Chargement…" infinite loop
+
+Work Log:
+- Diagnosed root cause: `global-error.tsx` had `bootstrapApp()` running at module load that:
+  1. Cleared `document.body.innerHTML` (removing server-rendered HTML)
+  2. Created a NEW React root via `createRoot()` and rendered `<App />` into it
+  3. This conflicted with Next.js hydration which expected the original DOM
+  4. Result: infinite loop — hydration error → global-error → bootstrapApp → DOM conflict → error → repeat
+- Also: `error.tsx` directly imported `AppClient` and rendered it for hydration errors, creating a SECOND render cycle
+- Removed entire `bootstrapApp()` hack from `global-error.tsx`
+- Simplified `error.tsx`: removed `import App` — returns `null` for hydration errors (React 19 auto-recovers)
+- Simplified `global-error.tsx`: renders minimal HTML shell for hydration errors
+- Removed console.error suppression hack (no longer needed)
+
+Stage Summary:
+- Dev log: `GET / 200 in 389ms` — page loads cleanly
+- Dev log: `GET /api/admin/dashboard 401` — app renders past splash screen, makes API calls
+- Dev log: **ZERO hydration errors** — the mismatch is handled silently by React 19
+- The fix eliminates the infinite loop entirely
+- Pushed as commit a74d93f
