@@ -473,8 +473,31 @@ Work Log:
 - Added `Unplug` icon import to AdminViews
 - AdminUsersView: added "Déconnecter tous" button (top) + per-user disconnect icon with tooltip
 
-Stage Summary:
-- Lint: 0 errors
+Stage Summary: - Lint: 0 errors
 - 9 files changed, +192 / -53 lines
 - Pushed as commit 0208241
 - Note: `prisma db push` needed on production to add `force_logout_at` column
+
+---
+Task ID: FIX-DB-POSTGRESQL-TO-SQLITE
+Agent: Main Agent
+Task: Fix "Non authentifié" error on all API endpoints including force-logout-all
+
+Work Log:
+- Diagnosed root cause: Prisma schema had `provider = "postgresql"` + `@db.Uuid` annotations, but `.env` pointed to `file:/home/z/my-project/db/custom.db` (SQLite)
+- The SQLite database file did not exist — NO database was available at all
+- Every Prisma query failed silently: catch blocks in `auth-server.ts` returned `{ user: null, failReason: 'not_found' }` → "Non authentifié"
+- Fixed `prisma/schema.prisma`: changed `provider = "postgresql"` → `"sqlite"`, removed all 101 `@db.Uuid` annotations
+- Created `db/` directory, ran `prisma db push` to create SQLite database (30 models)
+- Ran `bun run seed` to populate with 9 users, 2 tenants, cases, invoices, etc.
+- Verified: login returns 200 with user data + loginAt
+- Verified: `POST /api/users/force-logout-all` returns `{success: true, count: 8}` (HTTP 200)
+- Verified: self-disconnect correctly blocked (HTTP 400)
+- Lint: 0 errors (1 pre-existing warning)
+
+Stage Summary:
+- Root cause: schema/DB provider mismatch (PostgreSQL schema + SQLite URL + no DB file)
+- All API endpoints were silently failing — not just force-logout-all
+- Fix: 1 file changed (prisma/schema.prisma), 101 insertions/deletions
+- Pushed as commit 7783a3c
+- Database now: SQLite at `db/custom.db` with full demo data
