@@ -456,3 +456,25 @@ Stage Summary:
 - Dev log: **ZERO hydration errors** — the mismatch is handled silently by React 19
 - The fix eliminates the infinite loop entirely
 - Pushed as commit a74d93f
+
+---
+Task ID: FORCE-LOGOUT
+Agent: Main Agent
+Task: Déconnecter les utilisateurs actuellement connectés
+
+Work Log:
+- Added `forceLogoutAt` DateTime field to User model (Prisma schema)
+- Updated `/api/auth/login` and `/api/auth/mfa/challenge` to return `loginAt` timestamp and clear `forceLogoutAt`
+- Rewrote `auth-server.ts`: `getAuthUser()` checks `forceLogoutAt` vs `X-Login-At` header; `requireAuth()` returns `X-Force-Logout: true` header on forced disconnect
+- Updated `auth-fetch.ts`: sends `X-Login-At` header, detects `X-Force-Logout` response header, auto-clears localStorage + triggers store logout
+- Created `POST /api/users/[id]/force-logout` (single user, RBAC protected)
+- Created `POST /api/users/force-logout-all` (all active users except self, RBAC protected)
+- Added `loginAt?: string` to `UserInfo` interface in appStore
+- Added `Unplug` icon import to AdminViews
+- AdminUsersView: added "Déconnecter tous" button (top) + per-user disconnect icon with tooltip
+
+Stage Summary:
+- Lint: 0 errors
+- 9 files changed, +192 / -53 lines
+- Pushed as commit 0208241
+- Note: `prisma db push` needed on production to add `force_logout_at` column
