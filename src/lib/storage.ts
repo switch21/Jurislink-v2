@@ -18,6 +18,10 @@ export async function uploadFile(
   if (isStorageAvailable()) {
     return uploadToSupabase(file, fileName, mimeType, prefix)
   }
+  // Warn in serverless environments where local storage is ephemeral
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    console.error('[storage] CRITICAL: Supabase Storage is not configured. File uploads will be LOST after this request. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.')
+  }
   return uploadToLocal(file, fileName, prefix)
 }
 

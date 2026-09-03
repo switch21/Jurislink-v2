@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { compare } from 'bcryptjs'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { signPortalToken } from '@/lib/portal-jwt'
 
 export async function POST(request: Request) {
   const db = getDb()
@@ -44,6 +43,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Mot de passe incorrect' }, { status: 401 })
     }
 
+    // Generate JWT token
+    const token = signPortalToken(portalAccount.id, portalAccount.tenantId)
+
     // Update lastLoginAt (non-critical)
     try {
       await db.clientPortal.update({
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
       id: portalAccount.id,
       email: portalAccount.email,
       clientId: portalAccount.clientId,
+      token,
       client: {
         id: portalAccount.client.id,
         fullName: portalAccount.client.fullName,

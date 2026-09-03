@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { downloadFile } from '@/lib/storage'
+import { authenticatePortal } from '@/lib/portal-auth-server'
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const portalUserId = request.headers.get('x-portal-user-id')
-  if (!portalUserId) {
-    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-  }
+  const auth = await authenticatePortal(request)
+  if (auth instanceof NextResponse) return auth
 
   const db = getDb()
   try {
@@ -17,7 +16,7 @@ export async function GET(
 
     // Look up portal account and verify access via client relation
     const portalAccount = await db.clientPortal.findUnique({
-      where: { id: portalUserId },
+      where: { id: auth.portalUserId },
       select: { clientId: true, tenantId: true, isActive: true },
     })
     if (!portalAccount || !portalAccount.isActive) {

@@ -134,13 +134,13 @@ export function fmtDuration(seconds: number): string {
 export function getAuthHeaders(isPortal = false): Record<string, string> {
   const headers: Record<string, string> = {}
   try {
-    const key = isPortal ? 'jurislink_portal_user' : 'jurislink_user'
-    const stored = localStorage.getItem(key)
-    if (stored) {
-      const data = JSON.parse(stored)
-      if (isPortal) {
-        if (data.id) headers['X-Portal-User-Id'] = data.id
-      } else {
+    if (isPortal) {
+      const token = localStorage.getItem('jurislink_portal_token')
+      if (token) headers['Authorization'] = `Bearer ${token}`
+    } else {
+      const stored = localStorage.getItem('jurislink_user')
+      if (stored) {
+        const data = JSON.parse(stored)
         if (data.id) headers['X-User-Id'] = data.id
         if (data.tenantId) headers['X-Tenant-Id'] = data.tenantId
       }
@@ -178,7 +178,7 @@ export function uploadWithProgress(
     xhr.open('POST', url)
     if (headers['X-User-Id']) xhr.setRequestHeader('X-User-Id', headers['X-User-Id'])
     if (headers['X-Tenant-Id']) xhr.setRequestHeader('X-Tenant-Id', headers['X-Tenant-Id'])
-    if (headers['X-Portal-User-Id']) xhr.setRequestHeader('X-Portal-User-Id', headers['X-Portal-User-Id'])
+    if (headers['Authorization']) xhr.setRequestHeader('Authorization', headers['Authorization'])
     xhr.send(formData)
   })
 }

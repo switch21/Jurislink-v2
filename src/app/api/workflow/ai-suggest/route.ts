@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { authenticate, requireTenantAccess } from '@/lib/auth-server'
 import ZAI from 'z-ai-web-dev-sdk'
 
+export const maxDuration = 60
+
 export async function POST(request: Request) {
   const auth = await authenticate(request, 'task', 'view')
   if (auth instanceof NextResponse) return auth

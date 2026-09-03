@@ -77,9 +77,9 @@ export function Header() {
   useEffect(() => {
     if (unreadCount > prevUnreadRef.current && prevUnreadRef.current >= 0) {
       setBadgePulse(true)
-      const t = setTimeout(() => setBadgePulse(false), 600)
+      const timer = setTimeout(() => setBadgePulse(false), 600)
       prevUnreadRef.current = unreadCount
-      return () => clearTimeout(t)
+      return () => clearTimeout(timer)
     }
     prevUnreadRef.current = unreadCount
   }, [unreadCount])

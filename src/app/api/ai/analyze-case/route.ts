@@ -3,6 +3,8 @@ import { getDb } from '@/lib/db'
 import { authenticate, requireTenantAccess } from '@/lib/auth-server'
 import { analyzeCase as aiAnalyzeCase, generateJurisprudence, summarizeDocument, checkAIAccess } from '@/lib/ai-service'
 
+export const maxDuration = 60
+
 export async function POST(request: Request) {
   const auth = await authenticate(request, 'case', 'view')
   if (auth instanceof NextResponse) return auth

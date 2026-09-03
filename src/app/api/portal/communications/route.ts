@@ -1,18 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { authenticatePortal } from '@/lib/portal-auth-server'
 
 export async function GET(request: Request) {
+  const auth = await authenticatePortal(request)
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
-    const portalUserId = request.headers.get('X-Portal-User-Id')
-    if (!portalUserId || !UUID_REGEX.test(portalUserId)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const portalAccount = await db.clientPortal.findUnique({
-      where: { id: portalUserId },
+      where: { id: auth.portalUserId },
     })
     if (!portalAccount || !portalAccount.isActive) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -23,7 +20,7 @@ export async function GET(request: Request) {
 
     const where: Record<string, unknown> = {
       clientId: portalAccount.clientId,
-      tenantId: portalAccount.tenantId,
+      tenantId: auth.tenantId,
     }
     if (caseId) {
       where.caseId = caseId
@@ -50,15 +47,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await authenticatePortal(request)
+  if (auth instanceof NextResponse) return auth
+
   const db = getDb()
   try {
-    const portalUserId = request.headers.get('X-Portal-User-Id')
-    if (!portalUserId || !UUID_REGEX.test(portalUserId)) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const portalAccount = await db.clientPortal.findUnique({
-      where: { id: portalUserId },
+      where: { id: auth.portalUserId },
     })
     if (!portalAccount || !portalAccount.isActive) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -77,7 +72,7 @@ export async function POST(request: Request) {
         content,
         status: 'received',
         clientId: portalAccount.clientId,
-        tenantId: portalAccount.tenantId,
+        tenantId: auth.tenantId,
         caseId: caseId || null,
         sentById: null,
       },

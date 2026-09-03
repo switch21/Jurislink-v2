@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import PDFDocument from 'pdfkit'
-import path from 'path'
-import fs from 'fs'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+
+async function fetchLogoAsBuffer(logoUrl: string): Promise<Buffer | null> {
+  try {
+    const host = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
+    const res = await fetch(`${host}/${logoUrl.replace(/^\//, '')}`, { cache: 'force-cache' })
+    if (!res.ok) return null
+    const arrayBuf = await res.arrayBuffer()
+    return Buffer.from(arrayBuf)
+  } catch {
+    return null
+  }
+}
 
 const COLORS = { primary: '#1E5A8A', gold: '#C8A45D', dark: '#111827', gray: '#6B7280', lightGray: '#F3F4F6', border: '#D1D5DB', white: '#FFFFFF', green: '#059669', red: '#DC2626' }
 
@@ -55,17 +65,18 @@ export async function GET(request: Request) {
     // Blue accent bar at top
     doc.rect(0, 0, 595.28, 6).fill(COLORS.primary)
 
-    // Logo
+    // Logo (fetch via HTTP instead of fs — works on Vercel serverless)
     let logoW = 0
     let hasLogo = false
-    const logoPath = tenant?.logoUrl ? path.join(process.cwd(), 'public', tenant.logoUrl) : null
-    if (logoPath && fs.existsSync(logoPath)) {
-      try {
-        const imgBuf = fs.readFileSync(logoPath)
-        doc.image(imgBuf, 50, 24, { height: 55 })
-        logoW = 70
-        hasLogo = true
-      } catch { /* skip */ }
+    if (tenant?.logoUrl) {
+      const imgBuf = await fetchLogoAsBuffer(tenant.logoUrl)
+      if (imgBuf) {
+        try {
+          doc.image(imgBuf, 50, 24, { height: 55 })
+          logoW = 70
+          hasLogo = true
+        } catch { /* skip broken logo */ }
+      }
     }
 
     // Firm info

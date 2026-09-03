@@ -18,12 +18,17 @@ const THRESHOLDS = [
   { fromLevel: 3, toLevel: 4, minDaysOverdue: 45 },
 ]
 
+export const maxDuration = 60
+
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET || 'jurislink-cron'}`) {
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) {
+    console.error('[auto-remind] CRON_SECRET is not set — endpoint disabled')
+    return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 })
+  }
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const db = getDb()

@@ -254,6 +254,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   portalLogin: (portalUser) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jurislink_portal_user', JSON.stringify(portalUser))
+      // Store JWT token if present in the login response
+      if ('token' in portalUser && typeof (portalUser as Record<string, unknown>).token === 'string') {
+        localStorage.setItem('jurislink_portal_token', (portalUser as Record<string, unknown>).token as string)
+      }
     }
     set({ portalUser, isPortalAuthenticated: true, portalCurrentView: 'portal-dashboard', portalSelectedCaseId: null })
   },
@@ -261,6 +265,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (typeof window !== 'undefined') {
       localStorage.removeItem('jurislink_portal_user')
       localStorage.removeItem('jurislink_portal_view')
+      localStorage.removeItem('jurislink_portal_token')
     }
     set({ portalUser: null, isPortalAuthenticated: false, portalCurrentView: 'portal-dashboard', portalSelectedCaseId: null })
   },
