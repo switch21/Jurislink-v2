@@ -479,25 +479,206 @@ Stage Summary: - Lint: 0 errors
 - Note: `prisma db push` needed on production to add `force_logout_at` column
 
 ---
-Task ID: FIX-DB-POSTGRESQL-TO-SQLITE
+Task ID: REPO-ANALYSIS-SEP3
 Agent: Main Agent
-Task: Fix "Non authentifié" error on all API endpoints including force-logout-all
+Task: Analyse complète du repo pour identifier les problèmes bloquants et autres
 
-Work Log:
-- Diagnosed root cause: Prisma schema had `provider = "postgresql"` + `@db.Uuid` annotations, but `.env` pointed to `file:/home/z/my-project/db/custom.db` (SQLite)
-- The SQLite database file did not exist — NO database was available at all
-- Every Prisma query failed silently: catch blocks in `auth-server.ts` returned `{ user: null, failReason: 'not_found' }` → "Non authentifié"
-- Fixed `prisma/schema.prisma`: changed `provider = "postgresql"` → `"sqlite"`, removed all 101 `@db.Uuid` annotations
-- Created `db/` directory, ran `prisma db push` to create SQLite database (30 models)
-- Ran `bun run seed` to populate with 9 users, 2 tenants, cases, invoices, etc.
-- Verified: login returns 200 with user data + loginAt
-- Verified: `POST /api/users/force-logout-all` returns `{success: true, count: 8}` (HTTP 200)
-- Verified: self-disconnect correctly blocked (HTTP 400)
-- Lint: 0 errors (1 pre-existing warning)
+## ═══════════════════════════════════════════════════════════════
+##  JURISLINK — ANALYSE COMPLÈTE DU REPO (3 Sept 2026)
+##  v3.8.71 | Next.js 16.3.2 | React 19 | Prisma 6.19.3 | SQLite
+## ═══════════════════════════════════════════════════════════════
 
-Stage Summary:
-- Root cause: schema/DB provider mismatch (PostgreSQL schema + SQLite URL + no DB file)
-- All API endpoints were silently failing — not just force-logout-all
-- Fix: 1 file changed (prisma/schema.prisma), 101 insertions/deletions
-- Pushed as commit 7783a3c
-- Database now: SQLite at `db/custom.db` with full demo data
+### ÉTAT ACTUEL
+- **Page HTML** : ✅ charge en 200 (21KB, bundles JS inclus)
+- **Login API** : ✅ fonctionne (avec DB peuplée)
+- **APIs fonctionnelles** (200) : clients, invoices, tasks, notifications, messages, events, users, roles, audit-logs
+- **APIs cassées** (500) : admin/dashboard, cases, documents
+- **APIs partielles** (400) : time-entries, communications, search, reports (requièrent tenantId en query param — root_admin a tenantId=null)
+- **Lint** : 0 erreurs, 1 warning
+- **TypeScript src/** : 12 erreurs
+- **TypeScript total** : 15 erreurs (12 src/ + 2 PDF routes types + 1 skill externe)
+- **Dépendances** : 72 prod + 16 dev = 88 packages
+- **LOC src/** : 40 956 lignes
+
+---
+### 🔴 CRITIQUES — L'APP NE FONCTIONNE PAS CORRECTEMENT
+
+#### C1. `mode: 'insensitive'` — Incompatible SQLite (18 occurrences, 7 routes)
+**Impact** : TOUTES les recherches/texte échouent en 500
+**Cause** : Prisma pour SQLite ne supporte PAS `mode: 'insensitive'` (PostgreSQL seulement)
+**Vérifié** : `node --eval` confirme `Unknown argument 'mode'` au runtime
+
+Fichiers et lignes affectés :
+```
+src/app/api/cases/[id]/timeline/route.ts    : 7 occurrences (lignes 27,28,38,47,55,73,74)
+src/app/api/cases/route.ts                : 2 occurrences (lignes 56,57)
+src/app/api/documents/route.ts             : 3 occurrences (lignes 47,48,49)
+src/app/api/search/route.ts                 : 2 occurrences (lignes 55,203)
+src/app/api/users/route.ts                  : 2 occurrences (lignes 39,40)
+src/app/api/tenants/route.ts                : 1 occurrence  (ligne 19)
+src/app/api/portal/documents/route.ts      : 1 occurrence  (ligne 70)
+```
+**Fix** : Remplacer `{ contains: x, mode: 'insensitive' }` par `{ contains: x }` (SQLite `contains` est déjà case-insensitive pour l'ASCII de base) OU utiliser `db.$queryRaw` avec `LOWER()`.
+
+#### C2. `skipDuplicates: true` — Incompatible SQLite (5 occurrences, 4 routes)
+**Impact** : La création de dossiers, tâches et événements échoue en 500
+**Cause** : Prisma `createMany` avec `skipDuplicates` n'est pas supporté par SQLite
+**Vérifié** : `node --eval` confirme `Unknown argument 'skipDuplicates'` au runtime
+
+Fichiers et lignes affectés :
+```
+src/app/api/cases/[id]/route.ts    : 2 occurrences (lignes 162, 176)
+src/app/api/cases/route.ts          : 1 occurrence  (ligne 215)
+src/app/api/events/route.ts         : 1 occurrence  (ligne 87)
+src/app/api/tasks/route.ts          : 1 occurrence  (ligne 152)
+```
+**Fix** : Supprimer `skipDuplicates: true` de chaque `createMany()`. Pour SQLite, gérer les doublons en amont (vérifier l'existence avant l'insertion) ou utiliser un `try/catch` sur l'erreur d'unicité.
+
+#### C3. SQL PostgreSQL dans le Dashboard Admin (1 route)
+**Impact** : Le dashboard admin retourne 500
+**Cause** : `db.$queryRaw` utilise `TO_CHAR(created_at, 'YYYY-MM')` et `COUNT(*)::bigint` — syntaxe PostgreSQL
+**Fichier** : `src/app/api/admin/dashboard/route.ts` ligne 82-89
+
+```sql
+-- Actuel (PostgreSQL)
+SELECT TO_CHAR(created_at, 'YYYY-MM') as month, COUNT(*)::bigint as count
+
+-- Fix (SQLite)
+SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count
+```
+**Fix** : Remplacer `TO_CHAR` par `strftime` et retirer le cast `::bigint`.
+
+#### C4. Base de données vide sur clone frais
+**Impact** : L'app ne fonctionne pas du tout après un `git clone` sans seed
+**Cause** : `db/` est dans `.gitignore` (fichiers `.db` et `*.db-journal`). Le fichier `db/custom.db` n'est pas versionné.
+**Conséquence** : Le login échoue avec "Identifiants incorrects" (0 utilisateurs en DB)
+
+**Fix recommandé** : Ajouter un script `postinstall` dans `package.json` :
+```json
+"postinstall": "prisma db push --skip-generate && prisma generate && bun run seed"
+```
+Note : Cette approche est acceptable pour le dev, mais la production utilise PostgreSQL.
+
+---
+### 🟠 HAUTES — Fonctionnalités cassées
+
+#### H1. 12 erreurs TypeScript dans `src/`
+
+| Fichier | Ligne | Erreur | Cause |
+|---------|-------|--------|-------|
+| `cases/[id]/route.ts` | 162, 176 | TS2322: `true` not assignable to `never` | `skipDuplicates` inexistant dans type SQLite |
+| `cases/route.ts` | 215 | TS2322: `true` not assignable to `never` | `skipDuplicates` inexistant dans type SQLite |
+| `events/route.ts` | 87 | TS2322: `true` not assignable to `never` | `skipDuplicates` inexistant dans type SQLite |
+| `tasks/route.ts` | 152 | TS2322: `true` not assignable to `never` | `skipDuplicates` inexistant dans type SQLite |
+| `cases/[id]/timeline/route.ts` | 27,38,47,55,73 | TS2322: `mode` not in type | `mode:'insensitive'` inexistant dans type SQLite |
+| `cases/[id]/timeline/route.ts` | 116 | TS2551: `author` doesn't exist | `include:{author}` ok mais type inféré ne le voit pas |
+| `cases/[id]/timeline/route.ts` | 180 | TS2551: `sentBy` doesn't exist | `include:{sentBy}` ok mais type inféré ne le voit pas |
+
+Les erreurs H1-a (skipDuplicates + mode) sont corrigées par C1 et C2.
+Les erreurs H1-b (timeline l.116,180) sont des fausses alertes TypeScript : les `include` sont bien présents et fonctionnent au runtime, mais TypeScript ne les voit pas car le type `CaseNote` est inféré sans le include. **Pas de crash runtime.**
+
+#### H2. 2 erreurs TypeScript dans les routes PDF
+`/api/finances/export/pdf` et `/api/invoices/[id]/pdf` retournent `new Promise((resolve) => {...})` sans type de retour explicite → TS2344. Le type inféré est `Promise<unknown>` au lieu de `Promise<Response>`. **Pas de crash runtime.**
+
+#### H3. Routes nécessitant `tenantId` pour root_admin
+- `/api/time-entries` → 400 "tenantId is required"
+- `/api/communications` → 400 (probablement même cause)
+- `/api/search` → 400 "tenantId and q are required"
+- `/api/reports/*` → 400 "tenantId requis"
+
+Le root_admin a `tenantId: null` par définition. Ces routes doivent soit:
+- Accepter le root_admin sans tenantId (le laisser voir tout)
+- Retourner les données de tous les tenants pour le root_admin
+
+---
+### 🟡 MOYENNES — Qualité / Configuration
+
+#### M1. `ignoreBuildErrors: true` dans `next.config.ts`
+Masque les 15 erreurs TypeScript au build. Commentaire dit "src/ errors resolved" mais ce n'est plus vrai — 12 erreurs src/ existent à cause de la migration PostgreSQL→SQLite.
+
+#### M2. `reactStrictMode: false`
+Désactive les vérifications strictes de React (double-render en dev, avertissements deprecated APIs).
+
+#### M3. Supabase non configuré
+Aucune variable `SUPABASE_URL` / `SUPABASE_KEY` dans `.env`. L'upload de fichiers vers Supabase échouera. Le fallback local dans `storage.ts` devrait marcher.
+
+#### M4. Fichier mort `check_db.mjs` dans la racine
+Fichier de debug oublié.
+
+#### M5. Changements de permissions non commités
+4 fichiers ont changé de mode 644→755 (inutile, pas de shebang).
+
+#### M6. `migrations/` contient du SQL legacy PostgreSQL
+5 fichiers SQL avec syntaxe PostgreSQL. Non utilisés (le projet utilise `prisma db push`).
+
+#### M7. Dépendances potentiellement inutiles (non vérifié à 100%)
+`sharp` (traitement image), `vaul` (drawer), `qrcode` — à vérifier si réellement utilisés.
+
+#### M8. 189MB de cache `.next/`
+Peut être nettoyé avec `rm -rf .next`.
+
+---
+### 🔵 BASSES — Améliorations possibles
+
+#### L1. Pas de tests automatisés
+`vitest.config.ts` existe, `@testing-library/react` installé, mais 0 tests.
+
+#### L2. Auth sans JWT
+Système basé sur `X-User-Id` header + localStorage. Pas de signature, pas d'expiry. Correct pour un MVP mais pas pour la production.
+
+#### L3. 0 middleware Next.js
+L'auth est gérée uniquement par les headers dans chaque route. Pas de middleware.ts pour intercepter les requêtes non authentifiées.
+
+#### L4. i18n partiel
+Dictionnaires créés pour 7 langues mais certains textes restent codés en dur (messages d'erreur API, certains labels dans les vues).
+
+---
+### RÉSUMÉ DES TESTS API
+
+| Endpoint | HTTP | Statut | Note |
+|----------|------|--------|-------|
+| GET / | 200 | ✅ | HTML 21KB, bundles JS inclus |
+| POST /api/auth/login | 200 | ✅ | Retourne user + loginAt |
+| GET /api/admin/dashboard | 500 | ❌ | SQL PostgreSQL (TO_CHAR) |
+| GET /api/cases | 500 | ❌ | mode:'insensitive' SQLite |
+| POST /api/cases | 500 | ❌ | skipDuplicates SQLite |
+| GET /api/clients | 200 | ✅ | |
+| GET /api/invoices | 200 | ✅ | |
+| GET /api/tasks | 200 | ✅ | |
+| GET /api/documents | 500 | ❌ | mode:'insensitive' SQLite |
+| GET /api/notifications | 200 | ✅ | |
+| GET /api/messages | 200 | ✅ | |
+| GET /api/events | 200 | ✅ | |
+| GET /api/users | 200 | ✅ | |
+| GET /api/roles | 200 | ✅ | |
+| GET /api/audit-logs | 200 | ✅ | |
+| GET /api/time-entries | 400 | ⚠️ | Requiert tenantId (root_admin=null) |
+| GET /api/communications | 400 | ⚠️ | Requiert tenantId |
+| GET /api/search?q=test | 400 | ⚠️ | Requiert tenantId + mode:insensitive |
+| GET /api/reports/financial | 400 | ⚠️ | Requiert tenantId |
+| POST /api/users/force-logout-all | 200 | ✅ | |
+
+**Score : 11/17 fonctionnels (65%)**
+
+---
+### PLAN DE CORRECTION PRIORITAIRE
+
+**Étape 1 — Rendre l'app fonctionnelle (corriger C1-C4)** :
+1. Remplacer les 18 `mode: 'insensitive'` par `{ contains: x }` (SQLite est déjà case-insensitive)
+2. Supprimer les 5 `skipDuplicates: true`
+3. Remplacer `TO_CHAR` par `strftime` dans admin dashboard
+4. Ajouter `postinstall` script pour auto-seed la DB
+
+**Étape 2 — Corriger les routes root_admin (H3)** :
+5. Permettre au root_admin d'accéder aux routes sans tenantId
+
+**Étape 3 — Nettoyer (M1-M6)** :
+6. Corriger les erreurs TS restantes (PDF routes, timeline types)
+7. Supprimer `check_db.mjs`, nettoyer `migrations/`
+8. Commit les changements de permissions
+
+---
+
+## ═══════════════════════════════════════════════════════════════
+##  HISTORIQUE DES TÂCHES (précédent)
+## ═══════════════════════════════════════════════════════════════
