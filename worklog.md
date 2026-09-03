@@ -682,3 +682,209 @@ Dictionnaires créés pour 7 langues mais certains textes restent codés en dur 
 ## ═══════════════════════════════════════════════════════════════
 ##  HISTORIQUE DES TÂCHES (précédent)
 ## ═══════════════════════════════════════════════════════════════
+
+---
+Task ID: ANALYSE-COMPLETE-SUPABASE-VERCEL
+Agent: Main Agent
+Task: Analyse complète du repo avec contexte Supabase + Vercel
+
+## ═══════════════════════════════════════════════════════════════
+##  JURISLINK — ANALYSE COMPLÈTE PROBLÈMES (Supabase + Vercel)
+##  Date: $(date -u +%Y-%m-%d)
+## ═══════════════════════════════════════════════════════════════
+
+### CONTEXTE CRITIQUE
+- Le projet est conçu pour **Supabase (PostgreSQL)** + **Vercel**
+- Le schéma Prisma a été temporairement converti en **SQLite** (commit 7783a3c) pour le dév local
+- **Les deux bases sont INCOMPATIBLES** — le code contient du SQL brut PostgreSQL qui crashera avec SQLite
+- @supabase/supabase-js est dans les dépendances mais **jamais importé côté client** — uniquement dans storage.ts (server-side)
+- Le fix SQLite doit être **réverti avant déploiement**
+
+---
+### CATÉGORIE A — PROBLÈMES CRITIQUES (app ne charge pas / crash)
+
+**A1. Schéma Prisma SQLite au lieu de PostgreSQL**
+- Fichier: `prisma/schema.prisma` ligne 6
+- Le commit 7783a3c a changé `provider = "postgresql"` → `"sqlite"` et supprimé tous les `@db.Uuid`
+- En production Supabase, il FAUT PostgreSQL
+- **Fix**: Rétablir `provider = "postgresql"` et ajouter les `@db.Uuid` sur tous les champs `String @id @default(uuid())`
+
+**A2. Tables manquantes dans le schéma Prisma**
+- Fichiers: `src/app/api/privacy/consent/route.ts`, `src/app/api/privacy/export/route.ts`
+- Les routes privacy utilisent du SQL brut vers `privacy_consent_logs` et `data_export_requests`
+- Ces tables **n'existent pas dans schema.prisma** — elles crasheront en production
+- **Fix**: Ajouter les modèles Prisma correspondants
+
+**A3. Propriétés inexistantes dans la timeline des dossiers**
+- Fichier: `src/app/api/cases/[id]/timeline/route.ts` lignes 116, 180
+- `author` → devrait être `authorId` (ligne 116)
+- `sentBy` → devrait être `sentById` (ligne 180)
+- **Fix**: Corriger les noms de propriétés
+
+**A4. Erreurs TypeScript masquées par ignoreBuildErrors**
+- Fichier: `next.config.ts` — `typescript.ignoreBuildErrors: true`
+- 11 erreurs TS réelles dans `src/` sont cachées:
+  - `cases/[id]/route.ts:162,176` — Type 'true' non assignable à 'never'
+  - `cases/[id]/timeline/route.ts:27,38,47,55,73` — `mode` n'existe pas sur StringFilter (SQLite)
+  - `cases/route.ts:215` — même type 'true' → 'never'
+  - `events/route.ts:87` — même
+  - `tasks/route.ts:152` — même
+- **Fix**: Corriger ces erreurs puis passer `ignoreBuildErrors: false`
+
+---
+### CATÉGORIE B — PROBLÈMES HAUTS (sécurité / Vercel)
+
+**B1. Route user sans authentification**
+- Fichier: `src/app/api/auth/[id]/route.ts`
+- Retourne les données d'un utilisateur (email, téléphone, rôle, tenantId) **sans aucune auth**
+- N'importe qui qui connaît ou devine un UUID peut lire le profil
+- **Fix**: Ajouter `authenticate(request)` et vérifier les permissions
+
+**B2. Auth portal basée sur header spoofable**
+- Fichiers: Toutes les 11 routes sous `src/app/api/portal/`
+- L'auth utilise `X-Portal-User-Id` — un header client-side trivialment falsifiable
+- Pas de token JWT, pas de signature, pas de validation de session
+- **Fix**: Implémenter un JWT signé côté serveur sur le login portal
+
+**B3. fs.readFileSync sur Vercel serverless**
+- Fichiers: `src/app/api/finances/export/pdf/route.ts`, `src/app/api/invoices/[id]/pdf/route.ts`
+- `fs.existsSync()` + `fs.readFileSync()` pour charger les logos depuis `public/`
+- Sur Vercel, le filesystem n'est pas accessible depuis les fonctions serverless
+- **Fix**: Utiliser `fetch()` vers l'URL publique du logo
+
+**B4. Stockage fichiers cassé sur Vercel sans Supabase**
+- Fichier: `src/lib/storage.ts`
+- Si Supabase n'est pas configuré, les fichiers vont dans `/tmp/` (éphémère sur Vercel)
+- Les uploads semblent réussir mais les fichiers sont perdus immédiatement
+- **Fix**: Rendre Supabase Storage obligatoire en production, ajouter un warning au démarrage
+
+**B5. État MFA global mutable sur Vercel**
+- Fichier: `src/app/api/auth/mfa/challenge/route.ts`
+- Les challenges MFA sont stockés dans un `Map` en mémoire
+- Sur Vercel, chaque invocation serverless peut être dans un isolate différent
+- L'utilisateur ne pourra jamais compléter le MFA
+- **Fix**: Utiliser Vercel KV / Upstash Redis
+
+**B6. Secret cron avec fallback hardcoded**
+- Fichier: `src/app/api/invoices/overdue/auto-remind/route.ts` ligne 23
+- `process.env.CRON_SECRET || 'jurislink-cron'` — fallback triviallement devinable
+- En dev, le check est complètement bypassé
+- **Fix**: Supprimer le fallback, exiger CRON_SECRET en production
+
+**B7. Zéro validation d'entrée (Zod) sur 85 endpoints**
+- Tous les endpoints POST/PUT/PATCH/DELETE analysent `request.json()` sans validation
+- Pas de validation de types, longueurs, enums, ou champs inattendus
+- **Fix**: Ajouter des schemas Zod sur tous les endpoints de mutation
+
+---
+### CATÉGORIE C — PROBLÈMES MOYENS (fonctionnalité dégradée)
+
+**C1. SQL brut PostgreSQL dans les routes privacy**
+- Fichiers: `privacy/consent/route.ts`, `privacy/export/route.ts`, `privacy/forget/route.ts`, `admin/dashboard/route.ts`
+- Utilise `::uuid`, `::boolean`, `gen_random_uuid()`, `NOW()`, `INTERVAL`, `TO_CHAR()`, `CONCAT()`, `DO $$...END $$`
+- Ces requêtes crasheront avec le schéma SQLite actuel
+- Elles sont correctes pour la production PostgreSQL
+
+**C2. mode: 'insensitive' dans 7 fichiers (18 occurrences)**
+- Fichiers: portal/documents, search, users, tenants, cases/[id]/timeline, documents, cases
+- Non supporté par SQLite — crash au runtime
+- Supporté par PostgreSQL (via ILIKE)
+
+**C3. WebSocket notifications ne fonctionneront pas sur Vercel**
+- Fichiers: `src/hooks/useNotificationSocket.ts`, `src/hooks/usePortalSocket.ts`
+- Connectent à `/?XTransformPort=3004` — proxy dev uniquement
+- Vercel ne supporte pas WebSocket nativement
+- Le polling 30s (use-polling-notifications.ts) fonctionnera par contre
+
+**C4. @supabase/supabase-js dans le bundle client (~60KB)**
+- Importé dans `src/lib/supabase.ts` avec `NEXT_PUBLIC_` env vars
+- Mais `getSupabaseAuth()` n'est jamais appelé — code mort
+- Le client Supabase est inclus dans le bundle frontend inutilement
+
+**C5. 24 clés i18n manquantes**
+- 24 clés utilisées dans les vues mais absentes du dictionnaire FR
+- Affichées comme clés brutes aux utilisateurs
+
+**C6. Pas d'expiration de session**
+- Une fois connecté, l'utilisateur reste authentifié indéfiniment
+- Pas de TTL de token, pas de refresh, pas de validation côté serveur
+
+**C7. 0 tests**
+- vitest est configuré dans devDependencies mais **aucun fichier test** n'existe
+- Le script `"test": "vitest run"` n'exécutera rien
+
+**C8. Routes AI peuvent dépasser le timeout Vercel (10s)**
+- Fichiers: `workflow/ai-suggest/route.ts`, `ai/analyze-case/route.ts`, `search/route.ts`
+- Appels LLM externes avec latence variable (2-30s+)
+- **Fix**: Ajouter `export const maxDuration = 60` dans ces routes
+
+---
+### CATÉGORIE D — PROBLÈMES FAIBLES (qualité / design)
+
+**D1. Variable shadowing dans Header.tsx** — `const t = setTimeout(...)` masque la fonction `t()` de traduction
+**D2. Message count hardcoded à 0** dans Header.tsx:74 — le badge ne montrera jamais de compteur
+**D3. Assets morts dans public/** — `favicon.svg`, `logo.svg`, `jurislink-phase0-audit.pdf` (fuite d'info)
+**D4. Route debug/route.ts** expose des infos de connexion DB (partielles)
+**D5. Barrel import massif** (~2000 chars par ligne) dans les vues — fragile
+**D6. LoginPage entièrement en dur français** — ne utilise pas le système i18n
+**D7. Route setup avec DO $$...END $$** PostgreSQL-only
+**D8. PDF generation peut hang indéfiniment** si doc.end() n'est pas appelé
+
+---
+### RÉSUMÉ PAR SÉVÉRITÉ
+
+| Sévérité | Compte | Description |
+|----------|--------|-------------|
+| CRITIQUE | 4 | Schéma SQLite, tables manquantes, props inexistantes, TS erreurs cachées |
+| HAUT | 7 | Route sans auth, portal spoofable, fs sur Vercel, stockage cassé, MFA state, cron secret, 0 validation |
+| MOYEN | 8 | SQL PostgreSQL brut, mode:insensitive, WebSocket, bundle Supabase, i18n, session, 0 tests, timeout AI |
+| FAIBLE | 8 | Shadowing, hardcoded, assets morts, debug leak, barrel,LoginPage FR, setup route, PDF hang |
+| **TOTAL** | **27** | |
+
+---
+### PLAN DE PRIORITÉ POUR MIGRER VERS SUPABASE + VERCEL
+
+**Phase 1 — App fonctionnelle en local (Pré-requis)**
+1. Rétablir `provider = "postgresql"` dans schema.prisma + ajouter `@db.Uuid`
+2. Configurer DATABASE_URL avec l'URL Supabase dans .env.local (NON commité)
+3. Corriger les erreurs TypeScript (timeline props, mode:insensitive, type 'true'→'never')
+4. Lancer `prisma db push` pour synchroniser le schéma avec Supabase
+5. Lancer `bun run seed` pour peupler la base
+
+**Phase 2 — Sécurité critique (avant mise en ligne)**
+6. Ajouter auth sur `/api/auth/[id]` (B1)
+7. Implémenter JWT pour le portal (B2)
+8. Supprimer le fallback du cron secret (B6)
+9. Ajouter Zod validation sur les endpoints critiques (login, users, payments)
+
+**Phase 3 — Compatibilité Vercel**
+10. Remplacer fs.readFileSync par fetch() dans les routes PDF (B3)
+11. Rendre Supabase Storage obligatoire en production (B4)
+12. Remplacer le Map MFA par Vercel KV (B5)
+13. Ajouter maxDuration=60 sur les routes AI (C8)
+14. Accepter que le polling remplace WebSocket sur Vercel (C3)
+
+**Phase 4 — Qualité**
+15. Supprimer @supabase/supabase-js du bundle client (C4)
+16. Ajouter les 24 clés i18n manquantes (C5)
+17. Implémenter l'expiration de session (C6)
+18. Écrire les premiers tests (C7)
+19. Passer ignoreBuildErrors à false (A4)
+
+---
+### CONFIGURATION SUPABASE REQUISE (.env.local — NON COMMITÉ)
+
+```env
+DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true&connect_timeout=15
+NEXT_PUBLIC_SUPABASE_URL=https://[project-ref].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=[anon-key]
+SUPABASE_SERVICE_ROLE_KEY=[service-role-key]
+JWT_SECRET=[random-32-chars]
+CRON_SECRET=[random-32-chars]
+```
+
+Stage Summary:
+- Analyse complète de 121 routes API, 31 vues frontend, 10+ fichiers lib
+- 27 problèmes identifiés (4 critiques, 7 hauts, 8 moyens, 8 faibles)
+- Le problème principal: schéma SQLite temporaire incompatible avec Supabase PostgreSQL
+- Plan de migration en 4 phases fourni
