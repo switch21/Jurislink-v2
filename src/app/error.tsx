@@ -1,24 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import App from './AppClient'
-
-// Suppress hydration mismatch console.error at module level (same as global-error.tsx)
-if (typeof window !== 'undefined') {
-  const _orig = console.error
-  console.error = (...args: unknown[]) => {
-    const msg = args[0]?.toString?.() || ''
-    if (
-      msg.includes('185') ||
-      msg.includes('hydration') ||
-      msg.includes('Text content did not match') ||
-      msg.includes('Minified React error') ||
-      msg.includes('There was an error while hydrating') ||
-      msg.includes('did not match. Server')
-    ) return
-    _orig.apply(console, args)
-  }
-}
 
 export default function Error({
   error,
@@ -31,15 +13,15 @@ export default function Error({
   const isHydration = msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match') || msg.includes('Minified React error')
 
   useEffect(() => {
+    // Only log real errors, not the Next.js 16 MetadataBoundary hydration mismatch (#185)
     if (!isHydration) {
       console.error('=== APP ERROR ===', error)
     }
   }, [error, isHydration])
 
-  // Hydration error → render the app directly (direct import, no dynamic → no loading loop)
-  if (isHydration) {
-    return <App />
-  }
+  // Hydration mismatch: return nothing so React's built-in recovery kicks in
+  // (React 19 re-renders the mismatched subtree client-side automatically)
+  if (isHydration) return null
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page, #F5F7FA)' }}>

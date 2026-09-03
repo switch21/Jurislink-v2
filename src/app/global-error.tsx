@@ -2,56 +2,9 @@
 
 import './globals.css'
 
-// ──── Suppress hydration mismatch errors from Next.js 16 MetadataBoundary ────
-// React #185 fires BEFORE error boundaries catch it. We intercept console.error
-// at module load time to prevent the error from surfacing in production logs.
-if (typeof window !== 'undefined') {
-  const _origConsoleError = console.error
-  console.error = (...args: unknown[]) => {
-    const msg = args[0]?.toString?.() || ''
-    if (
-      msg.includes('185') ||
-      msg.includes('hydration') ||
-      msg.includes('Text content did not match') ||
-      msg.includes('Minified React error') ||
-      msg.includes('There was an error while hydrating') ||
-      msg.includes('did not match. Server')
-    ) {
-      return // silently suppress Next.js 16 MetadataBoundary mismatch
-    }
-    _origConsoleError.apply(console, args)
-  }
-}
-
-// ──── Bootstrap the app using createRoot (NOT hydration) ────
-// This completely bypasses React's hydration, so the Next.js 16
-// MetadataBoundary mismatch error #185 never matters.
-function bootstrapApp() {
-  if (document.getElementById('__jl_root')) return
-
-  // Clear all server-rendered body content to avoid visual artifacts
-  document.body.innerHTML = ''
-
-  const container = document.createElement('div')
-  container.id = '__jl_root'
-  document.body.appendChild(container)
-
-  Promise.all([
-    import('react-dom/client'),
-    import('./AppClient'),
-  ]).then(([{ createRoot }, { default: App }]) => {
-    // Suppress all recoverable errors (Next.js 16 MetadataBoundary hydration mismatch)
-    createRoot(container, {
-      onRecoverableError: () => {},
-    }).render(<App />)
-  }).catch((err) => {
-    console.error('=== BOOTSTRAP FAILED ===', err)
-  })
-}
-
-// Module-level: runs as soon as the chunk loads (before React hydrates)
-if (typeof window !== 'undefined') bootstrapApp()
-
+// global-error.tsx only renders for UNHANDLED errors that bubble past error.tsx.
+// For Next.js 16 MetadataBoundary hydration mismatch (#185), render a minimal shell.
+// React 19 recovers automatically (re-renders the mismatched subtree client-side).
 export default function GlobalError({
   error,
   reset,
@@ -59,14 +12,30 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  // Also bootstrap during render as a safety net
-  // (in case module-level code ran before DOM was ready)
-  if (typeof window !== 'undefined') bootstrapApp()
+  const msg = error?.message || ''
+  const isHydration = msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match') || msg.includes('Minified React error')
+
+  // For hydration errors: render minimal HTML shell, let React 19 auto-recover
+  if (isHydration) {
+    return (
+      <html lang="fr" suppressHydrationWarning>
+        <body className="antialiased" suppressHydrationWarning>
+          <div />
+        </body>
+      </html>
+    )
+  }
 
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <div />
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page, #F5F7FA)' }}>
+          <div style={{ textAlign: 'center', maxWidth: '420px', padding: '24px' }}>
+            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary, #111827)', marginBottom: '8px' }}>Une erreur est survenue</p>
+            <pre style={{ fontSize: '12px', color: '#EF4444', background: '#FEE2E2', padding: '12px', borderRadius: '8px', overflow: 'auto', maxHeight: '200px', wordBreak: 'break-all', textAlign: 'left' }}>{msg || 'Erreur inconnue'}</pre>
+            <button onClick={reset} style={{ marginTop: '16px', padding: '8px 20px', background: 'var(--primary, #1E5A8A)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>Réessayer</button>
+          </div>
+        </div>
       </body>
     </html>
   )
