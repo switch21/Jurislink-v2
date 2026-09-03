@@ -77,6 +77,7 @@ model User {
   password             String?
   mfaEnabled           Boolean   @default(false) @map("mfa_enabled")
   mfaSecret            String?   @map("mfa_secret")
+  forceLogoutAt        DateTime? @map("force_logout_at")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 

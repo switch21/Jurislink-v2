@@ -18,6 +18,7 @@ export interface UserInfo {
   isActive?: boolean
   permissions?: UserPermission[]
   roleObj?: { id: string; name: string; label: string; level: number; isSystem: boolean }
+  loginAt?: string
 }
 
 export interface PortalClientInfo {

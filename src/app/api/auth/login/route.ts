@@ -75,15 +75,16 @@ export async function POST(request: Request) {
     }
 
     // No MFA — return user data directly (original flow)
-    // Update last login (non-critical)
+    // Update last login + clear forceLogoutAt (non-critical)
+    const loginAt = new Date().toISOString()
     try {
       await db.user.update({
         where: { id: user.id },
-        data: { lastLoginAt: new Date() },
+        data: { lastLoginAt: new Date(), forceLogoutAt: null },
       })
     } catch {}
 
-    return NextResponse.json(userData)
+    return NextResponse.json({ ...userData, loginAt })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue'
     console.error('Login error:', message)
