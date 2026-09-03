@@ -888,3 +888,32 @@ Stage Summary:
 - 27 problèmes identifiés (4 critiques, 7 hauts, 8 moyens, 8 faibles)
 - Le problème principal: schéma SQLite temporaire incompatible avec Supabase PostgreSQL
 - Plan de migration en 4 phases fourni
+
+---
+Task ID: MIGRATION-SUPABASE-VERCEL
+Agent: Main Agent
+Task: Exécuter le plan de migration Supabase + Vercel
+
+Work Log:
+- Restauré schema Prisma depuis git (provider=postgresql, 100 @db.Uuid)
+- Regénéré client Prisma PostgreSQL — toutes les erreurs TS dans src/ résolues
+- Ajouté auth sur /api/auth/[id] (était sans aucune authentification)
+- Implémenté JWT portal (portal-jwt.ts + portal-auth-server.ts) — remplace header spoofable
+- Mis à jour 12 routes portal pour utiliser authenticatePortal()
+- Mis à jour auth-fetch.ts pour envoyer Bearer token portal
+- Mis à jour appStore pour stocker le JWT portal
+- Supprimé fallback hardcoded du cron secret
+- Remplacé fs.readFileSync par fetch() dans 2 routes PDF
+- Ajouté maxDuration=60 sur 3 routes (AI + cron)
+- Ajouté warning CRITICAL storage sur Vercel sans Supabase
+- Protégé route debug en production (retiré leak DB info)
+- Nettoyé supabase.ts (supprimé code client-side mort)
+- Fixé Header.tsx variable shadowing
+- Lint: 0 erreurs, TSC: 0 erreurs dans src/
+- Navigateur: login page charge, 0 erreurs console
+- Commit: c624d21
+
+Stage Summary:
+- 29 fichiers modifiés, 2 créés, 473 insertions, 343 suppressions
+- App prête pour déploiement Vercel avec Supabase
+- Reste: 24 clés i18n manquantes (P5), 0 tests (P5), MFA state sur Vercel (P3)
