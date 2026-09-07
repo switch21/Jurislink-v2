@@ -1,62 +1,58 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const doMigrate = searchParams.get('migrate') === 'true'
   const result: Record<string, unknown> = {}
-  
-  // 1. Env check (safely masked)
-  const rawUrl = process.env.DATABASE_URL || ''
-  result['has_database_url'] = Boolean(rawUrl)
-  if (rawUrl) {
-    try {
-      const parsed = new URL(rawUrl)
-      result['db_protocol'] = parsed.protocol
-      result['db_host'] = parsed.hostname
-      result['db_port'] = parsed.port
-      result['db_database'] = parsed.pathname
-      result['db_params'] = parsed.search
-    } catch {
-      result['db_url_parse_error'] = 'Invalid URL format'
-    }
-  }
-
-  // 2. Prisma raw query connection test
   const db = getDb()
+
   try {
-    const connCheck = await db.$queryRawUnsafe<Array<Record<string, unknown>>>(
-      'SELECT 1 as connected, current_database() as db, current_user as usr, version() as version'
-    )
-    result['connection_test'] = 'SUCCESS'
-    result['connection_info'] = connCheck[0] || null
-
-    // 3. Inspect public tables in DB
-    const tables = await db.$queryRawUnsafe<Array<{ table_name: string }>>(
-      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name`
-    )
-    result['existing_tables'] = tables.map((t) => t.table_name)
-
-    // 4. Inspect columns of users / User table
-    const columns = await db.$queryRawUnsafe<Array<{ column_name: string; data_type: string }>>(
-      `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name IN ('users', 'User') ORDER BY column_name`
-    )
-    result['user_columns'] = columns
-
-    // 5. Try Prisma findFirst
-    try {
-      const userCount = await db.user.count()
-      result['prisma_user_count'] = userCount
-      const firstUser = await db.user.findFirst({
-        select: { id: true, email: true, fullName: true, role: true, isActive: true },
-      })
-      result['prisma_find_first'] = 'SUCCESS'
-      result['sample_user'] = firstUser
-    } catch (e: unknown) {
-      result['prisma_find_first'] = 'FAILED'
-      result['prisma_find_first_error'] = e instanceof Error ? e.message : String(e)
+    // If migrate=true, safely apply missing columns
+    if (doMigrate) {
+      const sqlStatements = [
+        `ALTER TABLE users ADD COLUMN IF NOT EXISTS force_logout_at TIMESTAMP;`,
+        `ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS max_cases INTEGER DEFAULT 50;`,
+        `ALTER TABLE documents ADD COLUMN IF NOT EXISTS uploaded_by_portal_id UUID;`,
+        `ALTER TABLE events ADD COLUMN IF NOT EXISTS location TEXT;`,
+        `ALTER TABLE events ADD COLUMN IF NOT EXISTS external_event_id TEXT;`,
+        `ALTER TABLE events ADD COLUMN IF NOT EXISTS all_day BOOLEAN DEFAULT FALSE;`,
+      ]
+      const applied: string[] = []
+      for (const sql of sqlStatements) {
+        await db.$executeRawUnsafe(sql)
+        applied.push(sql)
+      }
+      result['migration_applied'] = applied
     }
+
+    // Inspect columns of users table
+    const columns = await db.$queryRawUnsafe<Array<{ column_name: string; data_type: string }>>(
+      `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' ORDER BY column_name`
+    )
+    result['user_columns'] = columns.map(c => c.column_name)
+
+    // Test the exact query that Login runs
+    try {
+      const testUser = await db.user.findFirst({
+        where: { email: 'ngassa@jurislink.com' },
+        include: { tenant: true, roleObj: true },
+      })
+      result['login_query_test'] = 'SUCCESS'
+      result['test_user_found'] = Boolean(testUser)
+      if (testUser) {
+        result['test_user_email'] = testUser.email
+        result['test_user_role'] = testUser.role
+        result['test_user_tenant'] = testUser.tenant?.name || null
+        result['test_user_has_password'] = Boolean(testUser.password)
+      }
+    } catch (e: unknown) {
+      result['login_query_test'] = 'FAILED'
+      result['login_query_error'] = e instanceof Error ? e.message : String(e)
+    }
+
   } catch (err: unknown) {
-    result['connection_test'] = 'FAILED'
-    result['connection_error'] = err instanceof Error ? err.message : String(err)
+    result['error'] = err instanceof Error ? err.message : String(err)
   } finally {
     await db.$disconnect().catch(() => {})
   }
