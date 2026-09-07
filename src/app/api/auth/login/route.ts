@@ -86,12 +86,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ...userData, loginAt })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error)
+    const message = error instanceof Error ? error.message : 'Erreur inconnue'
     console.error('Login error:', message)
-    return NextResponse.json({
-      error: 'Erreur de base de données',
-      detail: message,
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Erreur de base de données' }, { status: 500 })
   } finally {
     await db.$disconnect().catch(() => {})
   }
