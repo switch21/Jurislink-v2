@@ -37,26 +37,37 @@ async function main() {
   console.log('🌱 Seeding comprehensive data…');
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 1. CLEAN — delete in FK-safe order
+  // 1. CLEAN — only wipe if --force flag or DB is empty (preserve existing data)
   // ═══════════════════════════════════════════════════════════════════════════
-  const tables = [
-    'auditLog', 'notification', 'message', 'reminderLog',
-    'payment', 'invoiceLineItem', 'invoice',
-    'communication', 'timeEntry',
-    'documentVersion', 'document',
-    'task', 'caseNote',
-    'eventAssignment', 'event',
-    'caseAssignment', 'case',
-    'clientPortal', 'client',
-    'documentTemplate',
-    'rolePermission', 'user',
-    'subscription', 'subscriptionPlan',
-    'role', 'permission',
-    'currency', 'tenant',
-  ] as const;
-  for (const t of tables) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db as any)[t.charAt(0).toUpperCase() + t.slice(1)].deleteMany();
+  const existingTenants = await db.tenant.count();
+  const forceWipe = process.argv.includes('--force');
+  if (existingTenants > 0 && !forceWipe) {
+    console.log(`  ⏭️  Base déjà peuplée (${existingTenants} cabinets). Utilise --force pour réinitialiser.`);
+    console.log('  ✅ Seed terminé (aucune donnée supprimée).');
+    await db.$disconnect();
+    return;
+  }
+  if (forceWipe) {
+    console.log('  ⚠️  Mode --force : suppression de toutes les données...');
+    const tables = [
+      'auditLog', 'notification', 'message', 'reminderLog',
+      'payment', 'invoiceLineItem', 'invoice',
+      'communication', 'timeEntry',
+      'documentVersion', 'document',
+      'task', 'caseNote',
+      'eventAssignment', 'event',
+      'caseAssignment', 'case',
+      'clientPortal', 'client',
+      'documentTemplate',
+      'rolePermission', 'user',
+      'subscription', 'subscriptionPlan',
+      'role', 'permission',
+      'currency', 'tenant',
+    ] as const;
+    for (const t of tables) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (db as any)[t.charAt(0).toUpperCase() + t.slice(1)].deleteMany();
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
