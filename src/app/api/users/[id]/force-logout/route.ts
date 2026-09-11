@@ -4,9 +4,27 @@ import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+/** Call the notification service to immediately cut the user's WebSocket(s). */
+async function disconnectUserSockets(userId: string): Promise<number> {
+  try {
+    const res = await fetch('http://localhost:3005/force-disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    if (!res.ok) return 0
+    const data = await res.json()
+    return data.disconnected ?? 0
+  } catch {
+    // Notification service may not be running; non-critical
+    return 0
+  }
+}
+
 /**
  * POST /api/users/[id]/force-logout
  * Root admin: force-disconnect a specific user.
+ * Sets forceLogoutAt in DB AND immediately cuts their WebSocket connection.
  */
 export async function POST(
   request: Request,
@@ -40,15 +58,22 @@ export async function POST(
       return NextResponse.json({ error: 'Utilisateur déjà désactivé' }, { status: 400 })
     }
 
+    // 1. Set forceLogoutAt in DB — prevents re-auth via HTTP API
     await db.user.update({
       where: { id },
       data: { forceLogoutAt: new Date() },
     })
     await db.$disconnect().catch(() => {})
 
+    // 2. Immediately cut the user's WebSocket connection(s)
+    const socketsCut = await disconnectUserSockets(id)
+
     return NextResponse.json({
       success: true,
-      message: `${user.fullName} sera déconnecté à sa prochaine action`,
+      message: socketsCut > 0
+        ? `${user.fullName} a été déconnecté immédiatement (${socketsCut} session(s) coupée(s))`
+        : `${user.fullName} sera déconnecté à sa prochaine action`,
+      socketsCut,
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue'

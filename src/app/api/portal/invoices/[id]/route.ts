@@ -1,30 +1,33 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { authenticatePortal } from '@/lib/portal-auth-server'
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticatePortal(request)
-  if (auth instanceof NextResponse) return auth
-
   const db = getDb()
   try {
-    const { id } = await params
+    const portalUserId = request.headers.get('X-Portal-User-Id')
+    if (!portalUserId || !UUID_REGEX.test(portalUserId)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
 
     const portalAccount = await db.clientPortal.findUnique({
-      where: { id: auth.portalUserId },
+      where: { id: portalUserId },
     })
     if (!portalAccount || !portalAccount.isActive) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
+    const { id } = await params
+
     const invoice = await db.invoice.findFirst({
       where: {
         id,
         clientId: portalAccount.clientId,
-        tenantId: auth.tenantId,
+        tenantId: portalAccount.tenantId,
       },
       include: {
         lineItems: { orderBy: { sortOrder: 'asc' } },

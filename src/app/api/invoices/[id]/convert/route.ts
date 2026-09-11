@@ -55,7 +55,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       tenantId: original.tenantId, userId: auth.id,
       title: 'Devis converti en facture',
       message: `Devis ${original.invoiceNumber || ''} → Facture ${invoiceNumber}`,
-      type: 'facture', resourceType: 'invoice', resourceId: facture.id,
+      category: 'facture', resourceType: 'invoice', resourceId: facture.id,
     })
 
     return NextResponse.json(facture)

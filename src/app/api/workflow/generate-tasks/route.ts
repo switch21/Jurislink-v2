@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       createdTasks.push({
         title: task.title,
         priority: task.priority,
-        dueDate: task.dueDate as Date,
+        dueDate: task.dueDate,
       })
 
       // Create notification for each generated task

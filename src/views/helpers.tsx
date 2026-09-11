@@ -4,7 +4,6 @@ import { format, parseISO, differenceInDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { STATUS_COLORS, STATUS_LABELS } from './constants'
 import { t } from '@/lib/i18n'
-export { t }
 
 // ==================== i18n Label Maps ====================
 // These functions return translated labels for DB status/type values
@@ -102,10 +101,12 @@ export function fmtFileSize(bytes: number) {
   if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' Ko'
   return (bytes / 1048576).toFixed(1) + ' Mo'
 }
+export const ROLE_OPTIONS = ['root_admin', 'associate', 'firm_admin', 'lawyer', 'jurist', 'assistant', 'accountant', 'client'] as const
+export type RoleSlug = typeof ROLE_OPTIONS[number]
 export function initials(name: string) { return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) }
 const TASK_STATUS_MAP: Record<string, string> = { todo: 'a_faire', in_progress: 'en_cours', done: 'terminee', en_cours: 'en_cours', a_faire: 'a_faire', terminee: 'terminee' }
 export function taskStatusColor(s: string) { const mapped = TASK_STATUS_MAP[s] || s; return STATUS_COLORS[mapped === 'en_cours' ? 'en_cours_t' : mapped] || STATUS_COLORS[s] || '' }
-export function taskStatusLabel(s: string) { const mapped = TASK_STATUS_MAP[s] || s; return STATUS_LABELS[mapped === 'en_cours' ? 'en_cours_t' : mapped] || s }
+export function taskStatusLabel(s: string) { return statusLabel(s) }
 export function relativeTime(d: string | null | undefined): string {
   if (!d) return ''
   try {
@@ -134,13 +135,13 @@ export function fmtDuration(seconds: number): string {
 export function getAuthHeaders(isPortal = false): Record<string, string> {
   const headers: Record<string, string> = {}
   try {
-    if (isPortal) {
-      const token = localStorage.getItem('jurislink_portal_token')
-      if (token) headers['Authorization'] = `Bearer ${token}`
-    } else {
-      const stored = localStorage.getItem('jurislink_user')
-      if (stored) {
-        const data = JSON.parse(stored)
+    const key = isPortal ? 'jurislink_portal_user' : 'jurislink_user'
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      const data = JSON.parse(stored)
+      if (isPortal) {
+        if (data.id) headers['X-Portal-User-Id'] = data.id
+      } else {
         if (data.id) headers['X-User-Id'] = data.id
         if (data.tenantId) headers['X-Tenant-Id'] = data.tenantId
       }
@@ -178,7 +179,7 @@ export function uploadWithProgress(
     xhr.open('POST', url)
     if (headers['X-User-Id']) xhr.setRequestHeader('X-User-Id', headers['X-User-Id'])
     if (headers['X-Tenant-Id']) xhr.setRequestHeader('X-Tenant-Id', headers['X-Tenant-Id'])
-    if (headers['Authorization']) xhr.setRequestHeader('Authorization', headers['Authorization'])
+    if (headers['X-Portal-User-Id']) xhr.setRequestHeader('X-Portal-User-Id', headers['X-Portal-User-Id'])
     xhr.send(formData)
   })
 }

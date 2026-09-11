@@ -230,7 +230,7 @@ export async function POST(request: Request) {
 
     const safeFileName = `${template.name.replace(/[^a-zA-Z0-9À-ÿ\s-]/g, '').replace(/\s+/g, '_')}_${caze.reference || 'doc'}.pdf`
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
+    return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

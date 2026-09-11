@@ -1,19 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import PDFDocument from 'pdfkit'
+import path from 'path'
+import fs from 'fs'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
-
-async function fetchLogoAsBuffer(logoUrl: string): Promise<Buffer | null> {
-  try {
-    const host = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
-    const res = await fetch(`${host}/${logoUrl.replace(/^\//, '')}`, { cache: 'force-cache' })
-    if (!res.ok) return null
-    const arrayBuf = await res.arrayBuffer()
-    return Buffer.from(arrayBuf)
-  } catch {
-    return null
-  }
-}
 
 const TVA_RATE = 0.1925
 const COLORS = {
@@ -99,18 +89,16 @@ export async function GET(
     // Blue accent bar at top
     doc.rect(0, 0, 595.28, 6).fill(COLORS.primary)
 
-    // Logo (fetch via HTTP instead of fs — works on Vercel serverless)
+    const logoPath = t.logoUrl ? path.join(process.cwd(), 'public', t.logoUrl) : null
     let logoW = 0
     let hasLogo = false
-    if (t.logoUrl) {
-      const imgBuf = await fetchLogoAsBuffer(t.logoUrl)
-      if (imgBuf) {
-        try {
-          doc.image(imgBuf, 50, 24, { height: 55 })
-          logoW = 70
-          hasLogo = true
-        } catch { /* skip broken logo */ }
-      }
+    if (logoPath && fs.existsSync(logoPath)) {
+      try {
+        const imgBuf = fs.readFileSync(logoPath)
+        doc.image(imgBuf, 50, 24, { height: 55 })
+        logoW = 70
+        hasLogo = true
+      } catch { /* skip broken logo */ }
     }
 
     const firmX = 50 + logoW + 10
@@ -149,7 +137,7 @@ export async function GET(
     doc.roundedRect(300, boxY, 240, 80, 4).stroke(COLORS.border)
     doc.font('Helvetica-Bold').fontSize(7).fillColor(COLORS.gray).text('DÉTAILS FACTURE', 310, boxY + 8)
     doc.font('Helvetica').fontSize(8).fillColor(COLORS.dark)
-    doc.text(`Date : ${fmtDate(invoice.issuedAt ?? new Date())}`, 310, boxY + 22)
+    doc.text(`Date : ${fmtDate(invoice.issuedAt)}`, 310, boxY + 22)
     doc.text(`Échéance : ${invoice.dueDate ? fmtDate(invoice.dueDate) : '—'}`, 310, boxY + 34)
     if (invoice.case?.reference) doc.text(`Dossier : ${invoice.case.reference}`, 310, boxY + 46)
     const statusLabel: Record<string, string> = { paye: 'Payée', non_paye: 'Non payée', partiel: 'Partiellement payée' }

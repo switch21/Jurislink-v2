@@ -77,7 +77,6 @@ model User {
   password             String?
   mfaEnabled           Boolean   @default(false) @map("mfa_enabled")
   mfaSecret            String?   @map("mfa_secret")
-  forceLogoutAt        DateTime? @map("force_logout_at")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
@@ -180,7 +179,7 @@ model Subscription {
   tenantId            String    @unique @map("tenant_id") @db.Uuid
   tenant              Tenant    @relation(fields: [tenantId], references: [id])
   planId              String    @map("plan_id") @db.Uuid
-  plan              SubscriptionPlan @relation(fields: [planId], references: [id])
+  plan                SubscriptionPlan @relation(fields: [planId], references: [id])
   status              String    @default("active")
   billingPeriod       String    @default("annual") @map("billing_period")
   currentPeriodStart  DateTime  @default(now()) @map("current_period_start")
@@ -439,7 +438,7 @@ model Payment {
   reference     String?
   status        String    @default("complet") // complet, partiel, annule
   paidAt        DateTime  @default(now()) @map("paid_at")
-  notes         String?
+ notes         String?
   createdAt     DateTime  @default(now()) @map("created_at")
 
   tenantId      String    @map("tenant_id") @db.Uuid
@@ -476,7 +475,7 @@ model Notification {
   category     String   @default("dossier")
   read         Boolean  @default(false)
   resourceType String?  @map("resource_type")
-  resourceId   String?  @map("resource_id") @db.Uuid
+  resourceId   String?  @map("resource_id")
   createdAt    DateTime @default(now()) @map("created_at")
 
   tenantId     String   @map("tenant_id") @db.Uuid
@@ -520,7 +519,7 @@ model AuditLog {
   id           String   @id @default(uuid()) @db.Uuid
   action       String
   resourceType String?  @map("resource_type")
-  resourceId   String?  @map("resource_id") @db.Uuid
+  resourceId   String?  @map("resource_id")
   metadata     String?
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
@@ -661,7 +660,7 @@ model PortalNotification {
   category     String   @default("dossier")
   read         Boolean  @default(false)
   resourceType String?  @map("resource_type")
-  resourceId   String?  @map("resource_id") @db.Uuid
+  resourceId   String?  @map("resource_id")
   createdAt    DateTime @default(now()) @map("created_at")
 
   portalId String @map("portal_id") @db.Uuid

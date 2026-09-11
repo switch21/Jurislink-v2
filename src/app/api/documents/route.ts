@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       ]
     }
     if (tag) {
-      ;(where as Record<string, unknown>).tags = { contains: tag, mode: 'insensitive' }
+      ;(where as Record<string, unknown>).tags = { contains: tag }
     }
 
     const total = await db.document.count({ where })
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     })
 
     const allDocs = await db.document.findMany({
-      where: { tenantId: auth.tenantId! },
+      where: { tenantId },
       select: { tags: true },
     })
     const tagSet = new Set<string>()

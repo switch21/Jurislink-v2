@@ -222,7 +222,7 @@ async function handleAISearch(authUser: any, tenantId: string, q: string, limit:
     ])
 
     const ZAI = await import('z-ai-web-dev-sdk')
-    const zai = new (ZAI as any).default()
+    const zai = await ZAI.create()
 
     const contextStr = JSON.stringify({ cases, clients, tasks }, null, 2)
 

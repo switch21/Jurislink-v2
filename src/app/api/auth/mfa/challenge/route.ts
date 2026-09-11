@@ -82,16 +82,15 @@ export async function POST(request: Request) {
       // Challenge passed — remove it and return user data
       mfaChallenges.delete(challengeKey)
 
-      // Update last login + clear forceLogoutAt
-      const loginAt = new Date().toISOString()
+      // Update last login
       try {
         await db.user.update({
           where: { id: userId },
-          data: { lastLoginAt: new Date(), forceLogoutAt: null },
+          data: { lastLoginAt: new Date() },
         })
       } catch {}
 
-      return NextResponse.json({ ...challenge.userData, loginAt })
+      return NextResponse.json(challenge.userData)
     } finally {
       await db.$disconnect().catch(() => {})
     }

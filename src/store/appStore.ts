@@ -18,7 +18,6 @@ export interface UserInfo {
   isActive?: boolean
   permissions?: UserPermission[]
   roleObj?: { id: string; name: string; label: string; level: number; isSystem: boolean }
-  loginAt?: string
 }
 
 export interface PortalClientInfo {
@@ -116,8 +115,6 @@ interface AppState {
   portalSelectedCaseId: string | null
   // Portal notification state
   portalUnreadCount: number
-  // Unread message count
-  unreadMessageCount: number
   // Form dirty state (for beforeunload guard)
   hasUnsavedChanges: boolean
   // Actions
@@ -141,8 +138,6 @@ interface AppState {
   // Portal notification actions
   setPortalUnreadCount: (n: number) => void
   incrementPortalUnread: () => void
-  // Unread message count actions
-  setUnreadMessageCount: (n: number) => void
   // Unsaved changes
   setHasUnsavedChanges: (dirty: boolean) => void
 }
@@ -218,7 +213,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   portalCurrentView: loadSavedPortalView(),
   portalSelectedCaseId: null,
   portalUnreadCount: loadPortalUnread(),
-  unreadMessageCount: 0,
   hasUnsavedChanges: false,
   login: (user) => {
     // Normalize role: use roleObj.name if available (Prisma @default('lawyer') overrides the real role)
@@ -259,10 +253,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   portalLogin: (portalUser) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jurislink_portal_user', JSON.stringify(portalUser))
-      // Store JWT token if present in the login response
-      if ('token' in portalUser && typeof (portalUser as Record<string, unknown>).token === 'string') {
-        localStorage.setItem('jurislink_portal_token', (portalUser as Record<string, unknown>).token as string)
-      }
     }
     set({ portalUser, isPortalAuthenticated: true, portalCurrentView: 'portal-dashboard', portalSelectedCaseId: null })
   },
@@ -270,7 +260,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (typeof window !== 'undefined') {
       localStorage.removeItem('jurislink_portal_user')
       localStorage.removeItem('jurislink_portal_view')
-      localStorage.removeItem('jurislink_portal_token')
     }
     set({ portalUser: null, isPortalAuthenticated: false, portalCurrentView: 'portal-dashboard', portalSelectedCaseId: null })
   },
@@ -294,6 +283,5 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set({ portalUnreadCount: next })
   },
-  setUnreadMessageCount: (n) => set({ unreadMessageCount: n }),
   setHasUnsavedChanges: (dirty) => set({ hasUnsavedChanges: dirty }),
 }))

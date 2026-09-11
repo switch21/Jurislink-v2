@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { uploadFile } from '@/lib/storage'
 import { fireNotification } from '@/lib/notify'
-import { authenticatePortal } from '@/lib/portal-auth-server'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -34,13 +33,15 @@ const ALLOWED_MIME_TYPES = new Set([
 ])
 
 export async function GET(request: Request) {
-  const auth = await authenticatePortal(request)
-  if (auth instanceof NextResponse) return auth
-
   const db = getDb()
   try {
+    const portalUserId = request.headers.get('X-Portal-User-Id')
+    if (!portalUserId || !UUID_REGEX.test(portalUserId)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
     const portalAccount = await db.clientPortal.findUnique({
-      where: { id: auth.portalUserId },
+      where: { id: portalUserId },
     })
     if (!portalAccount || !portalAccount.isActive) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
     const clientCaseIds = await db.case.findMany({
       where: {
         clientId: portalAccount.clientId,
-        tenantId: auth.tenantId,
+        tenantId: portalAccount.tenantId,
         isSecret: false,
       },
       select: { id: true },
@@ -89,13 +90,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticatePortal(request)
-  if (auth instanceof NextResponse) return auth
-
   const db = getDb()
   try {
+    // 1. Portal auth validation
+    const portalUserId = request.headers.get('X-Portal-User-Id')
+    if (!portalUserId || !UUID_REGEX.test(portalUserId)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+    }
+
     const portalAccount = await db.clientPortal.findUnique({
-      where: { id: auth.portalUserId },
+      where: { id: portalUserId },
     })
     if (!portalAccount || !portalAccount.isActive) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -158,7 +162,7 @@ export async function POST(request: Request) {
     }
 
     // 5. Upload file using storage utility
-    const storageKey = await uploadFile(file, file.name, file.type, auth.tenantId)
+    const storageKey = await uploadFile(file, file.name, file.type, portalAccount.tenantId)
 
     // 6. Create Document record with pending status
     const document = await db.document.create({
@@ -172,8 +176,8 @@ export async function POST(request: Request) {
         mimeType: file.type || null,
         description: description || null,
         status: 'en_attente',
-        uploadedByPortalId: auth.portalUserId,
-        tenantId: auth.tenantId,
+        uploadedByPortalId: portalAccount.id,
+        tenantId: portalAccount.tenantId,
         caseId: targetCase.id,
       },
       include: {
@@ -184,7 +188,7 @@ export async function POST(request: Request) {
 
     // 7. Fire notification to tenant's users
     fireNotification({
-      tenantId: auth.tenantId,
+      tenantId: portalAccount.tenantId,
       type: 'document',
       title: 'Document portail en attente',
       message: `Un client a déposé le document « ${file.name} » dans le dossier ${targetCase.reference} — en attente de validation.`,

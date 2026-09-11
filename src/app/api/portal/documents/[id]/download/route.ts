@@ -1,39 +1,34 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { downloadFile } from '@/lib/storage'
-import { authenticatePortal } from '@/lib/portal-auth-server'
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await authenticatePortal(request)
-  if (auth instanceof NextResponse) return auth
+  const portalUserId = request.headers.get('x-portal-user-id')
+  if (!portalUserId) {
+    return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+  }
 
   const db = getDb()
   try {
     const { id } = await params
-
-    // Look up portal account and verify access via client relation
-    const portalAccount = await db.clientPortal.findUnique({
-      where: { id: auth.portalUserId },
-      select: { clientId: true, tenantId: true, isActive: true },
-    })
-    if (!portalAccount || !portalAccount.isActive) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
-
     const doc = await db.document.findUnique({
       where: { id },
       include: {
-        case: { select: { clientId: true } },
+        case: {
+          include: {
+            client: { select: { portalUserId: true } },
+          },
+        },
       },
     })
     if (!doc) {
       return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
     }
 
-    if (doc.case?.clientId !== portalAccount.clientId) {
+    if (doc.case?.client?.portalUserId !== portalUserId) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -55,7 +50,7 @@ export async function GET(
     }
     const contentType = doc.mimeType || mimeMap[ext || ''] || 'application/octet-stream'
 
-    return new NextResponse(new Uint8Array(fileBuffer), {
+    return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="${encodeURIComponent(doc.fileName)}"`,

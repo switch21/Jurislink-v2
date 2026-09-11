@@ -59,7 +59,7 @@ export function t(key: string): string {
 interface LocaleState { locale: Locale; setLocale: (l: Locale) => void }
 
 export const useLocaleStore = create<LocaleState>((set) => ({
-  locale: detectLocale(),
+  locale: 'fr' as Locale, // Always start with 'fr' for SSR/client hydration match
   setLocale: (l) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jurislink_locale', l)
@@ -70,11 +70,17 @@ export const useLocaleStore = create<LocaleState>((set) => ({
   },
 }))
 
-export const useLocale = () => {
-  const locale = useLocaleStore(s => s.locale)
-  const setLocale = useLocaleStore(s => s.setLocale)
-  return { locale, setLocale }
+// Detect and apply saved locale after hydration (client-only)
+if (typeof window !== 'undefined') {
+  try {
+    const stored = localStorage.getItem('jurislink_locale')
+    if (stored && SUPPORTED_LOCALES.includes(stored as Locale)) {
+      useLocaleStore.getState().setLocale(stored as Locale)
+    }
+  } catch { /* ignore */ }
 }
+
+export const useLocale = () => useLocaleStore((s) => ({ locale: s.locale, setLocale: s.setLocale }))
 
 // REMOVED: module-level DOM mutation that ran before React hydration
 // The DOM dir/lang attributes are now only set in setLocale() callback,

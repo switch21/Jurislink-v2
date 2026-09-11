@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, useAppStore, cn, Button, Badge, ScrollArea, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Search, Bell, LogOut, MessageSquare, Menu, X, Briefcase, Receipt, ClipboardList, FileText, Calendar, MessageCircle, ExternalLink, ThemeToggle, Globe } from './shared-ui'
+import { useState, useEffect, useRef, useAppStore, cn, Button, Badge, ScrollArea, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Search, Bell, LogOut, MessageSquare, Menu, X, Briefcase, Receipt, ClipboardList, FileText, Calendar, MessageCircle, ExternalLink, ThemeToggle, Globe , statusLabel, priorityLabel, typeLabel, eventTypeLabel, roleLabel, billingLabel, invoiceTypeLabel, invoiceStatusLabel, paymentMethodLabel, commTypeLabel, commStatusLabel, riskLabel, outcomeLabel, payStatusLabel, timelineTypeLabel, ROLE_OPTIONS, t } from './shared-ui'
 import { usePollingNotifications } from '@/hooks/use-polling-notifications'
-import { relativeTime, t } from './helpers'
+import { relativeTime } from './helpers'
 import { NAV_ITEMS, ADMIN_NAV_ITEMS } from './constants'
 import { useLocale, LOCALE_NAMES, LOCALE_FLAGS, SUPPORTED_LOCALES } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
@@ -60,48 +60,25 @@ const RESOURCE_TYPE_TO_VIEW: Record<string, ViewName> = {
 
 // ==================== Header ====================
 export function Header() {
-  const currentView = useAppStore(s => s.currentView)
-  const user = useAppStore(s => s.user)
-  const logout = useAppStore(s => s.logout)
-  const setCurrentView = useAppStore(s => s.setCurrentView)
-  const setPendingResourceOpen = useAppStore(s => s.setPendingResourceOpen)
-  const unreadMessageCount = useAppStore(s => s.unreadMessageCount)
+  const { currentView, user, logout, setCurrentView, setPendingResourceOpen } = useAppStore()
   const { locale, setLocale: setLocaleL } = useLocale()
   const [notifOpen, setNotifOpen] = useState(false)
   const [dropdownFilter, setDropdownFilter] = useState('all')
   const prevUnreadRef = useRef(0)
   const [badgePulse, setBadgePulse] = useState(false)
-  const viewLabelKey = NAV_ITEMS.find(n => n.view === currentView)?.label || ADMIN_NAV_ITEMS.find(n => n.view === currentView)?.label || ''
-  const viewLabel = t(viewLabelKey)
+  const viewLabel = (() => { const item = NAV_ITEMS.find(n => n.view === currentView) || ADMIN_NAV_ITEMS.find(n => n.view === currentView); return item?.labelKey ? t(item.labelKey) : item?.label || 'JurisLink' })()
 
   // Polling hook — 30s interval, auto-pauses when unauthenticated
   const { notifications, unreadCount, refetchNow } = usePollingNotifications(!!user?.tenantId)
-
-  // Fetch unread message count from API on mount and periodically
-  useEffect(() => {
-    if (!user?.id || !user?.tenantId) return
-    const uid = user.id
-    const tid = user.tenantId
-    const fetchMsgCount = () => {
-      fetch(`/api/messages/unread-count?userId=${uid}&tenantId=${tid}`)
-        .then(r => r.json())
-        .then(data => { if (typeof data.count === 'number') useAppStore.getState().setUnreadMessageCount(data.count) })
-        .catch(() => {})
-    }
-    fetchMsgCount()
-    const interval = setInterval(fetchMsgCount, 60_000)
-    return () => clearInterval(interval)
-  }, [user?.id, user?.tenantId])
-
-  const msgCount = unreadMessageCount
+  const msgCount = 0
 
   // Visual pulse on bell when new notifications arrive
   useEffect(() => {
     if (unreadCount > prevUnreadRef.current && prevUnreadRef.current >= 0) {
       setBadgePulse(true)
-      const timer = setTimeout(() => setBadgePulse(false), 600)
+      const t = setTimeout(() => setBadgePulse(false), 600)
       prevUnreadRef.current = unreadCount
-      return () => clearTimeout(timer)
+      return () => clearTimeout(t)
     }
     prevUnreadRef.current = unreadCount
   }, [unreadCount])

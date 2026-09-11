@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { AlertTriangle } from 'lucide-react'
 
 export default function Error({
   error,
@@ -10,25 +12,33 @@ export default function Error({
   reset: () => void
 }) {
   const msg = error?.message || ''
-  const isHydration = (msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')) && !msg.includes('403') && !msg.includes('401')
 
   useEffect(() => {
-    // Only log real errors, not the Next.js 16 MetadataBoundary hydration mismatch (#185)
-    if (!isHydration) {
-      console.error('=== APP ERROR ===', error)
-    }
-  }, [error, isHydration])
+    console.error('=== APP ERROR ===', error)
+  }, [error])
 
-  // Hydration mismatch: return nothing so React's built-in recovery kicks in
-  // (React 19 re-renders the mismatched subtree client-side automatically)
-  if (isHydration) return null
-
+  // Always show the error UI so the user can report it.
+  // Never return null — that causes blank/white pages.
+  // Never auto-reload — that causes infinite loops.
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page, #F5F7FA)' }}>
-      <div style={{ textAlign: 'center', maxWidth: '420px', padding: '24px' }}>
-        <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary, #111827)', marginBottom: '8px' }}>Une erreur est survenue</p>
-        <pre style={{ fontSize: '12px', color: '#EF4444', background: '#FEE2E2', padding: '12px', borderRadius: '8px', overflow: 'auto', maxHeight: '200px', wordBreak: 'break-all', textAlign: 'left' }}>{msg || 'Erreur inconnue'}</pre>
-        <button onClick={reset} style={{ marginTop: '16px', padding: '8px 20px', background: 'var(--primary, #1E5A8A)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>Réessayer</button>
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-4">
+      <div className="max-w-lg w-full text-center space-y-4">
+        <div className="mx-auto w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/30 flex items-center justify-center">
+          <AlertTriangle className="w-8 h-8 text-rose-600" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Une erreur est survenue</h2>
+        <pre className="text-xs text-left bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 p-3 rounded-lg overflow-auto max-h-40 whitespace-pre-wrap break-all">
+          {msg || 'Erreur inconnue'}
+        </pre>
+        {error?.digest && (
+          <p className="text-xs text-slate-400">Code: {error.digest}</p>
+        )}
+        <div className="flex gap-3 justify-center">
+          <Button onClick={reset} variant="outline">Réessayer</Button>
+          <Button onClick={() => { localStorage.clear(); window.location.reload() }}>
+            Réinitialiser
+          </Button>
+        </div>
       </div>
     </div>
   )

@@ -1,0 +1,14 @@
+'use client'
+
+import { Users, Briefcase, CreditCard, Edit, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { TableRow, TableCell } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
+import { fmtDate } from '@/lib/helpers'
+import type { AdminTenant } from '@/types'
+
+export function TenantRow({ t, subDaysLeft, openSubDialog, openEdit, delMut }: { t: AdminTenant; subDaysLeft: (t: AdminTenant) => number | null; openSubDialog: (t: AdminTenant) => void; openEdit: (t: AdminTenant) => void; delMut: { mutate: (id: string) => void } }) {
+  const dl = subDaysLeft(t)
+  return (<TableRow className='cursor-pointer hover:bg-[#F9FAFB]'><TableCell><div className='flex items-center gap-2'><div className={cn('size-2 rounded-full shrink-0', t.isActive ? 'bg-[#059669]' : 'bg-[#D1D5DB]')} /><div><span className='font-medium text-[#111827]'>{t.name}</span>{t.city && <p className='text-[10px] text-[#9CA3AF]'>{t.city}{t.country ? `, ${t.country}` : ''}</p>}</div></div></TableCell><TableCell className='hidden sm:table-cell'><div className='flex flex-col gap-1'><div className='flex items-center gap-1.5'><Badge className='bg-[#E8F0F8] text-[#1E5A8A] text-[10px]'>{t.subscription?.plan?.name || t.plan}</Badge>{dl !== null && <span className={cn('text-[10px] font-medium', dl <= 0 ? 'text-[#DC2626]' : dl <= 15 ? 'text-[#D97706]' : 'text-[#059669]')}>{dl <= 0 ? 'Expiré' : dl + 'j restants'}</span>}</div>{t.subscription?.currentPeriodEnd && <p className='text-[10px] text-[#9CA3AF]'>Fin : {new Date(t.subscription.currentPeriodEnd).toLocaleDateString('fr-FR')}</p>}</div></TableCell><TableCell><div className='flex items-center gap-1.5'><Users className='size-3 text-[#9CA3AF]' /><span className='text-sm font-medium'>{t._count?.users ?? 0}</span></div></TableCell><TableCell><div className='flex items-center gap-1.5'><Briefcase className='size-3 text-[#9CA3AF]' /><span className='text-sm font-medium'>{t._count?.cases ?? 0}</span></div></TableCell><TableCell className='hidden md:table-cell text-sm text-[#6B7280]'>{t._count?.clients ?? 0}</TableCell><TableCell className='hidden lg:table-cell text-sm text-[#6B7280]'>{t._count?.invoices ?? 0}</TableCell><TableCell className='hidden lg:table-cell text-xs text-[#6B7280]'>{fmtDate(t.createdAt)}</TableCell><TableCell><div className='flex items-center gap-0.5'><Button variant='ghost' size='icon' className='size-7 text-[#1E5A8A] hover:text-[#164070] hover:bg-[#E8F0F8]' onClick={() => openSubDialog(t)} title={"Gérer l'abonnement"}><CreditCard className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7' onClick={() => openEdit(t)}><Edit className='size-3.5' /></Button><Button variant='ghost' size='icon' className='size-7 text-[#DC2626]' onClick={() => delMut.mutate(t.id)}><Trash2 className='size-3.5' /></Button></div></TableCell></TableRow>)
+}

@@ -63,7 +63,6 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = { especes: 'Espèce
 export const PAYMENT_METHOD_COLORS: Record<string, string> = { especes: 'bg-[#059669]', virement: 'bg-[#1E5A8A]', mobile_money: 'bg-[#C8A45D]', carte: 'bg-[#7C3AED]', cheque: 'bg-[#6B7280]' }
 export const CHART_COLORS = ['#1E5A8A', '#C8A45D', '#059669', '#DC2626', '#6B7280', '#F59E0B']
 export const CHART_COLORS_DARK = ['#4A8FCA', '#E0C87A', '#34D399', '#FB7185', '#9CA3AF', '#FBBF24']
-export const TASK_STATUS_MAP: Record<string, string> = { todo: 'a_faire', in_progress: 'en_cours', done: 'terminee', en_cours: 'en_cours', a_faire: 'a_faire', terminee: 'terminee' }
 export const CASE_STATUS_LABELS: Record<string, string> = { nouveau: 'Nouveau', ouvert: 'Ouvert', en_cours: 'En cours', en_attente: 'En attente', clos: 'Clos', archive: 'Archivé' }
 export const INVOICE_STATUS_LABELS: Record<string, string> = { non_paye: 'Non payé', partiel: 'Partiel', paye: 'Payé', annule: 'Annulé' }
 export const COMM_TYPE_LABELS: Record<string, string> = { email: 'Email', sms: 'SMS', whatsapp: 'WhatsApp' }
@@ -79,31 +78,31 @@ export const QUICK_TEMPLATES = [
   { label: 'Confirmation rendez-vous', content: 'Bonjour {name},\n\nNous confirmons votre rendez-vous le {date} à {time} dans nos locaux.\n\nCordialement,' },
 ]
 
-export const NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType; adminOnly?: boolean; permission?: { resource: string; action: string } }[] = [
-  { view: 'dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
-  { view: 'cases', label: 'nav.cases', icon: Briefcase, permission: { resource: 'case', action: 'view' } },
-  { view: 'clients', label: 'nav.clients', icon: Users, permission: { resource: 'client', action: 'view' } },
-  { view: 'tasks', label: 'nav.tasks', icon: ClipboardList, permission: { resource: 'task', action: 'view' } },
-  { view: 'documents', label: 'nav.documents', icon: FileText, permission: { resource: 'document', action: 'view' } },
-  { view: 'calendar', label: 'nav.calendar', icon: Calendar, permission: { resource: 'event', action: 'view' } },
-  { view: 'invoices', label: 'nav.invoices', icon: Receipt, permission: { resource: 'invoice', action: 'view' } },
-  { view: 'finances', label: 'nav.finances', icon: TrendingUp, permission: { resource: 'invoice', action: 'view' } },
-  { view: 'impayes', label: 'nav.impayes', icon: AlertOctagon, permission: { resource: 'invoice', action: 'view' } },
-  { view: 'time-tracking', label: 'nav.timeTracking', icon: Timer, permission: { resource: 'task', action: 'view' } },
-  { view: 'communications', label: 'nav.communications', icon: SendHorizontal, permission: { resource: 'message', action: 'view' } },
-  { view: 'templates', label: 'nav.templates', icon: FileCode2, permission: { resource: 'document', action: 'view' } },
-  { view: 'messages', label: 'nav.messages', icon: MessageSquare, permission: { resource: 'message', action: 'view' } },
-  { view: 'reports', label: 'nav.reports', icon: BarChart3, permission: { resource: 'report', action: 'view' } },
-  { view: 'notifications', label: 'nav.notifications', icon: Bell, permission: { resource: 'notification', action: 'view' } },
-  { view: 'search', label: 'nav.search', icon: Search },
-  { view: 'audit-logs', label: 'nav.auditLogs', icon: Shield, adminOnly: true, permission: { resource: 'audit', action: 'view' } },
-  { view: 'settings', label: 'nav.settings', icon: Settings },
+export const NAV_ITEMS: { view: ViewName; labelKey: string; icon: React.ElementType; adminOnly?: boolean; permission?: { resource: string; action: string } }[] = [
+  { view: 'dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { view: 'cases', labelKey: 'nav.cases', icon: Briefcase, permission: { resource: 'case', action: 'view' } },
+  { view: 'clients', labelKey: 'nav.clients', icon: Users, permission: { resource: 'client', action: 'view' } },
+  { view: 'tasks', labelKey: 'nav.tasks', icon: ClipboardList, permission: { resource: 'task', action: 'view' } },
+  { view: 'documents', labelKey: 'nav.documents', icon: FileText, permission: { resource: 'document', action: 'view' } },
+  { view: 'calendar', labelKey: 'nav.calendar', icon: Calendar, permission: { resource: 'event', action: 'view' } },
+  { view: 'invoices', labelKey: 'nav.invoices', icon: Receipt, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'finances', labelKey: 'nav.finances', icon: TrendingUp, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'impayes', labelKey: 'nav.impayes', icon: AlertOctagon, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'time-tracking', labelKey: 'nav.timeTracking', icon: Timer, permission: { resource: 'task', action: 'view' } },
+  { view: 'communications', labelKey: 'nav.communications', icon: SendHorizontal, permission: { resource: 'message', action: 'view' } },
+  { view: 'templates', labelKey: 'nav.templates', icon: FileCode2, permission: { resource: 'document', action: 'view' } },
+  { view: 'messages', labelKey: 'nav.messages', icon: MessageSquare, permission: { resource: 'message', action: 'view' } },
+  { view: 'reports', labelKey: 'nav.reports', icon: BarChart3, permission: { resource: 'report', action: 'view' } },
+  { view: 'notifications', labelKey: 'nav.notifications', icon: Bell, permission: { resource: 'notification', action: 'view' } },
+  { view: 'search', labelKey: 'nav.search', icon: Search },
+  { view: 'audit-logs', labelKey: 'nav.auditLogs', icon: Shield, adminOnly: true, permission: { resource: 'audit', action: 'view' } },
+  { view: 'settings', labelKey: 'nav.settings', icon: Settings },
 ]
 
-export const ADMIN_NAV_ITEMS: { view: ViewName; label: string; icon: React.ElementType }[] = [
-  { view: 'admin-dashboard', label: 'nav.admin.dashboard', icon: LayoutDashboard },
-  { view: 'admin-cabinets', label: 'nav.admin.cabinets', icon: BuildingIcon },
-  { view: 'admin-users', label: 'nav.admin.users', icon: UsersRound },
-  { view: 'admin-plans', label: 'nav.admin.plans', icon: CreditCardIcon },
-  { view: 'settings', label: 'nav.settings', icon: Settings },
+export const ADMIN_NAV_ITEMS: { view: ViewName; labelKey: string; icon: React.ElementType }[] = [
+  { view: 'admin-dashboard', labelKey: 'nav.admin.dashboard', icon: LayoutDashboard },
+  { view: 'admin-cabinets', labelKey: 'nav.admin.cabinets', icon: BuildingIcon },
+  { view: 'admin-users', labelKey: 'nav.admin.users', icon: UsersRound },
+ { view: 'admin-plans', labelKey: 'nav.admin.plans', icon: CreditCardIcon },
+  { view: 'settings', labelKey: 'nav.settings', icon: Settings },
 ]

@@ -83,7 +83,10 @@ function buildAdminMockDb() {
       aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 100000 } }),
     },
     subscriptionPlan: { findMany: vi.fn().mockResolvedValue([]) },
-    $queryRaw: vi.fn() as any,
+    $queryRaw: vi.fn().mockResolvedValue([
+      { month: '2025-01', count: BigInt(3) },
+      { month: '2025-02', count: BigInt(2) },
+    ]),
   })
 }
 
