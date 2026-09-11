@@ -16,7 +16,7 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 }
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'report', 'view')
+  const auth = await authenticate(request) // No permission check — dashboard is the default view for all tenant users
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {

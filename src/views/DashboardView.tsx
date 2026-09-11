@@ -8,9 +8,9 @@ import { usePollingNotifications } from '@/hooks/use-polling-notifications'
 // ==================== Dashboard ====================
 export function DashboardView() {
   const { user, setCurrentView } = useAppStore()
-  const { data: stats, isLoading } = useQuery<DashboardStats>({
+  const { data: stats, isLoading, error: statsError } = useQuery<DashboardStats>({
     queryKey: ['dashboard', user?.tenantId],
-    queryFn: () => fetch(`/api/dashboard?tenantId=${user!.tenantId}&userId=${user!.id}`).then(r => r.json()),
+    queryFn: () => fetch(`/api/dashboard?tenantId=${user!.tenantId}&userId=${user!.id}`).then(r => { if (!r.ok) throw new Error(`Dashboard API ${r.status}`); return r.json() }),
     enabled: !!user?.tenantId, refetchInterval: 60000
   })
 
@@ -38,7 +38,16 @@ export function DashboardView() {
   const minute = new Date().getMinutes()
 
   if (isLoading) return <div className="p-6"><Skeleton className="h-8 w-48 mb-6" /><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div></div>
-  if (!stats) return null
+  if (!stats || statsError) return (
+    <div className='flex-1 flex items-center justify-center p-8'>
+      <Card className='max-w-md w-full animate-scale-in'>
+        <CardHeader className='text-center'>Aucune donnée disponible</CardHeader>
+        <CardContent className='text-center text-sm text-[var(--text-secondary)]'>
+          {statsError?.message?.includes('403') ? 'Vous n\'avez pas la permission de voir le tableau de bord. Contactez votre administrateur.' : 'Impossible de charger le tableau de bord. Veuillez réessayer.'}
+        </CardContent>
+      </Card>
+    </div>
+  )
 
   const finData = stats.financial
   const urgencyCount = (stats.urgencies?.length || 0) + (stats.overdueInvoices?.length || 0)

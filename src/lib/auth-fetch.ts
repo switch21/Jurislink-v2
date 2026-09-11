@@ -39,7 +39,7 @@ export function initAuthFetch() {
       const response = await originalFetch(input, { ...init, headers })
 
       // Detect forced logout: 401 + X-Force-Logout header
-      if (response.status === 401 && response.headers.get('x-force-logout')) {
+      if (response.status === 401) {
         const key = isPortal ? 'jurislink_portal_user' : 'jurislink_user'
         localStorage.removeItem(key)
         localStorage.removeItem(isPortal ? 'jurislink_portal_view' : 'jurislink_current_view')

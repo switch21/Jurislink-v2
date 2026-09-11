@@ -10,7 +10,7 @@ export default function Error({
   reset: () => void
 }) {
   const msg = error?.message || ''
-  const isHydration = msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match') || msg.includes('Minified React error')
+  const isHydration = (msg.includes('185') || msg.includes('hydration') || msg.includes('Text content did not match')) && !msg.includes('403') && !msg.includes('401')
 
   useEffect(() => {
     // Only log real errors, not the Next.js 16 MetadataBoundary hydration mismatch (#185)
