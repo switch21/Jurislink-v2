@@ -44,9 +44,9 @@ export async function GET(request: Request) {
     if (documentType) where.documentType = documentType
     if (search) {
       where.OR = [
-        { fileName: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { tags: { contains: search, mode: 'insensitive' } },
+        { fileName: { contains: search } },
+        { description: { contains: search } },
+        { tags: { contains: search } },
       ]
     }
     if (tag) {

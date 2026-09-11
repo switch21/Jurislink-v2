@@ -14,7 +14,7 @@ interface PollingNotifResult {
 }
 
 export function usePollingNotifications(enabled: boolean = true): PollingNotifResult {
-  const { user } = useAppStore()
+  const user = useAppStore(s => s.user)
   const qc = useQueryClient()
   const prevCountRef = useRef(0)
 

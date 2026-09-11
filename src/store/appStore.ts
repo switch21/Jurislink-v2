@@ -116,6 +116,8 @@ interface AppState {
   portalSelectedCaseId: string | null
   // Portal notification state
   portalUnreadCount: number
+  // Unread message count
+  unreadMessageCount: number
   // Form dirty state (for beforeunload guard)
   hasUnsavedChanges: boolean
   // Actions
@@ -139,6 +141,8 @@ interface AppState {
   // Portal notification actions
   setPortalUnreadCount: (n: number) => void
   incrementPortalUnread: () => void
+  // Unread message count actions
+  setUnreadMessageCount: (n: number) => void
   // Unsaved changes
   setHasUnsavedChanges: (dirty: boolean) => void
 }
@@ -214,6 +218,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   portalCurrentView: loadSavedPortalView(),
   portalSelectedCaseId: null,
   portalUnreadCount: loadPortalUnread(),
+  unreadMessageCount: 0,
   hasUnsavedChanges: false,
   login: (user) => {
     // Normalize role: use roleObj.name if available (Prisma @default('lawyer') overrides the real role)
@@ -289,5 +294,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set({ portalUnreadCount: next })
   },
+  setUnreadMessageCount: (n) => set({ unreadMessageCount: n }),
   setHasUnsavedChanges: (dirty) => set({ hasUnsavedChanges: dirty }),
 }))

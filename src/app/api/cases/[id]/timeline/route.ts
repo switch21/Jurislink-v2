@@ -24,8 +24,8 @@ export async function GET(
         where: { 
           caseId: id, tenantId: tenantId || undefined,
           ...(search ? { OR: [
-            { title: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
+            { title: { contains: search } },
+            { description: { contains: search } },
           ]} : {}),
         },
         include: { assignments: { include: { user: { select: { id: true, fullName: true } } } } },
@@ -35,7 +35,7 @@ export async function GET(
       db.caseNote.findMany({
         where: { 
           caseId: id,
-          ...(search ? { content: { contains: search, mode: 'insensitive' } } : {}),
+          ...(search ? { content: { contains: search } } : {}),
         },
         include: { author: { select: { id: true, fullName: true } } },
         orderBy: { createdAt: 'desc' },
@@ -44,7 +44,7 @@ export async function GET(
       db.document.findMany({
         where: { 
           caseId: id,
-          ...(search ? { fileName: { contains: search, mode: 'insensitive' } } : {}),
+          ...(search ? { fileName: { contains: search } } : {}),
         },
         orderBy: { createdAt: 'desc' },
         take: 100,
@@ -52,7 +52,7 @@ export async function GET(
       db.task.findMany({
         where: { 
           caseId: id, tenantId: tenantId || undefined,
-          ...(search ? { title: { contains: search, mode: 'insensitive' } } : {}),
+          ...(search ? { title: { contains: search } } : {}),
         },
         orderBy: { createdAt: 'desc' },
         take: 100,
@@ -70,8 +70,8 @@ export async function GET(
         where: { 
           caseId: id, tenantId: tenantId || undefined,
           ...(search ? { OR: [
-            { subject: { contains: search, mode: 'insensitive' } },
-            { content: { contains: search, mode: 'insensitive' } },
+            { subject: { contains: search } },
+            { content: { contains: search } },
           ]} : {}),
         },
         include: { sentBy: { select: { id: true, fullName: true } } },

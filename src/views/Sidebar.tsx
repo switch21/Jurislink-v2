@@ -7,7 +7,11 @@ import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventA
 
 // ==================== Sidebar ====================
 export function Sidebar() {
-  const { currentView, setCurrentView, user, sidebarOpen, setSidebarOpen } = useAppStore()
+  const currentView = useAppStore(s => s.currentView)
+  const setCurrentView = useAppStore(s => s.setCurrentView)
+  const user = useAppStore(s => s.user)
+  const sidebarOpen = useAppStore(s => s.sidebarOpen)
+  const setSidebarOpen = useAppStore(s => s.setSidebarOpen)
   const isAdmin = user?.role === 'firm_admin' || user?.role === 'root_admin' || user?.role === 'associate'
   const hasPermission = useAppStore(s => s.hasPermission)
   const { data: overdueCountData } = useQuery({ queryKey: ['sidebar-overdue-count', user?.tenantId], queryFn: () => fetch(`/api/invoices/overdue?tenantId=${user!.tenantId}`).then(r => r.json()).then(d => d?.kpis?.totalOverdue || 0), enabled: !!user?.tenantId, refetchInterval: 60000 })

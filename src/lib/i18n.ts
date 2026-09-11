@@ -70,7 +70,11 @@ export const useLocaleStore = create<LocaleState>((set) => ({
   },
 }))
 
-export const useLocale = () => useLocaleStore((s) => ({ locale: s.locale, setLocale: s.setLocale }))
+export const useLocale = () => {
+  const locale = useLocaleStore(s => s.locale)
+  const setLocale = useLocaleStore(s => s.setLocale)
+  return { locale, setLocale }
+}
 
 // REMOVED: module-level DOM mutation that ran before React hydration
 // The DOM dir/lang attributes are now only set in setLocale() callback,

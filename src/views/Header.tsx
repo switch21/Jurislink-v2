@@ -60,7 +60,12 @@ const RESOURCE_TYPE_TO_VIEW: Record<string, ViewName> = {
 
 // ==================== Header ====================
 export function Header() {
-  const { currentView, user, logout, setCurrentView, setPendingResourceOpen } = useAppStore()
+  const currentView = useAppStore(s => s.currentView)
+  const user = useAppStore(s => s.user)
+  const logout = useAppStore(s => s.logout)
+  const setCurrentView = useAppStore(s => s.setCurrentView)
+  const setPendingResourceOpen = useAppStore(s => s.setPendingResourceOpen)
+  const unreadMessageCount = useAppStore(s => s.unreadMessageCount)
   const { locale, setLocale: setLocaleL } = useLocale()
   const [notifOpen, setNotifOpen] = useState(false)
   const [dropdownFilter, setDropdownFilter] = useState('all')
@@ -71,7 +76,24 @@ export function Header() {
 
   // Polling hook — 30s interval, auto-pauses when unauthenticated
   const { notifications, unreadCount, refetchNow } = usePollingNotifications(!!user?.tenantId)
-  const msgCount = 0
+
+  // Fetch unread message count from API on mount and periodically
+  useEffect(() => {
+    if (!user?.id || !user?.tenantId) return
+    const uid = user.id
+    const tid = user.tenantId
+    const fetchMsgCount = () => {
+      fetch(`/api/messages/unread-count?userId=${uid}&tenantId=${tid}`)
+        .then(r => r.json())
+        .then(data => { if (typeof data.count === 'number') useAppStore.getState().setUnreadMessageCount(data.count) })
+        .catch(() => {})
+    }
+    fetchMsgCount()
+    const interval = setInterval(fetchMsgCount, 60_000)
+    return () => clearInterval(interval)
+  }, [user?.id, user?.tenantId])
+
+  const msgCount = unreadMessageCount
 
   // Visual pulse on bell when new notifications arrive
   useEffect(() => {

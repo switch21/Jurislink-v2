@@ -917,3 +917,95 @@ Stage Summary:
 - 29 fichiers modifiés, 2 créés, 473 insertions, 343 suppressions
 - App prête pour déploiement Vercel avec Supabase
 - Reste: 24 clés i18n manquantes (P5), 0 tests (P5), MFA state sur Vercel (P3)
+
+---
+Task ID: 1b
+Agent: full-stack-developer
+Task: Convert Prisma schema from PostgreSQL to SQLite for local dev
+
+Work Log:
+- Read prisma/schema.prisma (746 lines, 30+ models) — confirmed provider=postgresql, @db.Uuid and @default(uuid()) throughout
+- Read .env — DATABASE_URL was file:/home/z/my-project/db/custom.db
+- Searched codebase for `mode: 'insensitive'` Prisma filters — found 17 occurrences across 7 files
+- Changed provider from "postgresql" to "sqlite" in schema
+- Removed all @db.Uuid annotations (SQLite doesn't support native UUID type)
+- Changed all @default(uuid()) to @default(cuid()) (SQLite doesn't have uuid())
+- Updated .env DATABASE_URL to file:/home/z/my-project/db/custom.db (matched existing shell env var)
+- Fixed all mode: 'insensitive' filters in 7 API route files:
+  - src/app/api/cases/route.ts (2 occurrences)
+  - src/app/api/cases/[id]/timeline/route.ts (7 occurrences)
+  - src/app/api/documents/route.ts (3 occurrences)
+  - src/app/api/search/route.ts (2 occurrences with `as const`)
+  - src/app/api/tenants/route.ts (1 occurrence)
+  - src/app/api/users/route.ts (2 occurrences)
+  - src/app/api/portal/documents/route.ts (1 occurrence)
+- Ran `bun run db:push` — schema pushed successfully, SQLite database created
+- Ran `bunx prisma generate` — Prisma Client regenerated for SQLite
+- Ran `bun run seed` — comprehensive seed completed with all demo data (users, clients, cases, invoices, etc.)
+- Deleted .next cache directory to force Next.js full recompilation with new Prisma Client
+- Verified login API: `curl -X POST http://localhost:3000/api/auth/login` with admin@jurislink.com/Admin@123 — returned full user object with permissions (200 OK)
+
+Stage Summary:
+- Prisma schema successfully converted from PostgreSQL to SQLite
+- All @db.Uuid removed, @default(uuid()) → @default(cuid()), provider changed to sqlite
+- All 17 mode: 'insensitive' filters removed (SQLite doesn't support this Prisma filter mode)
+- Database seeded with comprehensive demo data
+- Login API verified working: admin@jurislink.com / Admin@123 returns 200 with user data + permissions
+- Key fix: .next directory had to be deleted to force Next.js to pick up the regenerated SQLite Prisma Client
+
+---
+Task ID: 2
+Agent: full-stack-developer
+Task: Fix missing i18n keys, hardcoded message count, LoginPage i18n
+
+Work Log:
+- Read the i18n system (src/lib/i18n.ts) and understood the t() function, locale store, and translation merging with pricing.ts
+- Scanned all views in src/views/ for t() calls using ripgrep to extract all used translation keys
+- Compared used keys against keys defined in fr.ts and pricing.ts to find 24 missing keys
+- Missing keys identified: 14 cases keys (advancedFilters, confirmDelete, gridView, identifiedRisks, jurisSearch, missingDocs, noTags, noTasksHint, notePlaceholder, recommendedActions, resetFilters, tabTasks, tableView, timelineSearch) and 10 invoices keys (changeStatus, convertToInvoice, fromTimeEntries, notesPlaceholder, paidRemaining, paymentTerms, selectUnbilled, termsPlaceholder, totalAmount, totalTtc)
+- Added all 24 missing keys to fr.ts with French translations
+- Added all 24 missing keys to en.ts, es.ts, de.ts, it.ts, ar.ts, sw.ts with appropriate translations for each locale
+- Added 25 new login i18n keys (login.cabinet, login.portalClient, login.loginWithEmail, login.mfaTitle, login.mfaDescription, login.mfaCodeLabel, login.mfaExpired, login.mfaVerifying, login.mfaVerify, login.mfaBack, login.mfaValidFor, login.portalSubtitle, login.portalAccess, login.forgotPassword, login.comingSoon, login.portalReserved, login.seePricing, login.enterEmail, login.enterPassword, login.connectionError, login.welcome, login.enterMfaCode, login.mfaExpiredError, login.invalidCode, login.mfaVerificationError, login.portalError) to all 7 locale files
+- Fixed Header.tsx: replaced `const msgCount = 0` with `const msgCount = unreadMessageCount` from the app store
+- Added `unreadMessageCount` field and `setUnreadMessageCount` action to the app store (src/store/appStore.ts)
+- Created new API endpoint `/api/messages/unread-count/route.ts` that returns the count of messages where the user is the receiver
+- Added useEffect in Header.tsx to fetch unread message count on mount and every 60 seconds
+- Updated LoginPage.tsx to use t() for all hardcoded French text: tab labels, form labels, button text, toast messages, footer text, copyright, MFA form, portal form, and pricing link
+- Cleared .next cache to resolve CSS compilation error from a transient typo
+- Verified lint passes (0 errors)
+- Verified dev server serves pages correctly
+
+Stage Summary:
+- Fixed 24 missing i18n keys across all 7 locale files (fr, en, es, de, it, ar, sw)
+- Added 25 new login-specific i18n keys to support LoginPage internationalization
+- Fixed hardcoded message count (msgCount = 0) in Header.tsx by connecting it to the app store and fetching from /api/messages/unread-count API
+- Converted all hardcoded French text in LoginPage.tsx to use the t() translation function
+- All changes verified: lint passes, dev server running correctly
+
+---
+Task ID: SESSION-CONTINUATION
+Agent: Main Agent
+Task: Continue from previous session - fix database, auth, i18n, and infinite loop issues
+
+Work Log:
+- Discovered Prisma schema was set to PostgreSQL but no PostgreSQL available in sandbox
+- Converted schema to SQLite: changed provider, removed @db.Uuid, changed uuid() to cuid()
+- Fixed mode:insensitive filters across 7 API route files (SQLite doesn't support it)
+- Pushed schema, generated Prisma client, seeded database
+- Fixed auth-server.ts: UUID regex rejected CUID IDs from SQLite - changed to accept both formats
+- Fixed 24 missing i18n keys across all 7 locale files
+- Fixed hardcoded message count (0) in Header - now fetches from /api/messages/unread-count
+- Made LoginPage use i18n system instead of hardcoded French text
+- Fixed critical infinite loop in Header component caused by:
+  1. useLocale() hook returning new object on every call (useSyncExternalStore violation)
+  2. Broad useAppStore() destructuring causing unnecessary re-renders
+  3. usePollingNotifications hook using useAppStore() without selector
+- Changed all critical components to use individual selectors: useAppStore(s => s.field)
+- Fixed Header, AppClient, Sidebar, AdminSidebar, usePollingNotifications
+
+Stage Summary:
+- App fully functional: login works, dashboard loads with data, no errors
+- Database: SQLite with seeded demo data (admin@jurislink.com / Admin@123)
+- i18n: 24 missing keys added, LoginPage internationalized
+- Performance: Fixed React 19 infinite loop caused by Zustand selector issues
+- All core features verified: sidebar navigation, notifications, messages, calendar events

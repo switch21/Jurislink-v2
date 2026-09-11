@@ -6,7 +6,11 @@ import { fmtDate, fmtDateTime, fmtMoney, fmtFileSize, initials, relativeTime, fm
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== Admin Sidebar ====================
 export function AdminSidebar() {
-  const { currentView, setCurrentView, user, sidebarOpen, setSidebarOpen } = useAppStore()
+  const currentView = useAppStore(s => s.currentView)
+  const setCurrentView = useAppStore(s => s.setCurrentView)
+  const user = useAppStore(s => s.user)
+  const sidebarOpen = useAppStore(s => s.sidebarOpen)
+  const setSidebarOpen = useAppStore(s => s.setSidebarOpen)
   const navContent = (
     <nav className='space-y-1 mx-3' role='navigation' aria-label='Navigation admin'>
       {ADMIN_NAV_ITEMS.map(item => {
