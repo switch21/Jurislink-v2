@@ -1009,3 +1009,37 @@ Stage Summary:
 - i18n: 24 missing keys added, LoginPage internationalized
 - Performance: Fixed React 19 infinite loop caused by Zustand selector issues
 - All core features verified: sidebar navigation, notifications, messages, calendar events
+
+---
+Task ID: R1-R3
+Agent: full-stack-developer
+Task: Restore PostgreSQL compatibility for Vercel production
+
+Work Log:
+- Restored prisma/schema.prisma: changed provider from "sqlite" to "postgresql"
+- Changed all @default(cuid()) to @default(uuid()) across all 30+ models
+- Added @db.Uuid annotations to all ID fields (id, tenantId, roleId, userId, clientId, caseId, etc.) across all models
+- Kept forceLogoutAt field on User model (valid addition from recent changes)
+- Kept all @map() annotations intact
+- Validated schema with Prisma CLI (passed with PostgreSQL URL)
+- Restored auth-server.ts: changed ID_RE (loose CUID/UUID regex) back to UUID_RE (strict UUID format)
+- Changed ID_RE.test(userId) back to UUID_RE.test(userId) in getAuthResult
+- Kept all new improvements: AuthFailReason, force_logout check, getAuthResult, X-Force-Logout header
+- Restored mode: 'insensitive' in 7 API routes:
+  - src/app/api/cases/route.ts: title, reference contains
+  - src/app/api/cases/[id]/timeline/route.ts: title, description, content, fileName, subject contains
+  - src/app/api/documents/route.ts: fileName, description, tags contains
+  - src/app/api/search/route.ts: all searchFilter objects (both GET and handleAISearch)
+  - src/app/api/tenants/route.ts: name contains
+  - src/app/api/users/route.ts: fullName, email contains
+  - src/app/api/portal/documents/route.ts: fileName contains
+- Updated .env: changed DATABASE_URL from SQLite file to PostgreSQL placeholder
+- Regenerated Prisma Client with npx prisma generate (success)
+
+Stage Summary:
+- Prisma schema fully restored to PostgreSQL compatibility (provider, uuid defaults, @db.Uuid annotations)
+- Auth server UUID validation restored while keeping force-logout feature
+- All 7 API routes have mode: 'insensitive' restored for PostgreSQL case-insensitive search
+- .env updated for PostgreSQL connection string
+- Prisma Client regenerated successfully
+- Vercel deployment should now work with Supabase PostgreSQL backend

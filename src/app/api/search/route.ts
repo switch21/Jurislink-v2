@@ -52,6 +52,7 @@ export async function GET(request: Request) {
   try {
     const searchFilter = {
       contains: q,
+      mode: 'insensitive' as const,
     }
 
     const tenantWhere = { tenantId }
@@ -199,7 +200,7 @@ export async function GET(request: Request) {
 async function handleAISearch(authUser: any, tenantId: string, q: string, limit: number) {
   const db = getDb()
   try {
-    const searchFilter = { contains: q }
+    const searchFilter = { contains: q, mode: 'insensitive' as const }
     const tenantWhere = { tenantId }
 
     const [cases, clients, tasks] = await Promise.all([

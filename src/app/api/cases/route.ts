@@ -53,8 +53,8 @@ export async function GET(request: Request) {
     const search = searchParams.get('search')
     if (search) {
       where.OR = [
-        { title: { contains: search } },
-        { reference: { contains: search } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { reference: { contains: search, mode: 'insensitive' } },
       ]
     }
 

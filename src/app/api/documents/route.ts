@@ -44,13 +44,13 @@ export async function GET(request: Request) {
     if (documentType) where.documentType = documentType
     if (search) {
       where.OR = [
-        { fileName: { contains: search } },
-        { description: { contains: search } },
-        { tags: { contains: search } },
+        { fileName: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { tags: { contains: search, mode: 'insensitive' } },
       ]
     }
     if (tag) {
-      ;(where as Record<string, unknown>).tags = { contains: tag }
+      ;(where as Record<string, unknown>).tags = { contains: tag, mode: 'insensitive' }
     }
 
     const total = await db.document.count({ where })

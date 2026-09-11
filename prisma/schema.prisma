@@ -3,13 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 // ==================== TENANT ====================
 model Tenant {
-  id            String   @id @default(cuid()) 
+  id            String   @id @default(uuid()) @db.Uuid
   name          String
   slug          String   @unique
   logoUrl       String?  @map("logo_url")
@@ -59,9 +59,9 @@ model Tenant {
 
 // ==================== USER ====================
 model User {
-  id                   String    @id @default(cuid()) 
-  tenantId             String?   @map("tenant_id") 
-  roleId               String?   @map("role_id") 
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenantId             String?   @map("tenant_id") @db.Uuid
+  roleId               String?   @map("role_id") @db.Uuid
   role                 String    @default("lawyer")
   fullName             String    @map("full_name")
   email                String    @unique
@@ -104,7 +104,7 @@ model User {
 
 // ==================== ROLE ====================
 model Role {
-  id          String   @id @default(cuid()) 
+  id          String   @id @default(uuid()) @db.Uuid
   name        String   @unique
   label       String
   description String?
@@ -121,7 +121,7 @@ model Role {
 
 // ==================== PERMISSION ====================
 model Permission {
-  id          String   @id @default(cuid()) 
+  id          String   @id @default(uuid()) @db.Uuid
   name        String   @unique
   resource    String
   action      String
@@ -136,10 +136,10 @@ model Permission {
 
 // ==================== ROLE PERMISSION ====================
 model RolePermission {
-  id           String   @id @default(cuid()) 
-  roleId       String   @map("role_id") 
+  id           String   @id @default(uuid()) @db.Uuid
+  roleId       String   @map("role_id") @db.Uuid
   role         Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permissionId String   @map("permission_id") 
+  permissionId String   @map("permission_id") @db.Uuid
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
   allowed      Boolean  @default(false)
   createdAt    DateTime @default(now()) @map("created_at")
@@ -150,7 +150,7 @@ model RolePermission {
 
 // ==================== SUBSCRIPTION PLAN ====================
 model SubscriptionPlan {
-  id              String   @id @default(cuid()) 
+  id              String   @id @default(uuid()) @db.Uuid
   name            String
   slug            String   @unique
   description     String?
@@ -176,11 +176,11 @@ model SubscriptionPlan {
 
 // ==================== SUBSCRIPTION ====================
 model Subscription {
-  id                  String    @id @default(cuid()) 
-  tenantId            String    @unique @map("tenant_id") 
+  id                  String    @id @default(uuid()) @db.Uuid
+  tenantId            String    @unique @map("tenant_id") @db.Uuid
   tenant              Tenant    @relation(fields: [tenantId], references: [id])
-  planId              String    @map("plan_id") 
-  plan                SubscriptionPlan @relation(fields: [planId], references: [id])
+  planId              String    @map("plan_id") @db.Uuid
+  plan              SubscriptionPlan @relation(fields: [planId], references: [id])
   status              String    @default("active")
   billingPeriod       String    @default("annual") @map("billing_period")
   currentPeriodStart  DateTime  @default(now()) @map("current_period_start")
@@ -194,8 +194,8 @@ model Subscription {
 
 // ==================== CLIENT ====================
 model Client {
-  id                  String    @id @default(cuid()) 
-  tenantId            String    @map("tenant_id") 
+  id                  String    @id @default(uuid()) @db.Uuid
+  tenantId            String    @map("tenant_id") @db.Uuid
   fullName            String    @map("full_name")
   company             String?
   phone               String?
@@ -210,7 +210,7 @@ model Client {
   clientType          String?   @map("client_type")
   status              String    @default("active")
   isActive            Boolean   @default(true) @map("is_active")
-  responsibleLawyerId String?   @map("responsible_lawyer_id") 
+  responsibleLawyerId String?   @map("responsible_lawyer_id") @db.Uuid
   lastActivityAt      DateTime? @map("last_activity_at")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
@@ -226,7 +226,7 @@ model Client {
 
 // ==================== CASE ====================
 model Case {
-  id              String    @id @default(cuid()) 
+  id              String    @id @default(uuid()) @db.Uuid
   title           String
   description     String?
   caseType        String    @default("civil") @map("case_type")
@@ -245,9 +245,9 @@ model Case {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  tenantId        String   @map("tenant_id") 
+  tenantId        String   @map("tenant_id") @db.Uuid
   tenant          Tenant   @relation(fields: [tenantId], references: [id])
-  clientId        String   @map("client_id") 
+  clientId        String   @map("client_id") @db.Uuid
   client          Client   @relation(fields: [clientId], references: [id])
 
   assignments     CaseAssignment[]
@@ -264,12 +264,12 @@ model Case {
 }
 
 model CaseAssignment {
-  id       String @id @default(cuid()) 
-  userId   String @map("user_id") 
+  id       String @id @default(uuid()) @db.Uuid
+  userId   String @map("user_id") @db.Uuid
   user     User   @relation(fields: [userId], references: [id])
-  caseId   String @map("case_id") 
+  caseId   String @map("case_id") @db.Uuid
   case     Case   @relation(fields: [caseId], references: [id])
-  tenantId String @map("tenant_id") 
+  tenantId String @map("tenant_id") @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   @@unique([userId, caseId])
@@ -277,15 +277,15 @@ model CaseAssignment {
 }
 
 model CaseNote {
-  id        String   @id @default(cuid()) 
+  id        String   @id @default(uuid()) @db.Uuid
   content   String
   createdAt DateTime @default(now()) @map("created_at")
 
-  caseId   String   @map("case_id") 
+  caseId   String   @map("case_id") @db.Uuid
   case     Case    @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  authorId String?  @map("author_id") 
+  authorId String?  @map("author_id") @db.Uuid
   author   User?   @relation(fields: [authorId], references: [id])
-  tenantId String   @map("tenant_id") 
+  tenantId String   @map("tenant_id") @db.Uuid
   tenant   Tenant  @relation(fields: [tenantId], references: [id])
 
   @@index([caseId])
@@ -294,7 +294,7 @@ model CaseNote {
 
 // ==================== DOCUMENT ====================
 model Document {
-  id          String  @id @default(cuid()) 
+  id          String  @id @default(uuid()) @db.Uuid
   fileName    String  @map("file_name")
   fileSize    Int     @map("file_size")
   filePath    String  @map("file_path")
@@ -305,16 +305,16 @@ model Document {
   mimeType    String? @map("mime_type")
   description String?
   status      String  @default("actif")
-  uploadedById String? @map("uploaded_by_id") 
+  uploadedById String? @map("uploaded_by_id") @db.Uuid
   uploadedBy  User?   @relation("DocumentUploader", fields: [uploadedById], references: [id])
-  uploadedByPortalId String? @map("uploaded_by_portal_id") 
+  uploadedByPortalId String? @map("uploaded_by_portal_id") @db.Uuid
   uploadedByPortal ClientPortal? @relation("PortalDocumentUpload", fields: [uploadedByPortalId], references: [id])
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  tenantId    String  @map("tenant_id") 
+  tenantId    String  @map("tenant_id") @db.Uuid
   tenant      Tenant  @relation(fields: [tenantId], references: [id])
-  caseId      String? @map("case_id") 
+  caseId      String? @map("case_id") @db.Uuid
   case        Case?   @relation(fields: [caseId], references: [id])
 
   versions    DocumentVersion[]
@@ -324,7 +324,7 @@ model Document {
 
 // ==================== DOCUMENT VERSION ====================
 model DocumentVersion {
-  id          String   @id @default(cuid()) 
+  id          String   @id @default(uuid()) @db.Uuid
   version     Int
   fileName    String   @map("file_name")
   fileSize    Int      @map("file_size")
@@ -333,9 +333,9 @@ model DocumentVersion {
   changeNote  String?  @map("change_note")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  documentId  String   @map("document_id") 
+  documentId  String   @map("document_id") @db.Uuid
   document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  uploadedById String? @map("uploaded_by_id") 
+  uploadedById String? @map("uploaded_by_id") @db.Uuid
   uploadedBy  User?    @relation("VersionUploader", fields: [uploadedById], references: [id])
 
   @@map("document_versions")
@@ -343,7 +343,7 @@ model DocumentVersion {
 
 // ==================== EVENT ====================
 model Event {
-  id          String    @id @default(cuid()) 
+  id          String    @id @default(uuid()) @db.Uuid
   title       String
   description String?
   startTime   DateTime  @map("start_time")
@@ -355,9 +355,9 @@ model Event {
   allDay          Boolean @default(false) @map("all_day")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  tenantId    String    @map("tenant_id") 
+  tenantId    String    @map("tenant_id") @db.Uuid
   tenant      Tenant    @relation(fields: [tenantId], references: [id])
-  caseId      String?   @map("case_id") 
+  caseId      String?   @map("case_id") @db.Uuid
   case        Case?     @relation(fields: [caseId], references: [id])
 
   assignments   EventAssignment[]
@@ -368,10 +368,10 @@ model Event {
 }
 
 model EventAssignment {
-  id      String @id @default(cuid()) 
-  userId  String @map("user_id") 
+  id      String @id @default(uuid()) @db.Uuid
+  userId  String @map("user_id") @db.Uuid
   user    User   @relation(fields: [userId], references: [id])
-  eventId String @map("event_id") 
+  eventId String @map("event_id") @db.Uuid
   event   Event  @relation(fields: [eventId], references: [id])
 
   @@unique([userId, eventId])
@@ -380,7 +380,7 @@ model EventAssignment {
 
 // ==================== INVOICE ====================
 model Invoice {
-  id            String    @id @default(cuid()) 
+  id            String    @id @default(uuid()) @db.Uuid
   invoiceNumber String?   @map("invoice_number")
   type          String    @default("facture") // devis, facture, avoir, recu
   amount        Float
@@ -399,13 +399,13 @@ model Invoice {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  tenantId      String    @map("tenant_id") 
+  tenantId      String    @map("tenant_id") @db.Uuid
   tenant        Tenant    @relation(fields: [tenantId], references: [id])
-  clientId      String    @map("client_id") 
+  clientId      String    @map("client_id") @db.Uuid
   client        Client    @relation(fields: [clientId], references: [id])
-  caseId        String?   @map("case_id") 
+  caseId        String?   @map("case_id") @db.Uuid
   case          Case?     @relation(fields: [caseId], references: [id])
-  currencyId    String?   @map("currency_id") 
+  currencyId    String?   @map("currency_id") @db.Uuid
   currency      Currency? @relation(fields: [currencyId], references: [id])
 
   lineItems     InvoiceLineItem[]
@@ -418,14 +418,14 @@ model Invoice {
 
 // ==================== INVOICE LINE ITEM ====================
 model InvoiceLineItem {
-  id          String  @id @default(cuid()) 
+  id          String  @id @default(uuid()) @db.Uuid
   description String
   quantity    Int     @default(1)
   unitPrice   Float   @map("unit_price")
   total       Float
   sortOrder   Int     @default(0) @map("sort_order")
 
-  invoiceId   String  @map("invoice_id") 
+  invoiceId   String  @map("invoice_id") @db.Uuid
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_line_items")
@@ -433,20 +433,20 @@ model InvoiceLineItem {
 
 // ==================== PAYMENT ====================
 model Payment {
-  id            String    @id @default(cuid()) 
+  id            String    @id @default(uuid()) @db.Uuid
   amount        Float
   method        String    @default("virement") // especes, virement, mobile_money, carte, cheque
   reference     String?
   status        String    @default("complet") // complet, partiel, annule
   paidAt        DateTime  @default(now()) @map("paid_at")
- notes         String?
+  notes         String?
   createdAt     DateTime  @default(now()) @map("created_at")
 
-  tenantId      String    @map("tenant_id") 
+  tenantId      String    @map("tenant_id") @db.Uuid
   tenant        Tenant    @relation(fields: [tenantId], references: [id])
-  invoiceId     String    @map("invoice_id") 
+  invoiceId     String    @map("invoice_id") @db.Uuid
   invoice       Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  recordedBy    String?   @map("recorded_by") 
+  recordedBy    String?   @map("recorded_by") @db.Uuid
   recorder      User?     @relation(fields: [recordedBy], references: [id])
 
   @@map("payments")
@@ -454,12 +454,12 @@ model Payment {
 
 // ==================== MESSAGE ====================
 model Message {
-  id        String   @id @default(cuid()) 
+  id        String   @id @default(uuid()) @db.Uuid
   content   String
-  tenantId  String   @map("tenant_id") 
-  senderId  String   @map("sender_id") 
+  tenantId  String   @map("tenant_id") @db.Uuid
+  senderId  String   @map("sender_id") @db.Uuid
   sender    User     @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId String   @map("receiver_id") 
+  receiverId String   @map("receiver_id") @db.Uuid
   receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -470,20 +470,20 @@ model Message {
 
 // ==================== NOTIFICATION ====================
 model Notification {
-  id           String   @id @default(cuid()) 
+  id           String   @id @default(uuid()) @db.Uuid
   title        String
   message      String
   category     String   @default("dossier")
   read         Boolean  @default(false)
   resourceType String?  @map("resource_type")
-  resourceId   String?  @map("resource_id")
+  resourceId   String?  @map("resource_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
 
-  tenantId     String   @map("tenant_id") 
+  tenantId     String   @map("tenant_id") @db.Uuid
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
-  userId       String?  @map("user_id") 
+  userId       String?  @map("user_id") @db.Uuid
   user         User?    @relation("UserNotifications", fields: [userId], references: [id])
-  eventId      String?  @map("event_id") 
+  eventId      String?  @map("event_id") @db.Uuid
   event        Event?   @relation(fields: [eventId], references: [id])
 
   @@map("notifications")
@@ -491,7 +491,7 @@ model Notification {
 
 // ==================== TASK ====================
 model Task {
-  id          String    @id @default(cuid()) 
+  id          String    @id @default(uuid()) @db.Uuid
   title       String
   description String?
   status      String    @default("a_faire")
@@ -500,13 +500,13 @@ model Task {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  tenantId     String    @map("tenant_id") 
+  tenantId     String    @map("tenant_id") @db.Uuid
   tenant       Tenant    @relation(fields: [tenantId], references: [id])
-  caseId       String?   @map("case_id") 
+  caseId       String?   @map("case_id") @db.Uuid
   case         Case?     @relation(fields: [caseId], references: [id])
-  eventId      String?   @map("event_id") 
+  eventId      String?   @map("event_id") @db.Uuid
   event        Event?    @relation(fields: [eventId], references: [id])
-  assignedToId String?   @map("assigned_to_id") 
+  assignedToId String?   @map("assigned_to_id") @db.Uuid
   assignedTo   User?     @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
 
   @@index([caseId])
@@ -517,18 +517,18 @@ model Task {
 
 // ==================== AUDIT LOG ====================
 model AuditLog {
-  id           String   @id @default(cuid()) 
+  id           String   @id @default(uuid()) @db.Uuid
   action       String
   resourceType String?  @map("resource_type")
-  resourceId   String?  @map("resource_id")
+  resourceId   String?  @map("resource_id") @db.Uuid
   metadata     String?
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
   timestamp    DateTime @default(now())
 
-  tenantId     String   @map("tenant_id") 
+  tenantId     String   @map("tenant_id") @db.Uuid
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
-  userId       String?  @map("user_id") 
+  userId       String?  @map("user_id") @db.Uuid
   user         User?    @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
@@ -536,7 +536,7 @@ model AuditLog {
 
 // ==================== TIME ENTRY ====================
 model TimeEntry {
-  id          String    @id @default(cuid()) 
+  id          String    @id @default(uuid()) @db.Uuid
   description String
   startTime   DateTime  @map("start_time")
   endTime     DateTime? @map("end_time")
@@ -548,13 +548,13 @@ model TimeEntry {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  tenantId String @map("tenant_id") 
+  tenantId String @map("tenant_id") @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
-  userId   String @map("user_id") 
+  userId   String @map("user_id") @db.Uuid
   user     User   @relation(fields: [userId], references: [id])
-  caseId   String? @map("case_id") 
+  caseId   String? @map("case_id") @db.Uuid
   case     Case?  @relation(fields: [caseId], references: [id])
-  invoiceId String? @map("invoice_id") 
+  invoiceId String? @map("invoice_id") @db.Uuid
   invoice  Invoice? @relation(fields: [invoiceId], references: [id])
 
   @@index([tenantId, userId])
@@ -564,7 +564,7 @@ model TimeEntry {
 
 // ==================== DOCUMENT TEMPLATE ====================
 model DocumentTemplate {
-  id          String   @id @default(cuid()) 
+  id          String   @id @default(uuid()) @db.Uuid
   name        String
   category    String   @default("general")
   description String?
@@ -574,7 +574,7 @@ model DocumentTemplate {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  tenantId String @map("tenant_id") 
+  tenantId String @map("tenant_id") @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   @@map("document_templates")
@@ -582,7 +582,7 @@ model DocumentTemplate {
 
 // ==================== COMMUNICATION ====================
 model Communication {
-  id             String    @id @default(cuid()) 
+  id             String    @id @default(uuid()) @db.Uuid
   type           String    @default("email")
   subject        String?
   content        String
@@ -592,13 +592,13 @@ model Communication {
   sentAt         DateTime? @map("sent_at")
   createdAt      DateTime  @default(now()) @map("created_at")
 
-  tenantId  String  @map("tenant_id") 
+  tenantId  String  @map("tenant_id") @db.Uuid
   tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  caseId    String? @map("case_id") 
+  caseId    String? @map("case_id") @db.Uuid
   case      Case?  @relation(fields: [caseId], references: [id])
-  clientId  String? @map("client_id") 
+  clientId  String? @map("client_id") @db.Uuid
   client    Client? @relation(fields: [clientId], references: [id])
-  sentById  String? @map("sent_by_id") 
+  sentById  String? @map("sent_by_id") @db.Uuid
   sentBy    User?   @relation("SentCommunications", fields: [sentById], references: [id])
 
   @@index([tenantId, type])
@@ -608,7 +608,7 @@ model Communication {
 
 // ==================== REMINDER LOG ====================
 model ReminderLog {
-  id          String   @id @default(cuid()) 
+  id          String   @id @default(uuid()) @db.Uuid
   level       Int      // 1=1re relance, 2=2e, 3=3e, 4=mise en demeure
   method      String   @default("email") // email, sms, whatsapp
   subject     String?
@@ -618,11 +618,11 @@ model ReminderLog {
   daysOverdue Int      @map("days_overdue")
   amountDue   Float    @map("amount_due")
 
-  invoiceId   String   @map("invoice_id") 
+  invoiceId   String   @map("invoice_id") @db.Uuid
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  tenantId    String   @map("tenant_id") 
+  tenantId    String   @map("tenant_id") @db.Uuid
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  sentById    String?  @map("sent_by_id") 
+  sentById    String?  @map("sent_by_id") @db.Uuid
   sentBy      User?    @relation("ReminderSender", fields: [sentById], references: [id])
 
   @@index([invoiceId])
@@ -632,7 +632,7 @@ model ReminderLog {
 
 // ==================== CLIENT PORTAL ====================
 model ClientPortal {
-  id            String    @id @default(cuid()) 
+  id            String    @id @default(uuid()) @db.Uuid
   email         String    @unique
   passwordHash  String    @map("password_hash")
   isActive      Boolean   @default(true) @map("is_active")
@@ -642,9 +642,9 @@ model ClientPortal {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  clientId String @map("client_id") 
+  clientId String @map("client_id") @db.Uuid
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  tenantId String @map("tenant_id") 
+  tenantId String @map("tenant_id") @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   portalNotifications PortalNotification[]
@@ -655,18 +655,18 @@ model ClientPortal {
 
 // ==================== PORTAL NOTIFICATION ====================
 model PortalNotification {
-  id           String   @id @default(cuid()) 
+  id           String   @id @default(uuid()) @db.Uuid
   title        String
   message      String
   category     String   @default("dossier")
   read         Boolean  @default(false)
   resourceType String?  @map("resource_type")
-  resourceId   String?  @map("resource_id")
+  resourceId   String?  @map("resource_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
 
-  portalId String @map("portal_id") 
+  portalId String @map("portal_id") @db.Uuid
   portal   ClientPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
-  tenantId String @map("tenant_id") 
+  tenantId String @map("tenant_id") @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   @@index([portalId])
@@ -676,7 +676,7 @@ model PortalNotification {
 
 // ==================== EXTERNAL CALENDAR ====================
 model ExternalCalendar {
-  id             String    @id @default(cuid()) 
+  id             String    @id @default(uuid()) @db.Uuid
   provider       String // google, outlook
   accessToken    String    @map("access_token")
   refreshToken   String?   @map("refresh_token")
@@ -689,9 +689,9 @@ model ExternalCalendar {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  userId   String @map("user_id") 
+  userId   String @map("user_id") @db.Uuid
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenantId String @map("tenant_id") 
+  tenantId String @map("tenant_id") @db.Uuid
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   @@unique([userId, tenantId, provider])
@@ -700,12 +700,12 @@ model ExternalCalendar {
 
 // ==================== CASE TAG ====================
 model CaseTag {
-  id        String   @id @default(cuid()) 
+  id        String   @id @default(uuid()) @db.Uuid
   name      String
   color     String   @default("#6B7280")
   createdAt DateTime @default(now()) @map("created_at")
 
-  tenantId  String   @map("tenant_id") 
+  tenantId  String   @map("tenant_id") @db.Uuid
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   taggings  CaseTagging[]
 
@@ -714,9 +714,9 @@ model CaseTag {
 }
 
 model CaseTagging {
-  caseId   String   @map("case_id") 
-  tagId    String   @map("tag_id") 
-  tenantId String   @map("tenant_id") 
+  caseId   String   @map("case_id") @db.Uuid
+  tagId    String   @map("tag_id") @db.Uuid
+  tenantId String   @map("tenant_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
 
   case     Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
@@ -729,11 +729,11 @@ model CaseTagging {
 
 // ==================== CURRENCY ====================
 model Currency {
-  id        String    @id @default(cuid()) 
+  id        String    @id @default(uuid()) @db.Uuid
   code      String
   name      String
   symbol    String
-  tenantId  String?   @map("tenant_id") 
+  tenantId  String?   @map("tenant_id") @db.Uuid
   tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")

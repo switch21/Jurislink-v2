@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     const where: Record<string, unknown> = {}
     if (!includeInactive) where.isActive = true
-    if (search) where.name = { contains: search }
+    if (search) where.name = { contains: search, mode: 'insensitive' }
 
     const [tenants, total] = await Promise.all([
       db.tenant.findMany({

@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
     const where: Record<string, unknown> = { caseId: { in: caseIds } }
     if (search) {
-      where.fileName = { contains: search }
+      where.fileName = { contains: search, mode: 'insensitive' }
     }
 
     const documents = await db.document.findMany({
