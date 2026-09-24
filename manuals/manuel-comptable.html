@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { size: 720px 1020px; margin: 0; }
+:root { --c-bg: #0f1419; --c-text: #e8e6e3; --c-accent: #16a34a; --c-accent-light: #22c55e; --c-surface: #1a1f25; --c-border: #2d333b; --c-muted: #8b949e; }
+html, body { margin: 0; padding: 0; width: 720px; background: var(--c-bg); color: var(--c-text); font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; }
+@media screen { html { height: auto; display: flex; justify-content: center; background: #222; } body { transform-origin: top center; margin: 20px auto; } }
+.cover { width: 720px; height: 1020px; box-sizing: border-box; break-after: page; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%); padding: 60px; text-align: center; }
+.cover-tag { font-size: 12px; text-transform: uppercase; letter-spacing: 4px; color: var(--c-accent); margin-bottom: 20px; font-weight: 600; }
+.cover-title { font-size: 42px; font-weight: 700; color: #ffffff; margin-bottom: 12px; line-height: 1.2; }
+.cover-subtitle { font-size: 18px; color: var(--c-muted); margin-bottom: 40px; }
+.cover-profile { display: inline-block; padding: 8px 24px; background: var(--c-accent); color: #fff; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 30px; }
+.cover-line { width: 60px; height: 3px; background: var(--c-accent); margin: 20px auto; }
+.cover-edition { font-size: 11px; color: var(--c-muted); margin-top: auto; }
+.page { width: 720px; box-sizing: border-box; break-after: page; }
+.main-content { padding: 50px 55px 40px 55px; }
+.section-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: var(--c-accent); font-weight: 600; margin-top: 28px; }
+.section-title { font-size: 26px; font-weight: 700; color: #ffffff; margin: 6px 0 8px 0; }
+.divider { width: 40px; height: 2px; background: var(--c-accent); margin-bottom: 16px; }
+.body-text { margin-bottom: 14px; color: var(--c-text); }
+.step-box { background: var(--c-surface); border-left: 3px solid var(--c-accent); padding: 14px 18px; margin-bottom: 12px; break-inside: avoid; border-radius: 0 6px 6px 0; }
+.step-num { display: inline-block; background: var(--c-accent); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; margin-right: 10px; }
+.step-title { font-weight: 600; color: #ffffff; }
+.step-desc { color: var(--c-muted); margin-top: 6px; font-size: 13px; }
+.screenshot { width: 100%; border-radius: 8px; margin: 16px 0; border: 1px solid var(--c-border); }
+.screenshot-caption { font-size: 11px; color: var(--c-muted); text-align: center; margin-top: -8px; margin-bottom: 16px; font-style: italic; }
+.permission-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; break-inside: avoid; }
+.permission-table th { background: var(--c-surface); color: var(--c-accent); padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--c-border); }
+.permission-table td { padding: 6px 10px; border-bottom: 1px solid var(--c-border); }
+.perm-yes { color: var(--c-accent-light); font-weight: 600; }
+.perm-no { color: #ef4444; }
+.tip-box { background: rgba(22, 163, 74, 0.1); border: 1px solid rgba(22, 163, 74, 0.3); border-radius: 6px; padding: 14px 18px; margin: 14px 0; break-inside: avoid; }
+.tip-label { color: var(--c-accent); font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 14px 18px; margin: 14px 0; break-inside: avoid; }
+.warning-label { color: #ef4444; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.toc-item { padding: 6px 0; border-bottom: 1px solid var(--c-border); display: flex; justify-content: space-between; }
+.toc-item span:first-child { color: var(--c-text); }
+.toc-item span:last-child { color: var(--c-muted); font-size: 12px; }
+.ending { width: 720px; height: 1020px; box-sizing: border-box; break-before: page; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%); text-align: center; }
+.ending-text { font-size: 28px; font-weight: 300; color: #ffffff; }
+.ending-sub { font-size: 14px; color: var(--c-muted); margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<!-- PAGE DE COUVERTURE -->
+<div class="cover">
+  <div class="cover-tag">Documentation Officielle</div>
+  <div class="cover-title">Manuel<br>d'utilisation</div>
+  <div class="cover-subtitle">JurisLink — Gestion de Cabinet Juridique</div>
+  <div class="cover-line"></div>
+  <div class="cover-profile">Profil : Comptable</div>
+  <div class="cover-edition">Édition 2025 — Version 1.0</div>
+</div>
+
+<!-- TABLE DES MATIÈRES -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Navigation</div>
+  <div class="section-title">Table des matières</div>
+  <div class="divider"></div>
+  <div class="toc-item"><span>1. Introduction</span><span>3</span></div>
+  <div class="toc-item"><span>2. Premiers pas</span><span>3</span></div>
+  <div class="toc-item"><span>3. Consultation des dossiers et clients</span><span>4</span></div>
+  <div class="toc-item"><span>4. Gestion des documents</span><span>4</span></div>
+  <div class="toc-item"><span>5. Facturation</span><span>5</span></div>
+  <div class="toc-item"><span>6. Gestion des paiements</span><span>6</span></div>
+  <div class="toc-item"><span>7. Temps passés</span><span>6</span></div>
+  <div class="toc-item"><span>8. Rapports financiers</span><span>7</span></div>
+  <div class="toc-item"><span>9. Droits d'accès</span><span>8</span></div>
+  <div class="toc-item"><span>10. Conseils et bonnes pratiques</span><span>8</span></div>
+</div>
+</div>
+
+<!-- 1. INTRODUCTION & 2. PREMIERS PAS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 1</div>
+  <div class="section-title">Introduction</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Bienvenue dans le manuel d'utilisation de JurisLink pour le profil <strong>Comptable</strong>. En tant que comptable, votre rôle est centré sur la gestion financière du cabinet : facturation, paiements, temps passés et rapports financiers. Vous disposez également d'un accès complet aux documents et pouvez consulter les dossiers et les clients en lecture seule.
+  </div>
+  <div class="body-text"><strong>Résumé de vos capacités :</strong></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Dossiers</span><div class="step-desc">Consultation uniquement. Accès limité aux informations des dossiers.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Clients</span><div class="step-desc">Consultation et export. Accès aux informations clients pour la facturation.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Documents</span><div class="step-desc">Consultation, création, modification et export. Gestion des justificatifs et pièces comptables.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Factures</span><div class="step-desc">Accès complet : consultation, création, modification et export.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Paiements & Temps passés</span><div class="step-desc">Accès complet : consultation, création, modification et export.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Rapports</span><div class="step-desc">Consultation, création et export. Génération des rapports financiers.</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restrictions importantes</div>
+    Vous n'avez pas accès à : l'agenda et les événements, la messagerie, les notifications, la gestion des utilisateurs, les paramètres du cabinet et l'audit. Vous ne pouvez pas créer ni modifier des dossiers ou des tâches.
+  </div>
+
+  <div class="section-tag">Chapitre 2</div>
+  <div class="section-title">Premiers pas</div>
+  <div class="divider"></div>
+  <div class="body-text"><strong>Connexion à l'application</strong></div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder à l'écran de connexion</span><div class="step-desc">Lancez JurisLink depuis votre navigateur. L'écran de connexion s'affiche avec les champs Identifiant et Mot de passe.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Saisir vos identifiants</span><div class="step-desc">Entrez votre identifiant professionnel et votre mot de passe fournis par l'administrateur du cabinet.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Valider la connexion</span><div class="step-desc">Cliquez sur « Se connecter ». Vous accédez au tableau de bord Comptable.</div></div>
+
+  <div class="body-text"><strong>Présentation du tableau de bord</strong></div>
+  <div class="body-text">
+    Le tableau de bord Comptable affiche les indicateurs financiers clés : chiffre d'affaires du mois, factures en attente de paiement, factures en retard, total des temps passés non facturés et résumé des paiements récents.
+  </div>
+  <img src="screenshots/comptable-dashboard.png" class="screenshot" alt="Tableau de bord Comptable">
+  <div class="screenshot-caption">Figure 1 — Tableau de bord du Comptable</div>
+
+  <div class="body-text"><strong>Navigation dans le menu latéral</strong></div>
+  <div class="body-text">
+    Le menu latéral affiche : Dossiers (lecture seule), Clients, Documents, Factures, Temps passés, Paiements et Rapports. Les sections Agenda, Messages, Utilisateurs et Paramètres ne sont pas visibles.
+  </div>
+</div>
+</div>
+
+<!-- 3. DOSSIERS & CLIENTS & 4. DOCUMENTS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 3</div>
+  <div class="section-title">Consultation des dossiers et clients</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Vous pouvez consulter les dossiers en lecture seule pour accéder aux informations nécessaires à la facturation. Pour les clients, vous disposez de la consultation et de l'export.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter un dossier</span><div class="step-desc">Cliquez sur « Dossiers » puis ouvrez un dossier. Vous accédez aux informations générales, aux documents associés et aux temps passés — utiles pour préparer la facturation.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Consulter un client</span><div class="step-desc">Cliquez sur « Clients » pour afficher la liste. Ouvrez une fiche client pour voir ses coordonnées et l'historique de ses factures.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Exporter les données clients</span><div class="step-desc">Depuis la liste, cliquez sur « Exporter » pour générer un fichier des clients filtrés.</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez ni créer ni modifier des dossiers ou des clients. Votre accès est limité à la consultation et à l'export pour les clients.
+  </div>
+
+  <div class="section-tag">Chapitre 4</div>
+  <div class="section-title">Gestion des documents</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Vous disposez d'un accès complet sur les documents : consultation, création, modification et export. Cela vous permet de gérer les justificatifs, pièces comptables et documents financiers.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Importer un document</span><div class="step-desc">Cliquez sur « Importer un document ». Sélectionnez le fichier, le dossier associé et la catégorie (Justificatif, Facture fournisseur, Relevé bancaire, etc.). Validez l'import.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Modifier un document</span><div class="step-desc">Ouvrez le document, cliquez sur « Modifier ». Mettez à jour les métadonnées puis « Enregistrer ».</div></div>
+  <img src="screenshots/documents-list.png" class="screenshot" alt="Liste des documents">
+  <div class="screenshot-caption">Figure 2 — Liste des documents</div>
+</div>
+</div>
+
+<!-- 5. FACTURATION -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 5</div>
+  <div class="section-title">Facturation</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La facturation est votre responsabilité principale. Vous disposez d'un accès complet : consultation, création, modification et export des factures.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter la liste des factures</span><div class="step-desc">Cliquez sur « Factures » dans le menu latéral. La liste affiche toutes les factures avec leur numéro, client, montant, statut (Brouillon, Envoyée, Payée, En retard) et date d'échéance.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Créer une nouvelle facture</span><div class="step-desc">Cliquez sur « Nouvelle facture ». Sélectionnez le client et le dossier concerné. Ajoutez les lignes de facturation : description de la prestation, quantité, prix unitaire et taux de TVA. Vérifiez les totaux puis cliquez sur « Créer ».</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Modifier une facture</span><div class="step-desc">Ouvrez la facture, cliquez sur « Modifier ». Seules les factures en brouillon peuvent être modifiées. Après modification, cliquez sur « Enregistrer ».</div></div>
+  <div class="step-box"><span class="step-num">4</span><span class="step-title">Envoyer une facture</span><div class="step-desc">Depuis la fiche facture, cliquez sur « Envoyer ». Le statut passe à « Envoyée » et la facture est prête pour le client.</div></div>
+  <div class="step-box"><span class="step-num">5</span><span class="step-title">Exporter les factures</span><div class="step-desc">Cliquez sur « Exporter » pour générer un fichier PDF ou Excel de la facture ou de la liste filtrée.</div></div>
+  <img src="screenshots/invoices-list.png" class="screenshot" alt="Liste des factures">
+  <div class="screenshot-caption">Figure 3 — Liste des factures</div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Vérifiez les temps passés du dossier avant de créer une facture pour vous assurer que toutes les activités sont incluses. Vous pouvez générer une facture directement depuis les temps passés non facturés.
+  </div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas supprimer une facture. Pour corriger une erreur, créez un avoir depuis la fonction « Annuler » de la facture concernée.
+  </div>
+</div>
+</div>
+
+<!-- 6. PAIEMENTS & 7. TEMPS PASSÉS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 6</div>
+  <div class="section-title">Gestion des paiements</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Vous disposez d'un accès complet sur les paiements : consultation, création, modification et export. Vous enregistrez les paiements reçus et suivez l'état des règlements.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Enregistrer un paiement</span><div class="step-desc">Depuis la fiche facture ou la section « Paiements », cliquez sur « Nouveau paiement ». Sélectionnez la facture concernée, saisissez le montant, la date du paiement et le mode de règlement (Virement, Chèque, Carte, Espèces). Validez.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Consulter les paiements</span><div class="step-desc">La section « Paiements » affiche la liste de tous les paiements enregistrés. Filtrez par date, par client ou par mode de règlement.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Modifier un paiement</span><div class="step-desc">Ouvrez le paiement, modifiez les informations si nécessaire, puis « Enregistrer ».</div></div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Enregistrez les paiements dès réception pour maintenir un suivi financier à jour. Vérifiez régulièrement les factures en retard de paiement pour planifier les relances.
+  </div>
+
+  <div class="section-tag">Chapitre 7</div>
+  <div class="section-title">Temps passés</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Vous disposez d'un accès complet sur les temps passés : consultation, création, modification et export. Cette fonctionnalité est essentielle pour préparer la facturation et suivre l'activité du cabinet.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter les temps passés</span><div class="step-desc">Accédez à la section « Temps passés ». La liste affiche toutes les écritures classées par date. Filtrez par collaborateur, par dossier ou par période.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Créer une écriture de temps</span><div class="step-desc">Cliquez sur « Nouveau temps passé ». Saisissez la date, la durée, le dossier concerné, le collaborateur et la description de l'activité.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Exporter les temps passés</span><div class="step-desc">Cliquez sur « Exporter » pour générer un fichier des écritures filtrées en Excel ou PDF.</div></div>
+</div>
+</div>
+
+<!-- 8. RAPPORTS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 8</div>
+  <div class="section-title">Rapports financiers</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Rapports vous permet de générer des analyses financières détaillées. Vous pouvez consulter, créer et exporter les rapports.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder aux rapports</span><div class="step-desc">Cliquez sur « Rapports » dans le menu latéral. Le tableau de bord des rapports affiche les indicateurs financiers clés du cabinet.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Générer un rapport financier</span><div class="step-desc">Sélectionnez le type de rapport : Chiffre d'affaires, Facturation, Paiements, Temps passés, Rentabilité par dossier. Choisissez la période et les filtres souhaités, puis cliquez sur « Générer ».</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Exporter un rapport</span><div class="step-desc">Après génération, cliquez sur « Exporter PDF » ou « Exporter Excel » pour télécharger le fichier.</div></div>
+  <img src="screenshots/reports-view.png" class="screenshot" alt="Vue des rapports">
+  <div class="screenshot-caption">Figure 4 — Vue des rapports</div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Générez un rapport de chiffre d'affaires mensuel et un rapport de facturation en retard chaque semaine. Partagez ces rapports avec les associés pour un suivi financier transparent.
+  </div>
+
+  <div class="section-tag">Chapitre 9</div>
+  <div class="section-title">Droits d'accès</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Le tableau ci-dessous résume vos droits d'accès en tant que Comptable. V = Voir, C = Créer, E = Modifier, D = Supprimer, X = Exporter.
+  </div>
+  <table class="permission-table">
+    <tr><th>Fonctionnalité</th><th>V</th><th>C</th><th>E</th><th>D</th><th>X</th></tr>
+    <tr><td>Dossiers</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Clients</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Documents</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Factures</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Tâches</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Rapports</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Temps passés</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Paiements</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Événements</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Messages</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Notifications</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Utilisateurs</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Paramètres</td><td class="perm-no">✗</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>Audit</td><td class="perm-no">✗</td><td>—</td><td>—</td><td>—</td><td class="perm-no">✗</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- 10. CONSEILS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 10</div>
+  <div class="section-title">Conseils et bonnes pratiques</div>
+  <div class="divider"></div>
+
+  <div class="tip-box">
+    <div class="tip-label">Facturation régulière</div>
+    Facturez les temps passés de manière régulière, idéalement en fin de mois. Vérifiez que tous les temps passés ont été saisis par les collaborateurs avant de générer les factures.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Suivi des paiements</div>
+    Enregistrez les paiements dès réception. Consultez chaque semaine les factures en retard de paiement et planifiez les relances nécessaires.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Rapprochement</div>
+    Comparez régulièrement les paiements enregistrés dans JurisLink avec les relevés bancaires pour détecter les écarts éventuels.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Rapports financiers</div>
+    Générez un rapport de chiffre d'affaires mensuel et transmettez-le aux associés. Un suivi régulier permet d'anticiper les besoins de trésorerie du cabinet.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Organisation des documents</div>
+    Importez tous les justificatifs et pièces comptables dans JurisLink. Attribuez la catégorie « Justificatif » ou « Pièce comptable » pour les distinguer des documents juridiques.
+  </div>
+
+  <div class="warning-box">
+    <div class="warning-label">Sécurité</div>
+    Les données financières sont sensibles. Ne partagez jamais vos identifiants de connexion. Verrouillez votre session en quittant votre poste. Signalez toute anomalie à l'administrateur du cabinet.
+  </div>
+</div>
+</div>
+
+<!-- PAGE DE FIN -->
+<div class="ending">
+  <div class="cover-line"></div>
+  <div class="ending-text">JurisLink — Votre cabinet, simplifié.</div>
+  <div class="ending-sub">Profil Comptable — Édition 2025</div>
+  <div class="cover-line"></div>
+</div>
+
+</body>
+</html>

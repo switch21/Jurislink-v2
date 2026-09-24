@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { size: 720px 1020px; margin: 0; }
+:root { --c-bg: #0f1419; --c-text: #e8e6e3; --c-accent: #16a34a; --c-accent-light: #22c55e; --c-surface: #1a1f25; --c-border: #2d333b; --c-muted: #8b949e; }
+html, body { margin: 0; padding: 0; width: 720px; background: var(--c-bg); color: var(--c-text); font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; }
+@media screen { html { height: auto; display: flex; justify-content: center; background: #222; } body { transform-origin: top center; margin: 20px auto; } }
+.cover { width: 720px; height: 1020px; box-sizing: border-box; break-after: page; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%); padding: 60px; text-align: center; }
+.cover-tag { font-size: 12px; text-transform: uppercase; letter-spacing: 4px; color: var(--c-accent); margin-bottom: 20px; font-weight: 600; }
+.cover-title { font-size: 42px; font-weight: 700; color: #ffffff; margin-bottom: 12px; line-height: 1.2; }
+.cover-subtitle { font-size: 18px; color: var(--c-muted); margin-bottom: 40px; }
+.cover-profile { display: inline-block; padding: 8px 24px; background: var(--c-accent); color: #fff; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 30px; }
+.cover-line { width: 60px; height: 3px; background: var(--c-accent); margin: 20px auto; }
+.cover-edition { font-size: 11px; color: var(--c-muted); margin-top: auto; }
+.page { width: 720px; box-sizing: border-box; break-after: page; }
+.main-content { padding: 50px 55px 40px 55px; }
+.section-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: var(--c-accent); font-weight: 600; margin-top: 28px; }
+.section-title { font-size: 26px; font-weight: 700; color: #ffffff; margin: 6px 0 8px 0; }
+.divider { width: 40px; height: 2px; background: var(--c-accent); margin-bottom: 16px; }
+.body-text { margin-bottom: 14px; color: var(--c-text); }
+.step-box { background: var(--c-surface); border-left: 3px solid var(--c-accent); padding: 14px 18px; margin-bottom: 12px; break-inside: avoid; border-radius: 0 6px 6px 0; }
+.step-num { display: inline-block; background: var(--c-accent); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; margin-right: 10px; }
+.step-title { font-weight: 600; color: #ffffff; }
+.step-desc { color: var(--c-muted); margin-top: 6px; font-size: 13px; }
+.screenshot { width: 100%; border-radius: 8px; margin: 16px 0; border: 1px solid var(--c-border); }
+.screenshot-caption { font-size: 11px; color: var(--c-muted); text-align: center; margin-top: -8px; margin-bottom: 16px; font-style: italic; }
+.permission-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; break-inside: avoid; }
+.permission-table th { background: var(--c-surface); color: var(--c-accent); padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--c-border); }
+.permission-table td { padding: 6px 10px; border-bottom: 1px solid var(--c-border); }
+.perm-yes { color: var(--c-accent-light); font-weight: 600; }
+.perm-no { color: #ef4444; }
+.tip-box { background: rgba(22, 163, 74, 0.1); border: 1px solid rgba(22, 163, 74, 0.3); border-radius: 6px; padding: 14px 18px; margin: 14px 0; break-inside: avoid; }
+.tip-label { color: var(--c-accent); font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 14px 18px; margin: 14px 0; break-inside: avoid; }
+.warning-label { color: #ef4444; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.toc-item { padding: 6px 0; border-bottom: 1px solid var(--c-border); display: flex; justify-content: space-between; }
+.toc-item span:first-child { color: var(--c-text); }
+.toc-item span:last-child { color: var(--c-muted); font-size: 12px; }
+.ending { width: 720px; height: 1020px; box-sizing: border-box; break-before: page; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%); text-align: center; }
+.ending-text { font-size: 28px; font-weight: 300; color: #ffffff; }
+.ending-sub { font-size: 14px; color: var(--c-muted); margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<!-- PAGE DE COUVERTURE -->
+<div class="cover">
+  <div class="cover-tag">Documentation Officielle</div>
+  <div class="cover-title">Manuel<br>d'utilisation</div>
+  <div class="cover-subtitle">JurisLink — Gestion de Cabinet Juridique</div>
+  <div class="cover-line"></div>
+  <div class="cover-profile">Profil : Associé</div>
+  <div class="cover-edition">Édition 2025 — Version 1.0</div>
+</div>
+
+<!-- TABLE DES MATIÈRES -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Navigation</div>
+  <div class="section-title">Table des matières</div>
+  <div class="divider"></div>
+  <div class="toc-item"><span>1. Introduction</span><span>3</span></div>
+  <div class="toc-item"><span>2. Premiers pas</span><span>3</span></div>
+  <div class="toc-item"><span>3. Gestion des dossiers</span><span>4</span></div>
+  <div class="toc-item"><span>4. Gestion des clients</span><span>5</span></div>
+  <div class="toc-item"><span>5. Gestion des documents</span><span>5</span></div>
+  <div class="toc-item"><span>6. Facturation</span><span>6</span></div>
+  <div class="toc-item"><span>7. Gestion des tâches</span><span>7</span></div>
+  <div class="toc-item"><span>8. Agenda et événements</span><span>7</span></div>
+  <div class="toc-item"><span>9. Messagerie</span><span>8</span></div>
+  <div class="toc-item"><span>10. Rapports et analyses</span><span>8</span></div>
+  <div class="toc-item"><span>11. Droits d'accès</span><span>9</span></div>
+  <div class="toc-item"><span>12. Conseils et bonnes pratiques</span><span>10</span></div>
+</div>
+</div>
+
+<!-- 1. INTRODUCTION -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 1</div>
+  <div class="section-title">Introduction</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Bienvenue dans le manuel d'utilisation de JurisLink pour le profil <strong>Associé</strong>. En tant qu'associé du cabinet, vous disposez du niveau d'accès le plus élevé après l'administrateur de cabinet. Vous pouvez consulter, créer et modifier l'ensemble des dossiers, clients, documents, factures, tâches et événements du cabinet.
+  </div>
+  <div class="body-text">
+    Votre rôle vous permet de superviser l'activité du cabinet, de gérer les dossiers stratégiques, de suivre la facturation et d'accéder aux rapports détaillés. Vous disposez également de l'accès aux journaux d'audit pour le suivi des opérations du système.
+  </div>
+  <div class="body-text"><strong>Résumé de vos capacités :</strong></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Dossiers & Clients</span><div class="step-desc">Consultation, création, modification et export. Suppression non autorisée.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Documents</span><div class="step-desc">Consultation, création, modification, suppression et export complets.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Factures, Tâches, Événements</span><div class="step-desc">Consultation, création, modification et export. Suppression non autorisée.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Rapports & Audit</span><div class="step-desc">Consultation, création/export des rapports. Accès aux journaux d'audit.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Messagerie & Notifications</span><div class="step-desc">Envoi et consultation de messages. Gestion des notifications.</div></div>
+
+  <div class="section-tag">Chapitre 2</div>
+  <div class="section-title">Premiers pas</div>
+  <div class="divider"></div>
+
+  <div class="body-text"><strong>Connexion à l'application</strong></div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder à l'écran de connexion</span><div class="step-desc">Lancez JurisLink depuis votre navigateur. L'écran de connexion s'affiche avec les champs Identifiant et Mot de passe.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Saisir vos identifiants</span><div class="step-desc">Entrez votre identifiant professionnel et votre mot de passe dans les champs prévus à cet effet. Les identifiants vous sont communiqués par l'administrateur du cabinet.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Valider la connexion</span><div class="step-desc">Cliquez sur le bouton « Se connecter ». Si vos identifiants sont corrects, vous accédez directement au tableau de bord Associé.</div></div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    En cas d'oubli de mot de passe, contactez l'administrateur du cabinet pour le réinitialiser. Ne partagez jamais vos identifiants.
+  </div>
+
+  <div class="body-text"><strong>Présentation du tableau de bord</strong></div>
+  <div class="body-text">
+    Le tableau de bord Associé est votre point d'entrée principal. Il affiche un résumé global de l'activité du cabinet : nombre de dossiers actifs, factures en attente, tâches à traiter, événements à venir et indicateurs financiers.
+  </div>
+  <img src="screenshots/associe-dashboard.png" class="screenshot" alt="Tableau de bord Associé">
+  <div class="screenshot-caption">Figure 1 — Tableau de bord de l'Associé</div>
+
+  <div class="body-text"><strong>Navigation dans le menu latéral</strong></div>
+  <div class="body-text">
+    Le menu latéral, situé à gauche de l'écran, donne accès à toutes les sections de l'application : Dossiers, Clients, Documents, Factures, Tâches, Agenda, Messages, Rapports et Paramètres. Cliquez sur un élément du menu pour accéder directement à la section correspondante.
+  </div>
+</div>
+</div>
+
+<!-- 3. GESTION DES DOSSIERS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 3</div>
+  <div class="section-title">Gestion des dossiers</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Dossiers vous permet de consulter, créer et modifier les dossiers juridiques du cabinet. Chaque dossier regroupe les informations relatives à une affaire : client concerné, type de dossier, statut, avocat responsable et juriste assigné.
+  </div>
+
+  <div class="body-text"><strong>Consulter la liste des dossiers</strong></div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder à la section Dossiers</span><div class="step-desc">Cliquez sur « Dossiers » dans le menu latéral. La liste de tous les dossiers du cabinet s'affiche.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Filtrer et rechercher</span><div class="step-desc">Utilisez la barre de recherche pour trouver un dossier par nom ou référence. Les filtres situés en haut de la liste permettent de filtrer par statut (En cours, En attente, Clôturé), par type de dossier ou par avocat responsable.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Consulter un dossier</span><div class="step-desc">Cliquez sur la ligne d'un dossier pour ouvrir sa fiche détaillée. Vous y trouverez l'ensemble des informations, documents associés, tâches, événements et temps passés.</div></div>
+  <img src="screenshots/cases-list.png" class="screenshot" alt="Liste des dossiers">
+  <div class="screenshot-caption">Figure 2 — Liste des dossiers</div>
+
+  <div class="body-text"><strong>Créer un nouveau dossier</strong></div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Ouvrir le formulaire de création</span><div class="step-desc">Depuis la liste des dossiers, cliquez sur le bouton « Nouveau dossier » situé en haut à droite de la page.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Remplir les informations obligatoires</span><div class="step-desc">Saisissez le nom du dossier, sélectionnez le client concerné, choisissez le type de dossier (Contentieux, Corporate, Immobilier, etc.) et assignez un avocat responsable.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Compléter les détails optionnels</span><div class="step-desc">Ajoutez une description, une date limite, un juriste assigné et éventuellement des étiquettes pour faciliter le classement.</div></div>
+  <div class="step-box"><span class="step-num">4</span><span class="step-title">Enregistrer le dossier</span><div class="step-desc">Cliquez sur « Créer le dossier ». Le dossier apparaît immédiatement dans la liste avec le statut « En cours ».</div></div>
+  <img src="screenshots/case-create-form.png" class="screenshot" alt="Formulaire de création de dossier">
+  <div class="screenshot-caption">Figure 3 — Formulaire de création d'un dossier</div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    En tant qu'Associé, vous ne pouvez pas supprimer un dossier. Cette action est réservée à l'administrateur du cabinet. Vous pouvez cependant clôturer un dossier en changeant son statut.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Lors de la création, attribuez systématiquement un avocat responsable et un juriste. Cela garantit une bonne répartition des tâches et un suivi efficace.
+  </div>
+</div>
+</div>
+
+<!-- 4. CLIENTS & 5. DOCUMENTS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 4</div>
+  <div class="section-title">Gestion des clients</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Clients vous permet de gérer le carnet d'adresses du cabinet. Vous pouvez consulter, créer et modifier les fiches clients. Chaque fiche contient les coordonnées, les dossiers associés et l'historique des interactions.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder à la section Clients</span><div class="step-desc">Cliquez sur « Clients » dans le menu latéral. La liste de tous les clients du cabinet s'affiche.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Créer un nouveau client</span><div class="step-desc">Cliquez sur « Nouveau client ». Remplissez les champs obligatoires : nom, prénom ou raison sociale, adresse, téléphone. Ajoutez le type de client (Particulier, Entreprise, Collectivité) puis cliquez sur « Créer ».</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Modifier une fiche client</span><div class="step-desc">Ouvrez la fiche du client, cliquez sur « Modifier », apportez vos modifications puis cliquez sur « Enregistrer ».</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas supprimer une fiche client. Si un client ne doit plus apparaître, contactez l'administrateur du cabinet.
+  </div>
+
+  <div class="section-tag">Chapitre 5</div>
+  <div class="section-title">Gestion des documents</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Documents est le coffre-fort numérique du cabinet. Vous disposez d'un accès complet : consultation, création, modification, suppression et export de tous les documents.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder à la section Documents</span><div class="step-desc">Cliquez sur « Documents » dans le menu latéral. La liste de tous les documents s'affiche, classés par date de modification.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Importer un document</span><div class="step-desc">Cliquez sur « Importer un document ». Sélectionnez le fichier sur votre ordinateur, choisissez le dossier associé, la catégorie (Pièce d'identité, Contrat, Plaidoirie, etc.) puis validez.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Consulter et modifier un document</span><div class="step-desc">Cliquez sur un document pour l'ouvrir. Vous pouvez visualiser son contenu, modifier ses métadonnées (catégorie, dossier associé, description) et télécharger le fichier.</div></div>
+  <div class="step-box"><span class="step-num">4</span><span class="step-title">Supprimer un document</span><div class="step-desc">Sélectionnez le document, cliquez sur « Supprimer » et confirmez l'action. Cette opération est irréversible.</div></div>
+  <img src="screenshots/documents-list.png" class="screenshot" alt="Liste des documents">
+  <div class="screenshot-caption">Figure 4 — Liste des documents</div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Nommez vos documents de manière explicite (ex. : « Contrat_Bail_Dupont_2025 ») pour faciliter la recherche et le classement.
+  </div>
+</div>
+</div>
+
+<!-- 6. FACTURATION -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 6</div>
+  <div class="section-title">Facturation</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Factures vous permet de gérer la facturation du cabinet. Vous pouvez consulter, créer et modifier les factures, ainsi que les exporter. Vous avez également accès à la gestion des paiements et des écritures de temps.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter la liste des factures</span><div class="step-desc">Cliquez sur « Factures » dans le menu latéral. La liste affiche toutes les factures avec leur numéro, client, montant, statut (Brouillon, Envoyée, Payée, En retard) et date d'échéance.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Créer une nouvelle facture</span><div class="step-desc">Cliquez sur « Nouvelle facture ». Sélectionnez le client et le dossier concerné, ajoutez les lignes de facturation (description, quantité, prix unitaire), vérifiez les totaux puis cliquez sur « Créer ».</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Modifier une facture</span><div class="step-desc">Ouvrez la facture, cliquez sur « Modifier ». Seules les factures en brouillon peuvent être modifiées. Après modification, cliquez sur « Enregistrer ».</div></div>
+  <div class="step-box"><span class="step-num">4</span><span class="step-title">Exporter les factures</span><div class="step-desc">Cliquez sur le bouton « Exporter » pour générer un fichier PDF ou Excel de la facture sélectionnée ou de la liste filtrée.</div></div>
+  <img src="screenshots/invoices-list.png" class="screenshot" alt="Liste des factures">
+  <div class="screenshot-caption">Figure 5 — Liste des factures</div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas supprimer une facture. Les factures sont des documents comptables qui doivent être conservés. Pour annuler une facture, utilisez la fonction « Annuler » qui crée un avoir.
+  </div>
+
+  <div class="body-text"><strong>Saisie des temps passés</strong></div>
+  <div class="body-text">
+    La fonctionnalité de saisie des temps vous permet d'enregistrer le temps passé sur chaque dossier. Accédez-y depuis la section « Temps passés » dans le menu ou directement depuis la fiche d'un dossier. Saisissez la date, la durée, le dossier concerné et une description de l'activité.
+  </div>
+</div>
+</div>
+
+<!-- 7. TÂCHES & 8. AGENDA -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 7</div>
+  <div class="section-title">Gestion des tâches</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Tâches vous permet d'organiser et de suivre les activités du cabinet. Les tâches sont affichées sous forme de tableau Kanban avec les colonnes : À faire, En cours, En revue et Terminé.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Créer une tâche</span><div class="step-desc">Cliquez sur « Nouvelle tâche ». Saisissez le titre, la description, assignez la tâche à un collaborateur, définissez une date limite et une priorité (Basse, Normale, Haute, Urgente). Liez la tâche à un dossier si nécessaire.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Déplacer une tâche</span><div class="step-desc">Dans la vue Kanban, glissez-déposez la carte de la tâche d'une colonne à l'autre pour changer son statut. Vous pouvez aussi ouvrir la tâche et modifier son statut manuellement.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Filtrer les tâches</span><div class="step-desc">Utilisez les filtres en haut de la page pour afficher les tâches par assigné, par priorité, par dossier ou par date limite.</div></div>
+  <img src="screenshots/tasks-kanban.png" class="screenshot" alt="Tableau Kanban des tâches">
+  <div class="screenshot-caption">Figure 6 — Tableau Kanban des tâches</div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas supprimer une tâche. Vous pouvez cependant l'archiver en la déplaçant dans la colonne « Terminé » ou en changeant son statut.
+  </div>
+
+  <div class="section-tag">Chapitre 8</div>
+  <div class="section-title">Agenda et événements</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    L'agenda intégré vous permet de gérer les rendez-vous, audiences, réunions et échéances du cabinet. Il offre une vue mensuelle, hebdomadaire et journalière.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Créer un événement</span><div class="step-desc">Cliquez sur « Nouvel événement » ou sur un créneau horaire dans l'agenda. Saisissez le titre, la date et l'heure, le lieu, le type (Audience, Rendez-vous, Réunion, Échéance) et associez un dossier si nécessaire.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Modifier un événement</span><div class="step-desc">Cliquez sur l'événement dans l'agenda pour l'ouvrir. Modifiez les informations souhaitées puis cliquez sur « Enregistrer ».</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Naviguer dans l'agenda</span><div class="step-desc">Utilisez les flèches de navigation pour passer d'un mois à l'autre. Les boutons « Jour », « Semaine » et « Mois » permettent de changer la vue.</div></div>
+  <img src="screenshots/calendar-view.png" class="screenshot" alt="Vue de l'agenda">
+  <div class="screenshot-caption">Figure 7 — Vue de l'agenda</div>
+</div>
+</div>
+
+<!-- 9. MESSAGERIE & 10. RAPPORTS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 9</div>
+  <div class="section-title">Messagerie</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La messagerie intégrée permet d'échanger avec les collaborateurs du cabinet de manière sécurisée. Les conversations peuvent être liées à un dossier spécifique.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter les messages</span><div class="step-desc">Cliquez sur « Messages » dans le menu latéral. La liste de vos conversations s'affiche à gauche. Cliquez sur une conversation pour afficher les messages à droite.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Envoyer un message</span><div class="step-desc">Cliquez sur « Nouveau message ». Sélectionnez le ou les destinataires, saisissez l'objet et le contenu du message. Vous pouvez joindre des fichiers et lier la conversation à un dossier.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Répondre à un message</span><div class="step-desc">Dans une conversation, saisissez votre réponse dans le champ en bas de la page et appuyez sur « Envoyer » ou sur la touche Entrée.</div></div>
+  <img src="screenshots/messages-view.png" class="screenshot" alt="Vue de la messagerie">
+  <div class="screenshot-caption">Figure 8 — Vue de la messagerie</div>
+
+  <div class="section-tag">Chapitre 10</div>
+  <div class="section-title">Rapports et analyses</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Rapports vous permet de générer des analyses détaillées sur l'activité du cabinet : chiffre d'affaires, dossiers par statut, temps passés par collaborateur, taux de facturation, etc.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder aux rapports</span><div class="step-desc">Cliquez sur « Rapports » dans le menu latéral. Le tableau de bord des rapports affiche les indicateurs clés du cabinet.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Générer un rapport</span><div class="step-desc">Sélectionnez le type de rapport (Financier, Activité, Temps passés, Dossiers), choisissez la période et les filtres souhaités, puis cliquez sur « Générer ».</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Exporter un rapport</span><div class="step-desc">Après avoir généré un rapport, cliquez sur « Exporter PDF » ou « Exporter Excel » pour télécharger le fichier.</div></div>
+  <img src="screenshots/reports-view.png" class="screenshot" alt="Vue des rapports">
+  <div class="screenshot-caption">Figure 9 — Vue des rapports</div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Consultez les rapports mensuellement pour suivre l'évolution du chiffre d'affaires et identifier les dossiers nécessitant une attention particulière.
+  </div>
+</div>
+</div>
+
+<!-- 11. DROITS D'ACCÈS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 11</div>
+  <div class="section-title">Droits d'accès</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Le tableau ci-dessous résume l'ensemble de vos droits d'accès en tant qu'Associé. Les colonnes indiquent les actions possibles : V (Voir), C (Créer), E (Modifier), D (Supprimer), X (Exporter).
+  </div>
+  <table class="permission-table">
+    <tr><th>Fonctionnalité</th><th>V</th><th>C</th><th>E</th><th>D</th><th>X</th></tr>
+    <tr><td>Dossiers</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Clients</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Documents</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Factures</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Tâches</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Événements</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Audit</td><td class="perm-yes">✓</td><td>—</td><td>—</td><td>—</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Utilisateurs</td><td class="perm-yes">✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>Rapports</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td>—</td><td>—</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Paramètres</td><td class="perm-yes">✓</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>Messages</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td>—</td></tr>
+    <tr><td>Notifications</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td>—</td><td>—</td></tr>
+    <tr><td>Temps passés</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td>—</td><td>—</td></tr>
+    <tr><td>Paiements</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td>—</td><td>—</td></tr>
+    <tr><td>Communications</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td>—</td><td>—</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- 12. CONSEILS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 12</div>
+  <div class="section-title">Conseils et bonnes pratiques</div>
+  <div class="divider"></div>
+
+  <div class="tip-box">
+    <div class="tip-label">Organisation des dossiers</div>
+    Créez un dossier dès la prise en charge d'une nouvelle affaire. Attribuez systématiquement un avocat responsable et un juriste. Utilisez les étiquettes pour catégoriser les dossiers par domaine juridique.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Suivi de la facturation</div>
+    Vérifiez régulièrement les factures en retard de paiement depuis le tableau de bord. Relancez les clients directement depuis la fiche facture en utilisant la fonction « Relancer ».
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Saisie des temps passés</div>
+    Encouragez les collaborateurs à saisir leurs temps passés quotidiennement. Une saisie régulière garantit une facturation accurate et des rapports fiables.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Archivage des documents</div>
+    Importez tous les documents importants dans JurisLink plutôt que de les conserver uniquement sur votre ordinateur. Le coffre-fort numérique offre une traçabilité complète et un accès sécurisé pour toute l'équipe.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Communication interne</div>
+    Utilisez la messagerie intégrée pour les échanges liés aux dossiers. Cela permet de conserver un historique des communications accessible à toute l'équipe du dossier.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Rapports périodiques</div>
+    Générez un rapport financier mensuel et un rapport d'activité trimestriel. Partagez-les avec les associés lors des réunions de cabinet pour un suivi transparent de la performance.
+  </div>
+
+  <div class="warning-box">
+    <div class="warning-label">Sécurité</div>
+    Ne partagez jamais vos identifiants de connexion. Verrouillez votre session lorsque vous vous éloignez de votre poste. En cas de suspicion d'accès non autorisé, contactez immédiatement l'administrateur du cabinet.
+  </div>
+</div>
+</div>
+
+<!-- PAGE DE FIN -->
+<div class="ending">
+  <div class="cover-line"></div>
+  <div class="ending-text">JurisLink — Votre cabinet, simplifié.</div>
+  <div class="ending-sub">Profil Associé — Édition 2025</div>
+  <div class="cover-line"></div>
+</div>
+
+</body>
+</html>

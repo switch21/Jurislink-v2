@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { size: 720px 1020px; margin: 0; }
+:root { --c-bg: #0f1419; --c-text: #e8e6e3; --c-accent: #16a34a; --c-accent-light: #22c55e; --c-surface: #1a1f25; --c-border: #2d333b; --c-muted: #8b949e; }
+html, body { margin: 0; padding: 0; width: 720px; background: var(--c-bg); color: var(--c-text); font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; }
+@media screen { html { height: auto; display: flex; justify-content: center; background: #222; } body { transform-origin: top center; margin: 20px auto; } }
+.cover { width: 720px; height: 1020px; box-sizing: border-box; break-after: page; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%); padding: 60px; text-align: center; }
+.cover-tag { font-size: 12px; text-transform: uppercase; letter-spacing: 4px; color: var(--c-accent); margin-bottom: 20px; font-weight: 600; }
+.cover-title { font-size: 42px; font-weight: 700; color: #ffffff; margin-bottom: 12px; line-height: 1.2; }
+.cover-subtitle { font-size: 18px; color: var(--c-muted); margin-bottom: 40px; }
+.cover-profile { display: inline-block; padding: 8px 24px; background: var(--c-accent); color: #fff; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 30px; }
+.cover-line { width: 60px; height: 3px; background: var(--c-accent); margin: 20px auto; }
+.cover-edition { font-size: 11px; color: var(--c-muted); margin-top: auto; }
+.page { width: 720px; box-sizing: border-box; break-after: page; }
+.main-content { padding: 50px 55px 40px 55px; }
+.section-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: var(--c-accent); font-weight: 600; margin-top: 28px; }
+.section-title { font-size: 26px; font-weight: 700; color: #ffffff; margin: 6px 0 8px 0; }
+.divider { width: 40px; height: 2px; background: var(--c-accent); margin-bottom: 16px; }
+.body-text { margin-bottom: 14px; color: var(--c-text); }
+.step-box { background: var(--c-surface); border-left: 3px solid var(--c-accent); padding: 14px 18px; margin-bottom: 12px; break-inside: avoid; border-radius: 0 6px 6px 0; }
+.step-num { display: inline-block; background: var(--c-accent); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; margin-right: 10px; }
+.step-title { font-weight: 600; color: #ffffff; }
+.step-desc { color: var(--c-muted); margin-top: 6px; font-size: 13px; }
+.screenshot { width: 100%; border-radius: 8px; margin: 16px 0; border: 1px solid var(--c-border); }
+.screenshot-caption { font-size: 11px; color: var(--c-muted); text-align: center; margin-top: -8px; margin-bottom: 16px; font-style: italic; }
+.permission-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; break-inside: avoid; }
+.permission-table th { background: var(--c-surface); color: var(--c-accent); padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--c-border); }
+.permission-table td { padding: 6px 10px; border-bottom: 1px solid var(--c-border); }
+.perm-yes { color: var(--c-accent-light); font-weight: 600; }
+.perm-no { color: #ef4444; }
+.tip-box { background: rgba(22, 163, 74, 0.1); border: 1px solid rgba(22, 163, 74, 0.3); border-radius: 6px; padding: 14px 18px; margin: 14px 0; break-inside: avoid; }
+.tip-label { color: var(--c-accent); font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 14px 18px; margin: 14px 0; break-inside: avoid; }
+.warning-label { color: #ef4444; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.toc-item { padding: 6px 0; border-bottom: 1px solid var(--c-border); display: flex; justify-content: space-between; }
+.toc-item span:first-child { color: var(--c-text); }
+.toc-item span:last-child { color: var(--c-muted); font-size: 12px; }
+.ending { width: 720px; height: 1020px; box-sizing: border-box; break-before: page; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%); text-align: center; }
+.ending-text { font-size: 28px; font-weight: 300; color: #ffffff; }
+.ending-sub { font-size: 14px; color: var(--c-muted); margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<!-- PAGE DE COUVERTURE -->
+<div class="cover">
+  <div class="cover-tag">Documentation Officielle</div>
+  <div class="cover-title">Manuel<br>d'utilisation</div>
+  <div class="cover-subtitle">JurisLink — Gestion de Cabinet Juridique</div>
+  <div class="cover-line"></div>
+  <div class="cover-profile">Profil : Juriste</div>
+  <div class="cover-edition">Édition 2025 — Version 1.0</div>
+</div>
+
+<!-- TABLE DES MATIÈRES -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Navigation</div>
+  <div class="section-title">Table des matières</div>
+  <div class="divider"></div>
+  <div class="toc-item"><span>1. Introduction</span><span>3</span></div>
+  <div class="toc-item"><span>2. Premiers pas</span><span>3</span></div>
+  <div class="toc-item"><span>3. Consultation des dossiers</span><span>4</span></div>
+  <div class="toc-item"><span>4. Gestion des documents</span><span>5</span></div>
+  <div class="toc-item"><span>5. Suivi des tâches</span><span>5</span></div>
+  <div class="toc-item"><span>6. Saisie des temps passés</span><span>6</span></div>
+  <div class="toc-item"><span>7. Droits d'accès</span><span>7</span></div>
+  <div class="toc-item"><span>8. Conseils et bonnes pratiques</span><span>7</span></div>
+</div>
+</div>
+
+<!-- 1. INTRODUCTION & 2. PREMIERS PAS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 1</div>
+  <div class="section-title">Introduction</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Bienvenue dans le manuel d'utilisation de JurisLink pour le profil <strong>Juriste</strong>. En tant que juriste, vous disposez d'un accès limité orienté vers les aspects documentaires et opérationnels de l'activité du cabinet. Votre rôle est centré sur la consultation des dossiers, la gestion des documents, le suivi des tâches qui vous sont assignées et la saisie des temps passés.
+  </div>
+  <div class="body-text"><strong>Résumé de vos capacités :</strong></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Dossiers</span><div class="step-desc">Consultation et modification uniquement. Pas de création de dossier.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Clients</span><div class="step-desc">Consultation et export uniquement.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Documents</span><div class="step-desc">Consultation, création, modification et export. Accès étendu sur les documents.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Tâches</span><div class="step-desc">Consultation et modification uniquement. Pas de création de tâche.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Temps passés</span><div class="step-desc">Consultation et modification (saisie de vos temps).</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restrictions importantes</div>
+    Vous n'avez pas accès à : la facturation, les événements de l'agenda, la messagerie (sauf consultation), les rapports (sauf consultation/export), les paiements, les utilisateurs, les paramètres, l'audit, les communications et les notifications (sauf consultation). Vous ne pouvez ni créer de dossiers ni créer de tâches.
+  </div>
+
+  <div class="section-tag">Chapitre 2</div>
+  <div class="section-title">Premiers pas</div>
+  <div class="divider"></div>
+  <div class="body-text"><strong>Connexion à l'application</strong></div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder à l'écran de connexion</span><div class="step-desc">Lancez JurisLink depuis votre navigateur. L'écran de connexion s'affiche avec les champs Identifiant et Mot de passe.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Saisir vos identifiants</span><div class="step-desc">Entrez votre identifiant professionnel et votre mot de passe fournis par l'administrateur du cabinet.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Valider la connexion</span><div class="step-desc">Cliquez sur « Se connecter ». Vous accédez au tableau de bord Juriste, orienté vers vos tâches et dossiers assignés.</div></div>
+
+  <div class="body-text"><strong>Présentation du tableau de bord</strong></div>
+  <div class="body-text">
+    Le tableau de bord Juriste affiche vos tâches en cours, les dossiers auxquels vous êtes assigné, vos temps passés récents et les documents récemment modifiés. L'interface est simplifiée par rapport aux profils supérieurs, centrée sur votre travail quotidien.
+  </div>
+  <img src="screenshots/juriste-dashboard.png" class="screenshot" alt="Tableau de bord Juriste">
+  <div class="screenshot-caption">Figure 1 — Tableau de bord du Juriste</div>
+
+  <div class="body-text"><strong>Navigation dans le menu latéral</strong></div>
+  <div class="body-text">
+    Le menu latéral affiche uniquement les sections accessibles : Dossiers, Documents, Tâches et Temps passés. Les autres sections ne sont pas visibles dans votre interface.
+  </div>
+</div>
+</div>
+
+<!-- 3. DOSSIERS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 3</div>
+  <div class="section-title">Consultation des dossiers</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Dossiers vous permet de consulter et modifier les dossiers auxquels vous êtes assigné. Vous ne pouvez pas créer de nouveaux dossiers.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter la liste des dossiers</span><div class="step-desc">Cliquez sur « Dossiers » dans le menu latéral. La liste affiche les dossiers du cabinet. Vous pouvez filtrer par statut et utiliser la barre de recherche pour retrouver un dossier spécifique.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Ouvrir un dossier</span><div class="step-desc">Cliquez sur la ligne d'un dossier pour accéder à sa fiche détaillée. Vous y trouvez les informations générales, les documents associés, les tâches et les temps passés.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Modifier un dossier</span><div class="step-desc">Depuis la fiche du dossier, cliquez sur « Modifier ». Vous pouvez mettre à jour la description, le statut et d'autres champs modifiables. Cliquez sur « Enregistrer » pour valider.</div></div>
+  <div class="step-box"><span class="step-num">4</span><span class="step-title">Exporter les données</span><div class="step-desc">Cliquez sur « Exporter » pour générer un fichier PDF ou Excel de la liste des dossiers filtrée.</div></div>
+  <img src="screenshots/cases-list.png" class="screenshot" alt="Liste des dossiers">
+  <div class="screenshot-caption">Figure 2 — Liste des dossiers</div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas créer de nouveau dossier. La création de dossiers est réservée aux avocats et associés. Si vous avez besoin d'ouvrir un nouveau dossier, demandez à l'avocat responsable de le créer et de vous y assigner.
+  </div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas supprimer un dossier. Cette action n'est disponible pour aucun profil utilisateur.
+  </div>
+</div>
+</div>
+
+<!-- 4. DOCUMENTS & 5. TÂCHES -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 4</div>
+  <div class="section-title">Gestion des documents</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Documents est votre principal espace de travail. Vous disposez d'un accès étendu : consultation, création, modification et export. C'est là que vous importez les pièces du dossier, rédigez les notes et classez les documents.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Importer un document</span><div class="step-desc">Cliquez sur « Importer un document ». Sélectionnez le fichier sur votre ordinateur, choisissez le dossier associé et la catégorie (Pièce d'identité, Contrat, Plaidoirie, Note interne, Correspondance, etc.). Ajoutez une description si nécessaire puis validez.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Consulter un document</span><div class="step-desc">Cliquez sur le document pour l'ouvrir. Vous pouvez visualiser son contenu, télécharger le fichier et voir ses métadonnées.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Modifier les métadonnées</span><div class="step-desc">Ouvrez le document, cliquez sur « Modifier ». Mettez à jour la catégorie, la description ou le dossier associé, puis « Enregistrer ».</div></div>
+  <div class="step-box"><span class="step-num">4</span><span class="step-title">Exporter des documents</span><div class="step-desc">Cliquez sur « Exporter » pour télécharger un document ou une sélection de documents.</div></div>
+  <img src="screenshots/documents-list.png" class="screenshot" alt="Liste des documents">
+  <div class="screenshot-caption">Figure 3 — Liste des documents</div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Nommez vos documents de façon descriptive (ex. : « Requete_Dupont_TGI_2025 ») et attribuez systématiquement une catégorie. Cela facilite la recherche pour toute l'équipe.
+  </div>
+
+  <div class="section-tag">Chapitre 5</div>
+  <div class="section-title">Suivi des tâches</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Tâches affiche les tâches qui vous sont assignées ou liées à vos dossiers. Vous pouvez consulter et modifier les tâches, mais pas en créer de nouvelles.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter vos tâches</span><div class="step-desc">Cliquez sur « Tâches » dans le menu latéral. Le tableau Kanban affiche vos tâches classées par statut : À faire, En cours, En revue, Terminé.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Modifier une tâche</span><div class="step-desc">Ouvrez la tâche, modifiez la description ou le statut, puis « Enregistrer ». Vous pouvez aussi glisser-déposer la carte dans le Kanban pour changer son statut.</div></div>
+  <img src="screenshots/tasks-kanban.png" class="screenshot" alt="Tableau Kanban">
+  <div class="screenshot-caption">Figure 4 — Tableau Kanban des tâches</div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas créer de nouvelle tâche. Si vous identifiez un besoin d'action, demandez à l'avocat responsable du dossier de créer la tâche et de vous l'assigner.
+  </div>
+</div>
+</div>
+
+<!-- 6. TEMPS PASSÉS & 7. DROITS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 6</div>
+  <div class="section-title">Saisie des temps passés</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La saisie des temps passés vous permet d'enregistrer le temps que vous consacrez à chaque dossier. Vous pouvez consulter et modifier vos écritures de temps.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter vos temps passés</span><div class="step-desc">Accédez à la section « Temps passés » depuis le menu latéral ou depuis la fiche d'un dossier. La liste affiche vos écritures de temps classées par date.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Modifier un temps passé</span><div class="step-desc">Ouvrez une écriture de temps existante. Vous pouvez corriger la durée, la description ou le dossier associé. Cliquez sur « Enregistrer » pour valider la modification.</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas créer de nouvelle écriture de temps. La création de temps passés est réservée aux avocats et associés. Si vous devez enregistrer du temps, demandez à l'avocat responsable de créer l'écriture ou de vous donner les droits nécessaires via l'administrateur.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Vérifiez régulièrement vos écritures de temps pour vous assurer qu'elles sont correctes et complètes. Des données précises sont essentielles pour la facturation du cabinet.
+  </div>
+
+  <div class="section-tag">Chapitre 7</div>
+  <div class="section-title">Droits d'accès</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Le tableau ci-dessous résume vos droits d'accès en tant que Juriste. V = Voir, C = Créer, E = Modifier, D = Supprimer, X = Exporter.
+  </div>
+  <table class="permission-table">
+    <tr><th>Fonctionnalité</th><th>V</th><th>C</th><th>E</th><th>D</th><th>X</th></tr>
+    <tr><td>Dossiers</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Clients</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Documents</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Tâches</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Événements</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Utilisateurs</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Rapports</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Messages</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Notifications</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Temps passés</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Factures</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Paiements</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Audit</td><td class="perm-no">✗</td><td>—</td><td>—</td><td>—</td><td class="perm-no">✗</td></tr>
+    <tr><td>Paramètres</td><td class="perm-no">✗</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- 8. CONSEILS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 8</div>
+  <div class="section-title">Conseils et bonnes pratiques</div>
+  <div class="divider"></div>
+
+  <div class="tip-box">
+    <div class="tip-label">Organisation des documents</div>
+    Importez systématiquement les documents reçus ou produits dans JurisLink. Attribuez une catégorie claire et liez chaque document au dossier concerné. Un bon classement facilite la collaboration avec les avocats.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Suivi des tâches</div>
+    Consultez votre tableau Kanban chaque matin pour identifier les tâches prioritaires. Mettez à jour le statut de vos tâches au fur et à mesure de votre progression pour que les avocats puissent suivre l'avancement.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Communication avec les avocats</div>
+    Si vous avez besoin de créer un dossier, une tâche ou une écriture de temps, demandez-le à l'avocat responsable du dossier. Précisez les informations nécessaires pour qu'il puisse créer l'élément rapidement.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Vérification des temps passés</div>
+    Relisez vos écritures de temps avant validation. Assurez-vous que la durée est correcte et que la description de l'activité est suffisamment détaillée pour la facturation.
+  </div>
+
+  <div class="warning-box">
+    <div class="warning-label">Sécurité</div>
+    Ne partagez jamais vos identifiants de connexion. Verrouillez votre session en quittant votre poste. Signalez toute anomalie ou activité suspecte à l'administrateur du cabinet.
+  </div>
+</div>
+</div>
+
+<!-- PAGE DE FIN -->
+<div class="ending">
+  <div class="cover-line"></div>
+  <div class="ending-text">JurisLink — Votre cabinet, simplifié.</div>
+  <div class="ending-sub">Profil Juriste — Édition 2025</div>
+  <div class="cover-line"></div>
+</div>
+
+</body>
+</html>

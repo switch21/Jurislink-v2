@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { size: 720px 1020px; margin: 0; }
+:root { --c-bg: #0f1419; --c-text: #e8e6e3; --c-accent: #16a34a; --c-accent-light: #22c55e; --c-surface: #1a1f25; --c-border: #2d333b; --c-muted: #8b949e; }
+html, body { margin: 0; padding: 0; width: 720px; background: var(--c-bg); color: var(--c-text); font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; }
+@media screen { html { height: auto; display: flex; justify-content: center; background: #222; } body { transform-origin: top center; margin: 20px auto; } }
+.cover { width: 720px; height: 1020px; box-sizing: border-box; break-after: page; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%); padding: 60px; text-align: center; }
+.cover-tag { font-size: 12px; text-transform: uppercase; letter-spacing: 4px; color: var(--c-accent); margin-bottom: 20px; font-weight: 600; }
+.cover-title { font-size: 42px; font-weight: 700; color: #ffffff; margin-bottom: 12px; line-height: 1.2; }
+.cover-subtitle { font-size: 18px; color: var(--c-muted); margin-bottom: 40px; }
+.cover-profile { display: inline-block; padding: 8px 24px; background: var(--c-accent); color: #fff; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 30px; }
+.cover-line { width: 60px; height: 3px; background: var(--c-accent); margin: 20px auto; }
+.cover-edition { font-size: 11px; color: var(--c-muted); margin-top: auto; }
+.page { width: 720px; box-sizing: border-box; break-after: page; }
+.main-content { padding: 50px 55px 40px 55px; }
+.section-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: var(--c-accent); font-weight: 600; margin-top: 28px; }
+.section-title { font-size: 26px; font-weight: 700; color: #ffffff; margin: 6px 0 8px 0; }
+.divider { width: 40px; height: 2px; background: var(--c-accent); margin-bottom: 16px; }
+.body-text { margin-bottom: 14px; color: var(--c-text); }
+.step-box { background: var(--c-surface); border-left: 3px solid var(--c-accent); padding: 14px 18px; margin-bottom: 12px; break-inside: avoid; border-radius: 0 6px 6px 0; }
+.step-num { display: inline-block; background: var(--c-accent); color: #fff; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; margin-right: 10px; }
+.step-title { font-weight: 600; color: #ffffff; }
+.step-desc { color: var(--c-muted); margin-top: 6px; font-size: 13px; }
+.screenshot { width: 100%; border-radius: 8px; margin: 16px 0; border: 1px solid var(--c-border); }
+.screenshot-caption { font-size: 11px; color: var(--c-muted); text-align: center; margin-top: -8px; margin-bottom: 16px; font-style: italic; }
+.permission-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; break-inside: avoid; }
+.permission-table th { background: var(--c-surface); color: var(--c-accent); padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--c-border); }
+.permission-table td { padding: 6px 10px; border-bottom: 1px solid var(--c-border); }
+.perm-yes { color: var(--c-accent-light); font-weight: 600; }
+.perm-no { color: #ef4444; }
+.tip-box { background: rgba(22, 163, 74, 0.1); border: 1px solid rgba(22, 163, 74, 0.3); border-radius: 6px; padding: 14px 18px; margin: 14px 0; break-inside: avoid; }
+.tip-label { color: var(--c-accent); font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 14px 18px; margin: 14px 0; break-inside: avoid; }
+.warning-label { color: #ef4444; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
+.toc-item { padding: 6px 0; border-bottom: 1px solid var(--c-border); display: flex; justify-content: space-between; }
+.toc-item span:first-child { color: var(--c-text); }
+.toc-item span:last-child { color: var(--c-muted); font-size: 12px; }
+.ending { width: 720px; height: 1020px; box-sizing: border-box; break-before: page; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%); text-align: center; }
+.ending-text { font-size: 28px; font-weight: 300; color: #ffffff; }
+.ending-sub { font-size: 14px; color: var(--c-muted); margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<!-- PAGE DE COUVERTURE -->
+<div class="cover">
+  <div class="cover-tag">Documentation Officielle</div>
+  <div class="cover-title">Manuel<br>d'utilisation</div>
+  <div class="cover-subtitle">JurisLink — Portail Client</div>
+  <div class="cover-line"></div>
+  <div class="cover-profile">Profil : Client</div>
+  <div class="cover-edition">Édition 2025 — Version 1.0</div>
+</div>
+
+<!-- TABLE DES MATIÈRES -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Navigation</div>
+  <div class="section-title">Table des matières</div>
+  <div class="divider"></div>
+  <div class="toc-item"><span>1. Introduction</span><span>3</span></div>
+  <div class="toc-item"><span>2. Connexion au portail</span><span>3</span></div>
+  <div class="toc-item"><span>3. Tableau de bord</span><span>4</span></div>
+  <div class="toc-item"><span>4. Consultation des dossiers</span><span>4</span></div>
+  <div class="toc-item"><span>5. Documents</span><span>5</span></div>
+  <div class="toc-item"><span>6. Factures et paiements</span><span>5</span></div>
+  <div class="toc-item"><span>7. Messagerie</span><span>6</span></div>
+  <div class="toc-item"><span>8. Droits d'accès</span><span>7</span></div>
+  <div class="toc-item"><span>9. Conseils et bonnes pratiques</span><span>7</span></div>
+</div>
+</div>
+
+<!-- 1. INTRODUCTION -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 1</div>
+  <div class="section-title">Introduction</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Bienvenue dans le manuel d'utilisation du <strong>Portail Client JurisLink</strong>. Ce portail est une interface dédiée et distincte de l'application principale du cabinet. Il vous permet de suivre l'avancement de vos dossiers, consulter vos documents et factures, effectuer des paiements et communiquer avec l'équipe du cabinet.
+  </div>
+  <div class="body-text">
+    Le portail client est conçu pour vous offrir une transparence totale sur la gestion de vos affaires. Vous y accédez de manière sécurisée avec vos identifiants personnels. Les informations affichées sont strictement limitées à vos propres dossiers et données.
+  </div>
+  <div class="body-text"><strong>Résumé de vos capacités :</strong></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Dossiers</span><div class="step-desc">Consultation et export de vos dossiers uniquement. Accès en lecture seule.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Documents</span><div class="step-desc">Consultation et export de vos documents. Vous pouvez télécharger les pièces de vos dossiers.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Factures</span><div class="step-desc">Consultation et export de vos factures. Vous pouvez voir le détail et le statut de chaque facture.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Paiements</span><div class="step-desc">Consultation de l'historique de vos paiements.</div></div>
+  <div class="step-box"><span class="step-num">✓</span><span class="step-title">Messagerie</span><div class="step-desc">Consultation et envoi de messages à l'équipe du cabinet.</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Important</div>
+    Le portail client est une interface séparée de l'application principale utilisée par le cabinet. Vous n'avez accès qu'à vos propres données. Vous ne pouvez ni créer ni modifier des dossiers, des documents ou des factures.
+  </div>
+
+  <div class="section-tag">Chapitre 2</div>
+  <div class="section-title">Connexion au portail</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    L'accès au portail client se fait via l'écran de connexion dédié. Vos identifiants vous sont communiqués par le cabinet lors de votre première prise en charge.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Accéder à l'écran de connexion</span><div class="step-desc">Lancez le portail client JurisLink depuis votre navigateur. L'écran de connexion du portail s'affiche, distinct de celui de l'application du cabinet.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Saisir vos identifiants</span><div class="step-desc">Entrez votre identifiant client et votre mot de passe. Ces informations vous ont été communiquées par le cabinet lors de l'ouverture de votre dossier.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Valider la connexion</span><div class="step-desc">Cliquez sur « Se connecter ». Si vos identifiants sont corrects, vous accédez au tableau de bord de votre portail client.</div></div>
+  <img src="screenshots/login-page.png" class="screenshot" alt="Écran de connexion">
+  <div class="screenshot-caption">Figure 1 — Écran de connexion du portail client</div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    En cas d'oubli de mot de passe, contactez le cabinet par téléphone pour demander une réinitialisation. Ne communiquez jamais vos identifiants à un tiers.
+  </div>
+</div>
+</div>
+
+<!-- 3. TABLEAU DE BORD & 4. DOSSIERS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 3</div>
+  <div class="section-title">Tableau de bord</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Le tableau de bord du portail client affiche un résumé de vos dossiers en cours, vos dernières factures, vos documents récents et un accès direct à la messagerie. C'est votre point d'entrée principal pour suivre l'activité du cabinet relative à vos affaires.
+  </div>
+  <img src="screenshots/client-portal-dashboard.png" class="screenshot" alt="Tableau de bord Portail Client">
+  <div class="screenshot-caption">Figure 2 — Tableau de bord du portail client</div>
+
+  <div class="section-tag">Chapitre 4</div>
+  <div class="section-title">Consultation des dossiers</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Dossiers vous permet de consulter l'état d'avancement de vos affaires. Vous avez un accès en lecture seule : vous pouvez voir les informations de chaque dossier et exporter les données.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter vos dossiers</span><div class="step-desc">Cliquez sur « Dossiers » dans le menu. La liste affiche tous vos dossiers avec leur statut (En cours, En attente, Clôturé), le type de dossier et l'avocat responsable.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Ouvrir un dossier</span><div class="step-desc">Cliquez sur un dossier pour accéder à sa fiche détaillée. Vous y trouverez les informations générales, les documents associés, les dernières factures et les événements marquants.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Exporter les données d'un dossier</span><div class="step-desc">Depuis la fiche du dossier, cliquez sur « Exporter » pour télécharger un résumé PDF des informations du dossier.</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez ni créer ni modifier un dossier. La gestion des dossiers est assurée par l'équipe du cabinet. Si vous souhaitez ouvrir un nouveau dossier, contactez le cabinet directement.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Consultez régulièrement vos dossiers pour suivre l'avancement de vos affaires. En cas de question sur un dossier, utilisez la messagerie intégrée pour contacter l'avocat responsable.
+  </div>
+</div>
+</div>
+
+<!-- 5. DOCUMENTS & 6. FACTURES -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 5</div>
+  <div class="section-title">Documents</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Documents vous permet de consulter et télécharger les documents relatifs à vos dossiers : contrats, correspondances, pièces juridiques, etc.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter vos documents</span><div class="step-desc">Cliquez sur « Documents » dans le menu. La liste affiche tous les documents de vos dossiers, classés par date de modification.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Télécharger un document</span><div class="step-desc">Cliquez sur le document pour l'ouvrir. Vous pouvez le visualiser en ligne et le télécharger sur votre ordinateur via le bouton « Télécharger ».</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Exporter une liste de documents</span><div class="step-desc">Cliquez sur « Exporter » pour télécharger une liste récapitulative de vos documents.</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez ni importer ni modifier des documents depuis le portail client. Si vous devez transmettre un document au cabinet, envoyez-le via la messagerie ou contactez le cabinet.
+  </div>
+
+  <div class="section-tag">Chapitre 6</div>
+  <div class="section-title">Factures et paiements</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La section Factures vous permet de consulter et exporter vos factures. Vous pouvez également consulter l'historique de vos paiements.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter vos factures</span><div class="step-desc">Cliquez sur « Factures » dans le menu. La liste affiche toutes vos factures avec leur numéro, montant, statut (Envoyée, Payée, En retard) et date d'échéance.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Ouvrir une facture</span><div class="step-desc">Cliquez sur une facture pour afficher son détail : lignes de facturation, totaux, TVA, et mode de paiement.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Exporter une facture</span><div class="step-desc">Depuis la fiche facture, cliquez sur « Télécharger PDF » pour obtenir une copie de la facture.</div></div>
+  <div class="step-box"><span class="step-num">4</span><span class="step-title">Consulter vos paiements</span><div class="step-desc">La section « Paiements » affiche l'historique de vos règlements : date, montant, mode de paiement et facture associée.</div></div>
+
+  <div class="warning-box">
+    <div class="warning-label">Restriction</div>
+    Vous ne pouvez pas effectuer de paiement en ligne directement depuis le portail. Les paiements doivent être réalisés par virement ou chèque selon les instructions figurant sur la facture. Le portail affiche uniquement les paiements déjà enregistrés par le cabinet.
+  </div>
+</div>
+</div>
+
+<!-- 7. MESSAGERIE -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 7</div>
+  <div class="section-title">Messagerie</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    La messagerie du portail client vous permet de communiquer avec l'équipe du cabinet de manière sécurisée. Vous pouvez consulter les messages reçus et envoyer de nouveaux messages.
+  </div>
+  <div class="step-box"><span class="step-num">1</span><span class="step-title">Consulter vos messages</span><div class="step-desc">Cliquez sur « Messages » dans le menu. La liste de vos conversations s'affiche. Cliquez sur une conversation pour lire les messages.</div></div>
+  <div class="step-box"><span class="step-num">2</span><span class="step-title">Envoyer un message</span><div class="step-desc">Cliquez sur « Nouveau message ». Sélectionnez le sujet (question sur un dossier, transmission de pièce, demande d'information), saisissez votre message et cliquez sur « Envoyer ». Vous pouvez lier le message à un dossier spécifique.</div></div>
+  <div class="step-box"><span class="step-num">3</span><span class="step-title">Répondre à un message</span><div class="step-desc">Dans une conversation existante, saisissez votre réponse dans le champ en bas de la page et appuyez sur « Envoyer ».</div></div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Utilisez la messagerie intégrée plutôt que les courriels classiques pour les échanges liés à vos dossiers. Cela garantit une traçabilité complète et un suivi plus efficace par l'équipe du cabinet.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Conseil</div>
+    Pour transmettre un document au cabinet, envoyez un message en joignant le fichier. L'équipe du cabinet l'intégrera à votre dossier.
+  </div>
+
+  <div class="section-tag">Chapitre 8</div>
+  <div class="section-title">Droits d'accès</div>
+  <div class="divider"></div>
+  <div class="body-text">
+    Le tableau ci-dessous résume vos droits d'accès sur le portail client. V = Voir, C = Créer, E = Modifier, D = Supprimer, X = Exporter.
+  </div>
+  <table class="permission-table">
+    <tr><th>Fonctionnalité</th><th>V</th><th>C</th><th>E</th><th>D</th><th>X</th></tr>
+    <tr><td>Dossiers</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Documents</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Factures</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-yes">✓</td></tr>
+    <tr><td>Événements</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Messages</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Notifications</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Paiements</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+    <tr><td>Communications</td><td class="perm-yes">✓</td><td class="perm-yes">✓</td><td class="perm-no">✗</td><td class="perm-no">✗</td><td class="perm-no">✗</td></tr>
+  </table>
+
+  <div class="body-text">
+    <strong>Note :</strong> L'accès est strictement limité à vos propres données. Vous ne pouvez voir que les dossiers, documents, factures et messages qui vous concernent directement.
+  </div>
+</div>
+</div>
+
+<!-- 9. CONSEILS -->
+<div class="page">
+<div class="main-content">
+  <div class="section-tag">Chapitre 9</div>
+  <div class="section-title">Conseils et bonnes pratiques</div>
+  <div class="divider"></div>
+
+  <div class="tip-box">
+    <div class="tip-label">Suivi régulier</div>
+    Consultez le portail régulièrement pour suivre l'avancement de vos dossiers. Le tableau de bord vous donne un aperçu rapide de l'état de vos affaires.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Documents</div>
+    Téléchargez et conservez les documents importants (contrats, conclusions, décisions) sur votre ordinateur. Le portail vous permet d'y accéder à tout moment.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Factures</div>
+    Vérifiez vos factures dès réception. En cas de question sur le montant ou les prestations facturées, contactez le cabinet via la messagerie dans les meilleurs délais.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Communication</div>
+    Privilégiez la messagerie du portail pour les échanges liés à vos dossiers. Indiquez clairement le dossier concerné dans l'objet de votre message pour un traitement rapide.
+  </div>
+
+  <div class="tip-box">
+    <div class="tip-label">Transmission de pièces</div>
+    Pour transmettre un document au cabinet, utilisez la messagerie en joignant le fichier. Précisez le dossier concerné et la nature du document (pièce justificative, correspondance, etc.).
+  </div>
+
+  <div class="warning-box">
+    <div class="warning-label">Sécurité</div>
+    Ne partagez jamais vos identifiants de connexion avec un tiers. Vérifiez que vous accédez bien au portail officiel de votre cabinet. En cas de suspicion d'accès non autorisé à votre compte, contactez immédiatement le cabinet.
+  </div>
+
+  <div class="warning-box">
+    <div class="warning-label">Confidentialité</div>
+    Les informations accessibles via le portail sont confidentielles. Ne les partagez pas et ne les imprimez que si nécessaire. Assurez-vous de vous déconnecter après chaque session, surtout sur un ordinateur partagé.
+  </div>
+</div>
+</div>
+
+<!-- PAGE DE FIN -->
+<div class="ending">
+  <div class="cover-line"></div>
+  <div class="ending-text">JurisLink — Votre cabinet, simplifié.</div>
+  <div class="ending-sub">Portail Client — Édition 2025</div>
+  <div class="cover-line"></div>
+</div>
+
+</body>
+</html>

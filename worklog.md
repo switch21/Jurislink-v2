@@ -2640,3 +2640,29 @@ Stage Summary:
 - Hydration mismatch eliminated by: (1) removing inter.variable class from body, (2) using inline styles for initial splash, (3) ensuring page.tsx renders identical HTML on server and client first render.
 - App successfully loads login page, forms are interactive, API calls work.
 
+
+---
+Task ID: USER-MANUALS-GENERATION
+Agent: Main Agent
+Task: Générer des manuels d'utilisation détaillés pour chaque profil (sauf super admin) avec captures d'écran
+
+Work Log:
+- Analysé les permissions RBAC détaillées de chaque profil depuis prisma/seed.ts
+- Généré 17 captures d'écran illustratives via z-ai image pour tous les profils et fonctionnalités
+- Captures générées: login, dashboards (7 profils), cases, case-create, documents, invoices, tasks, calendar, messages, reports, settings
+- Créé 7 manuels HTML complets suivant le pipeline Creative Flow du PDF skill
+- Converti les 7 HTML en PDF vectoriels via html2pdf-next.js
+- QA vérifié les 7 PDF (tous pass avec warnings cosmétiques uniquement)
+
+Stage Summary:
+- 7 manuels PDF générés dans /home/z/my-project/manuals/:
+  - manuel-associe.pdf (22 pages, 865 KB, 9 captures)
+  - manuel-admin-cabinet.pdf (17 pages, 893 KB, 9 captures)
+  - manuel-avocat.pdf (16 pages, 717 KB, 7 captures)
+  - manuel-juriste.pdf (14 pages, 431 KB, 4 captures)
+  - manuel-assistant.pdf (13 pages, 414 KB, 4 captures)
+  - manuel-comptable.pdf (15 pages, 444 KB, 4 captures)
+  - manuel-client.pdf (14 pages, 270 KB, 2 captures)
+- Chaque manuel contient: page de couverture, table des matières, introduction, premiers pas, sections par fonctionnalité avec étapes pas à pas, tableau des permissions, conseils, page de fin
+- Tout en français, aucun lien, aucun mot de passe
+- 17 captures d'écran dans /home/z/my-project/manuals/screenshots/
