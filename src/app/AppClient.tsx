@@ -13,6 +13,7 @@ import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { TrialBanner } from '@/views/TrialBanner'
 import { Toaster } from '@/components/ui/toaster'
 import { hydrateLocale } from '@/lib/i18n'
+import { ThemeProvider } from 'next-themes'
 
 // ──── Lazy-loaded guard (non-critical, loads after mount) ────
 const LazyBeforeUnloadGuard = lazy(() => import('@/components/BeforeUnloadGuard').then(m => ({ default: m.BeforeUnloadGuard })))
@@ -164,11 +165,7 @@ function DashboardRouter() {
 
 // ==================== CMD+K SEARCH PROVIDER ====================
 const searchOpenState = { value: false, set: (v: boolean) => { searchOpenState.value = v } }
-
-// Expose search open function globally for Header button
-if (typeof window !== 'undefined') {
-  (window as any).__jlOpenSearch = () => { searchOpenState.set(true) }
-}
+// NOTE: __jlOpenSearch is now set in useEffect (below) to avoid module-level side effects
 
 // ==================== MAIN APP ====================
 function AppInner() {
@@ -266,13 +263,16 @@ export default function App() {
     hydrateLocale()
     // 3. Patch fetch for auth headers
     initAuthFetch()
-    // 4. Set mounted after one frame to trigger AppInner render
+    // 4. Expose search open function globally (moved from module-level to avoid hydration issues)
+    ;(window as any).__jlOpenSearch = () => { searchOpenState.set(true) }
+    // 5. Set mounted after one frame to trigger AppInner render
     const id = requestAnimationFrame(() => setMounted(true))
     return () => cancelAnimationFrame(id)
   }, [])
   return (
     <>
       <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
         <TooltipProvider>
           <div className='min-h-screen flex flex-col bg-[var(--bg-page)] transition-colors duration-300'>
             <a href='#main-content' className='skip-link'>Aller au contenu principal</a>
@@ -288,6 +288,7 @@ export default function App() {
             </div>
           </div>
         </TooltipProvider>
+        </ThemeProvider>
       </QueryClientProvider>
       <Toaster />
     </>
