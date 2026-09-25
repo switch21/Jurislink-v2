@@ -140,6 +140,8 @@ interface AppState {
   incrementPortalUnread: () => void
   // Unsaved changes
   setHasUnsavedChanges: (dirty: boolean) => void
+  // SSR-safe hydration from localStorage (call in useEffect after mount)
+  hydrateFromStorage: () => void
 }
 
 const loadUser = (): UserInfo | null => {
@@ -201,18 +203,20 @@ const loadSavedPortalView = (): PortalViewName => {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  user: loadUser(),
-  isAuthenticated: !!loadUser(),
-  currentView: loadSavedView(),
+  // SSR-safe defaults: always start with server-safe values (null/false/'login')
+  // localStorage is read in hydrateFromStorage() called from useEffect after mount
+  user: null,
+  isAuthenticated: false,
+  currentView: 'login',
   sidebarOpen: false,
   unreadCount: 0,
   lastNotification: null,
   pendingResourceOpen: null,
-  portalUser: loadPortalUser(),
-  isPortalAuthenticated: !!loadPortalUser(),
-  portalCurrentView: loadSavedPortalView(),
+  portalUser: null,
+  isPortalAuthenticated: false,
+  portalCurrentView: 'portal-dashboard',
   portalSelectedCaseId: null,
-  portalUnreadCount: loadPortalUnread(),
+  portalUnreadCount: 0,
   hasUnsavedChanges: false,
   login: (user) => {
     // Normalize role: use roleObj.name if available (Prisma @default('lawyer') overrides the real role)
@@ -284,4 +288,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ portalUnreadCount: next })
   },
   setHasUnsavedChanges: (dirty) => set({ hasUnsavedChanges: dirty }),
+  // Hydrate store from localStorage after client mount (prevents hydration mismatch)
+  hydrateFromStorage: () => {
+    const user = loadUser()
+    if (user) {
+      set({ user, isAuthenticated: true, currentView: user.role === 'root_admin' ? 'admin-dashboard' : 'dashboard' })
+    } else {
+      // Check saved view even if not authenticated (for pricing page etc.)
+      const savedView = loadSavedView()
+      set({ currentView: savedView })
+    }
+    const portalUser = loadPortalUser()
+    if (portalUser) {
+      set({ portalUser, isPortalAuthenticated: true })
+    }
+    set({
+      portalCurrentView: loadSavedPortalView(),
+      portalUnreadCount: loadPortalUnread(),
+    })
+  },
 }))

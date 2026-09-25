@@ -12,6 +12,7 @@ import { SearchDialog } from '@/views/SearchDialog'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { TrialBanner } from '@/views/TrialBanner'
 import { Toaster } from '@/components/ui/toaster'
+import { hydrateLocale } from '@/lib/i18n'
 
 // ──── Lazy-loaded guard (non-critical, loads after mount) ────
 const LazyBeforeUnloadGuard = lazy(() => import('@/components/BeforeUnloadGuard').then(m => ({ default: m.BeforeUnloadGuard })))
@@ -52,8 +53,8 @@ const LazyPortalSidebar = lazy(() => import('@/views/PortalViews').then(m => ({ 
 const LazyPortalHeader = lazy(() => import('@/views/PortalViews').then(m => ({ default: m.PortalHeader })))
 const LazyPortalRouter = lazy(() => import('@/views/PortalViews').then(m => ({ default: m.PortalRouter })))
 
-// Patch fetch immediately at module load (before any React rendering)
-if (typeof window !== 'undefined') initAuthFetch()
+// NOTE: initAuthFetch() is now called in useEffect (see App component below)
+// to prevent module-level side effects that cause React error #185
 
 // ──── View Loading Fallback ────
 function ViewLoader() {
@@ -258,7 +259,17 @@ function AppInner() {
 
 export default function App() {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => { initAuthFetch(); const id = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(id) }, [])
+  useEffect(() => {
+    // 1. Hydrate Zustand store from localStorage (SSR-safe: only after mount)
+    useAppStore.getState().hydrateFromStorage()
+    // 2. Hydrate locale from localStorage (SSR-safe: only after mount)
+    hydrateLocale()
+    // 3. Patch fetch for auth headers
+    initAuthFetch()
+    // 4. Set mounted after one frame to trigger AppInner render
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
   return (
     <>
       <QueryClientProvider client={queryClient}>

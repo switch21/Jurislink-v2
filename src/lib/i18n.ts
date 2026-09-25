@@ -70,8 +70,10 @@ export const useLocaleStore = create<LocaleState>((set) => ({
   },
 }))
 
-// Detect and apply saved locale after hydration (client-only)
-if (typeof window !== 'undefined') {
+// Hydrate locale from localStorage AFTER React hydration (call in useEffect)
+// This replaces the old module-level code that caused React error #185
+export function hydrateLocale() {
+  if (typeof window === 'undefined') return
   try {
     const stored = localStorage.getItem('jurislink_locale')
     if (stored && SUPPORTED_LOCALES.includes(stored as Locale)) {
@@ -81,7 +83,3 @@ if (typeof window !== 'undefined') {
 }
 
 export const useLocale = () => useLocaleStore((s) => ({ locale: s.locale, setLocale: s.setLocale }))
-
-// REMOVED: module-level DOM mutation that ran before React hydration
-// The DOM dir/lang attributes are now only set in setLocale() callback,
-// which is called from a useEffect in the locale selector component.

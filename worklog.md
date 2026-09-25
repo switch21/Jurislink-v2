@@ -2751,3 +2751,22 @@ Stage Summary:
 - API routes: COMPLETE - full CRUD for portal accounts
 - Portal accounts: ALL 12 clients have portal accounts in production Supabase
 - No remaining code changes needed - everything is deployment-ready
+
+---
+Task ID: hydration-fix-185
+Agent: main
+Task: Fix React error #185 (hydration mismatch) when logging in with mbeki@jurislink.com
+
+Work Log:
+- Analyzed root cause: Zustand store (appStore.ts) reads localStorage at module initialization time, causing server/client state mismatch
+- Identified 3 causes: (1) appStore.ts localStorage reads at init, (2) i18n.ts module-level DOM mutation, (3) initAuthFetch() module-level call
+- Fix #1: Changed appStore.ts to use SSR-safe defaults (null/false/'login') instead of reading localStorage at init. Added hydrateFromStorage() action
+- Fix #2: Removed module-level locale detection from i18n.ts, exported hydrateLocale() function instead
+- Fix #3: Updated AppClient.tsx to call hydrateFromStorage(), hydrateLocale(), and initAuthFetch() in useEffect (after mount), removed module-level initAuthFetch() call
+- Verified with agent-browser: no React error #185, no hydration mismatch, login page renders cleanly
+
+Stage Summary:
+- React error #185 is FIXED
+- Key pattern: All localStorage reads must happen AFTER React hydration (in useEffect), not at module initialization time
+- Store now initializes with server-safe defaults and hydrates from localStorage on mount
+- This ensures server HTML and client HTML match during hydration
