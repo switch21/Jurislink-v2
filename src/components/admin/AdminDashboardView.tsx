@@ -37,7 +37,7 @@ export default function AdminDashboardView() {
         <div className='flex items-end gap-2 h-40'>{months.map(([m, v]) => (<div key={m} className='flex-1 flex flex-col items-center gap-1'><span className='text-[10px] text-[#6B7280]'>{v}</span><div className='w-full bg-[#C8A45D] rounded-t' style={{ height: `${Math.max((v / maxMonth) * 120, 2)}px` }} /><span className='text-[9px] text-[#9CA3AF] truncate w-full text-center'>{m}</span></div>))}</div>
       </Card>
       <Card className='p-4'><CardTitle className='text-sm font-semibold mb-3'>Cabinets récents</CardTitle>
-        <div className='space-y-3'>{(data.recentTenants || []).slice(0, 5).map(t => (<div key={t.id} className='flex items-center justify-between'><div><p className='text-sm font-medium text-[#111827]'>{t.name}</p><p className='text-xs text-[#9CA3AF]'>{t._count.users} utilisateur{t._count.users > 1 ? 's' : ''} · {fmtDate(t.createdAt)}</p></div>{t.subscription?.plan && <Badge className='bg-[#E8F0F8] text-[#1E5A8A] text-[10px]'>{t.subscription.plan.name}</Badge>}</div>))}</div>
+        <div className='space-y-3'>{(data.recentTenants || []).slice(0, 5).map(t => { const userCount = t._count?.users ?? 0; return (<div key={t.id} className='flex items-center justify-between'><div><p className='text-sm font-medium text-[#111827]'>{t.name}</p><p className='text-xs text-[#9CA3AF]'>{userCount} utilisateur{userCount > 1 ? 's' : ''} · {fmtDate(t.createdAt)}</p></div>{t.subscription?.plan && <Badge className='bg-[#E8F0F8] text-[#1E5A8A] text-[10px]'>{t.subscription.plan.name}</Badge>}</div>) })}</div>
       </Card>
     </div>
     <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
