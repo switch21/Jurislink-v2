@@ -37,9 +37,19 @@ export async function POST(request: Request) {
       }
     }
 
-    // Fetch user permissions via roleId -> role_permissions -> permission
+    // Fetch user permissions
+    // root_admin is a platform superuser — always grant ALL permissions regardless of role_permissions
     let permissions: Array<{ resource: string; action: string; allowed: boolean }> = []
-    if (user.roleId) {
+    if (user.role === 'root_admin') {
+      // Platform superuser: grant every permission in the system
+      const allPerms = await db.permission.findMany()
+      permissions = allPerms.map((p) => ({
+        resource: p.resource,
+        action: p.action,
+        allowed: true,
+      }))
+    } else if (user.roleId) {
+      // Standard tenant user: resolve permissions via roleId -> role_permissions -> permission
       const rolePerms = await db.rolePermission.findMany({
         where: { roleId: user.roleId },
         include: { permission: true },
@@ -50,8 +60,8 @@ export async function POST(request: Request) {
         allowed: rp.allowed,
       }))
     } else {
-      // No roleId — deny all permissions for safety. User must be assigned a role.
-      // This prevents unauthorized full-access if a user has no role configured.
+      // No roleId and not root_admin — deny all permissions for safety.
+      // User must be assigned a role to gain access.
       const allResources = ['case', 'client', 'task', 'document', 'event', 'invoice', 'message', 'report', 'notification', 'audit', 'time_entry', 'communication', 'document_template', 'subscription', 'role', 'user']
       const allActions = ['view', 'create', 'update', 'delete', 'manage']
       for (const resource of allResources) {
