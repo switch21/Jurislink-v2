@@ -2719,3 +2719,35 @@ Stage Summary:
 - Code changes made locally need deployment to Vercel to be visible on jurislink.pro
 - API endpoint /api/clients/portal ready for portal account management from UI
 - Portal UI added to ClientsView with activate, reset password, and deactivate features
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Verify and confirm all fixes - Login fallback permissions, Portal management UI, Portal accounts
+
+Work Log:
+- Verified login route fallback is correctly fixed: when roleId is NULL, all permissions are denied (allowed: false) instead of granted
+- Verified full portal management UI exists in ClientsView.tsx:
+  - Portal status column in client table (Activé/Inactif/Désactivé badges)
+  - Activate portal button (Globe icon) for clients without portal accounts
+  - Dropdown menu for portal management (reset password, deactivate)
+  - Credentials dialog showing generated email + password after activation
+  - Reset password result dialog
+  - Deactivate confirmation dialog (AlertDialog)
+- Verified API routes exist at /api/clients/portal (GET, POST, DELETE, PATCH)
+  - GET: List portal accounts for a tenant
+  - POST: Create portal account (generates random password)
+  - DELETE: Revoke portal access
+  - PATCH: Reset password or toggle active status
+- Verified translations exist for all portal-related keys in both fr.ts and en.ts
+- Verified portal password reset flow exists at /api/portal/reset-password
+- Ran seed-portal-accounts.js script: all 12 clients already have portal accounts
+- Confirmed database fixes from previous session are still in place (role column, role_id, MFA)
+
+Stage Summary:
+- All code changes are already implemented and correct
+- Login fallback: SAFE - denies all permissions when roleId is NULL
+- Portal management UI: COMPLETE - status column, activate/deactivate/reset buttons, credentials dialogs
+- API routes: COMPLETE - full CRUD for portal accounts
+- Portal accounts: ALL 12 clients have portal accounts in production Supabase
+- No remaining code changes needed - everything is deployment-ready
