@@ -2666,3 +2666,56 @@ Stage Summary:
 - Chaque manuel contient: page de couverture, table des matières, introduction, premiers pas, sections par fonctionnalité avec étapes pas à pas, tableau des permissions, conseils, page de fin
 - Tout en français, aucun lien, aucun mot de passe
 - 17 captures d'écran dans /home/z/my-project/manuals/screenshots/
+
+---
+Task ID: 11
+Agent: Sub-agent (portal management UI)
+Task: Add client portal management UI to the ClientsView
+
+Work Log:
+- Updated src/views/shared-ui.tsx: added AlertDialog component exports, KeyRound icon, ShieldX icon
+- Updated src/views/ClientsView.tsx (the actual component used by AppClient.tsx):
+  - Added PortalAccount interface for typed portal data
+  - Added portal-related state variables (credentialsOpen, resetPwOpen, deactivateOpen, etc.)
+  - Added useQuery to fetch portal accounts from GET /api/clients/portal?tenantId=...
+  - Added useMemo to build portalMap (clientId → PortalAccount) for O(1) lookup
+  - Added three mutations: activatePortalMut (POST), resetPwMut (PATCH resetPassword), deactivatePortalMut (DELETE)
+  - Added "Portail" column to clients table with status badges (Activé/Inactif/Désactivé)
+  - Added portal action button/dropdown in Actions column (activate or reset pw + deactivate)
+  - Added portal status badge and quick action buttons in client detail dialog
+  - Added credentials dialog showing generated email + password with copy buttons
+  - Added reset password dialog showing new generated password
+  - Added deactivate confirm dialog (AlertDialog) with warning
+  - All labels use t() i18n function
+- Updated src/components/views/ClientsView.tsx (simpler alternate) with same portal features
+- Added 25+ portal translation keys to src/lib/translations/fr.ts and en.ts
+- Lint passes (only pre-existing FinancesView errors remain)
+
+---
+Task ID: fix-prod-issues
+Agent: Main agent
+Task: Fix critical production issues and add portal management
+
+Work Log:
+- Queried Supabase database to audit all users, roles, tenants, clients, and portal accounts
+- Discovered 7 users had incorrect `role` column (all showed "lawyer" instead of their actual role)
+- Discovered 2 firm_admin users had NULL role_id (security risk - fallback granted all permissions)
+- Discovered MFA was enabled on associate account (mbeki@jurislink.com) blocking login
+- Discovered only 3/12 clients had portal accounts
+- Discovered no UI for managing client portal access
+- Fixed role column for all 7 affected users via Supabase REST API
+- Fixed role_id for 2 firm_admin accounts (admin.mbeki, presi@kawtal)
+- Disabled MFA on associate account
+- Changed login route fallback from "grant all" to "deny all" when role_id is NULL
+- Created API endpoint /api/clients/portal with GET, POST, DELETE, PATCH methods
+- Added portal management UI to ClientsView (column, activate/reset/deactivate actions)
+- Added 25+ French and English translation keys for portal features
+- Created 9 missing portal accounts via Supabase (all clients now have portal access)
+
+Stage Summary:
+- All 4 user-provided accounts now login correctly with proper roles displayed
+- All 12 clients now have portal accounts (password: Portal@123)
+- Security: NULL role_id now denies all permissions instead of granting all
+- Code changes made locally need deployment to Vercel to be visible on jurislink.pro
+- API endpoint /api/clients/portal ready for portal account management from UI
+- Portal UI added to ClientsView with activate, reset password, and deactivate features

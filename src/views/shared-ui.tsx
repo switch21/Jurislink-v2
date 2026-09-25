@@ -46,6 +46,7 @@ export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCap
 export { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 export { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog'
 export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+export { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 export { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 export { ScrollArea } from '@/components/ui/scroll-area'
@@ -73,9 +74,9 @@ export {
   FileImage, List, LayoutGrid, History,
   Globe, ShieldUser, FileDown, MessageCircleReply, UserCog,
   Building2 as BuildingIcon, CreditCard as CreditCardIcon, Zap as ZapIcon,
-  QrCode, KeyRound as Key,
+  QrCode, KeyRound, KeyRound as Key,
   SlidersHorizontal, Table2,
-  Unplug, Info, Star, ArrowRight
+  Unplug, Info, Star, ArrowRight, ShieldX
 } from 'lucide-react'
 // ═══ Internal Components ═══
 export { EmptyState } from './EmptyState'
