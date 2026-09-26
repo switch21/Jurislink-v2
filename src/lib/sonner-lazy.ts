@@ -13,16 +13,20 @@ import { lazy } from 'react'
  * Fix: Dynamic import() creates a separate chunk. sonner only evaluates
  * (and injects CSS) when the chunk loads — which is AFTER hydration
  * because all toast/Toaster usage is post-mount.
+ *
+ * IMPORTANT: No module-level `typeof window !== 'undefined'` checks.
+ * All initialization is lazy — triggered on first toast() call or Toaster render.
  */
 
-// Pre-fetch sonner chunk asynchronously (non-blocking, no CSS side effects)
-// The import() promise resolves when the chunk loads, triggering __insertCSS()
-// only then — well past hydration.
-const sonnerPromise = typeof window !== 'undefined'
-  ? import('sonner').then(m => { __toast = m.toast; return m })
-  : null
-
 let __toast: typeof import('sonner').toast | null = null
+let sonnerPromise: Promise<typeof import('sonner')> | null = null
+
+function getSonnerPromise() {
+  if (!sonnerPromise) {
+    sonnerPromise = import('sonner').then(m => { __toast = m.toast; return m })
+  }
+  return sonnerPromise
+}
 
 // Lazy Toaster component — React.lazy defers rendering until after mount
 export const Toaster = lazy(() =>
@@ -37,11 +41,11 @@ export const toast = new Proxy(function () {}, {
     if (__toast && prop in __toast) return (__toast as any)[prop]
     return (...args: any[]) => {
       if (__toast) return (__toast as any)[prop](...args)
-      sonnerPromise?.then(m => (m.toast as any)[prop](...args))
+      getSonnerPromise().then(m => (m.toast as any)[prop](...args))
     }
   },
   apply(_, _thisArg, args) {
     if (__toast) return __toast(...(args as any))
-    sonnerPromise?.then(m => m.toast(...(args as any)))
+    getSonnerPromise().then(m => m.toast(...(args as any)))
   },
 }) as unknown as typeof import('sonner').toast

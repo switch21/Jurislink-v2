@@ -13,7 +13,6 @@ import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { TrialBanner } from '@/views/TrialBanner'
 import { Toaster } from '@/components/ui/toaster'
 import { hydrateLocale } from '@/lib/i18n'
-import { ThemeProvider } from 'next-themes'
 
 // ──── Lazy-loaded guard (non-critical, loads after mount) ────
 const LazyBeforeUnloadGuard = lazy(() => import('@/components/BeforeUnloadGuard').then(m => ({ default: m.BeforeUnloadGuard })))
@@ -272,7 +271,6 @@ export default function App() {
   return (
     <>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
         <TooltipProvider>
           <div className='min-h-screen flex flex-col bg-[var(--bg-page)] transition-colors duration-300'>
             <a href='#main-content' className='skip-link'>Aller au contenu principal</a>
@@ -288,7 +286,6 @@ export default function App() {
             </div>
           </div>
         </TooltipProvider>
-        </ThemeProvider>
       </QueryClientProvider>
       <Toaster />
     </>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ThemeProvider } from "next-themes";
+import { LocaleSync } from "@/components/LocaleSync";
 import "./globals.css";
 
 const inter = Inter({
@@ -34,8 +36,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className="antialiased" suppressHydrationWarning>
-        {children}
+      <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
+          <LocaleSync />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

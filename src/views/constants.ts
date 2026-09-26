@@ -6,6 +6,13 @@ import { LayoutDashboard, Briefcase, Users, ClipboardList, FileText, Calendar, R
 import type { ViewName } from '@/store/appStore'
 
 // ==================== Query Client ====================
+// Lazy singleton to avoid separate server/client instances at module level
+let _qc: QueryClient | null = null
+export function getQueryClient() {
+  if (!_qc) _qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } })
+  return _qc
+}
+/** @deprecated Use getQueryClient() instead for SSR safety */
 export const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } })
 
 // ==================== Constants ====================

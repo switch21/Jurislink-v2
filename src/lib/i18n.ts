@@ -63,8 +63,9 @@ export const useLocaleStore = create<LocaleState>((set) => ({
   setLocale: (l) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jurislink_locale', l)
-      document.documentElement.dir = RTL_LOCALES.has(l) ? 'rtl' : 'ltr'
-      document.documentElement.lang = l
+      // NOTE: We do NOT mutate document.documentElement.lang/.dir here anymore.
+      // That caused React error #185 because React 19 detects attribute mismatches.
+      // Instead, a <LocaleSync> component handles this in a useEffect.
     }
     set({ locale: l })
   },
