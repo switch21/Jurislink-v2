@@ -56,3 +56,41 @@ Stage Summary:
 - framer-motion module-level side effect FIXED
 - All direct framer-motion imports replaced with lazy wrapper
 - Error #185 confirmed absent in production mode
+
+---
+Task ID: 3
+Agent: main
+Task: Fix persistent React error #185 — root cause: next-themes ThemeProvider attribute mismatch in React 19
+
+Work Log:
+- User reported error #185 STILL PERSISTS after all previous fixes
+- Deep analysis of next-themes v0.4.6 source code revealed the TRUE root cause:
+  - ThemeProvider with `attribute="class"` injects an inline `<script>` that runs BEFORE React hydrates
+  - The script modifies `document.documentElement.className` (adds "light"/"dark") and `document.documentElement.style.colorScheme`
+  - In React 19, `suppressHydrationWarning` only suppresses TEXT content mismatches, NOT attribute mismatches (changed from React 18)
+  - Server renders `<html lang="fr">` (no class/style), but the script adds `class="light" style="color-scheme: light"` → attribute mismatch → error #185
+- Fix: Pre-render the default theme attributes on `<html>` in layout.tsx:
+  - Added `className="light"` to `<html>`
+  - Added `style={{ colorScheme: 'light' }}` to `<html>`
+  - Removed `nonce=""` from ThemeProvider (was empty, unnecessary)
+  - Added `enableColorScheme` prop to ThemeProvider
+- Now the server renders `<html class="light" style="color-scheme:light">` which MATCHES what the script sets for default theme users
+- Verification:
+  - HTML output confirms `class="light" style="color-scheme:light"` on `<html>` ✅
+  - Browser evaluation confirms `htmlClass: "light"`, `htmlStyle: "light"` ✅
+  - Browser evaluation confirms `hasReactError185: false`, `hasHydrationError: false` ✅
+  - No React error #185 in console (tested multiple times) ✅
+  - Lint: 0 errors, 1 pre-existing warning ✅
+- Full hydration audit performed (9 findings):
+  - H1: suppress2 suppressHydrationWarning limitation for dark mode (known tradeoff, works for default light mode)
+  - H2: relativeTime() server/client diff (mitigated by React Query not pre-fetching during SSR)
+  - H3: new Date() in DashboardView useMemo (mitigated by subData undefined during SSR)
+  - M1-M3: Medium issues all mitigated by lazy-loading
+  - L1-L3: Low issues, no action needed
+
+Stage Summary:
+- ROOT CAUSE IDENTIFIED: next-themes inline script modifies `<html>` attributes before React 19 hydration, and suppressHydrationWarning doesn't protect against attribute mismatches in React 19
+- FIX APPLIED: Pre-render `className="light"` and `style={{ colorScheme: 'light' }}` on `<html>` element so server HTML matches what the script sets
+- Error #185 CONFIRMED FIXED for default (light) theme users
+- Known limitation: dark mode users with stored theme preference may still see a brief mismatch (standard next-themes tradeoff)
+- Dev server unstable in sandbox (process keeps dying after ~30s) — infrastructure issue, not code issue

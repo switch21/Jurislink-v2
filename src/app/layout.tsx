@@ -29,15 +29,29 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Root layout — server component.
+ *
+ * We pre-render className="light" and style={{ colorScheme: 'light' }} on <html>
+ * so the next-themes inline script (which runs BEFORE React hydrates) does NOT
+ * cause a hydration attribute mismatch.
+ *
+ * In React 19, suppressHydrationWarning only suppresses TEXT mismatches,
+ * NOT attribute mismatches. The next-themes script sets:
+ *   document.documentElement.classList.add('light')
+ *   document.documentElement.style.colorScheme = 'light'
+ * ...before React hydrates. If the server HTML already has these attributes,
+ * the DOM matches → no React error #185.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className="light" style={{ colorScheme: 'light' }} suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange nonce="">
+        <ThemeProvider attribute="class" defaultTheme="light" enableColorScheme disableTransitionOnChange>
           <LocaleSync />
           {children}
         </ThemeProvider>
