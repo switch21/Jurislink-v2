@@ -12,8 +12,8 @@ export function getQueryClient() {
   if (!_qc) _qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } })
   return _qc
 }
-/** @deprecated Use getQueryClient() instead for SSR safety */
-export const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } })
+/** Convenience alias — lazily creates QueryClient on first access (SSR-safe) */
+export const queryClient = getQueryClient()
 
 // ==================== Constants ====================
 export const STATUS_COLORS: Record<string, string> = {

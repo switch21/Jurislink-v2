@@ -109,6 +109,7 @@ export function taskStatusColor(s: string) { const mapped = TASK_STATUS_MAP[s] |
 export function taskStatusLabel(s: string) { return statusLabel(s) }
 export function relativeTime(d: string | null | undefined): string {
   if (!d) return ''
+  if (typeof window === 'undefined') return '' // SSR-safe: skip Date.now() on server
   try {
     const now = Date.now()
     const then = parseISO(d).getTime()
@@ -133,6 +134,7 @@ export function fmtDuration(seconds: number): string {
 
 /** Read auth headers from localStorage — same source as auth-fetch.ts override */
 export function getAuthHeaders(isPortal = false): Record<string, string> {
+  if (typeof window === 'undefined') return {} // SSR-safe
   const headers: Record<string, string> = {}
   try {
     const key = isPortal ? 'jurislink_portal_user' : 'jurislink_user'

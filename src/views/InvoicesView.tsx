@@ -15,7 +15,9 @@ export function InvoicesView() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [showPayForm, setShowPayForm] = useState(false)
-  const [payForm, setPayForm] = useState({ amount: '', method: 'virement', reference: '', paidAt: new Date().toISOString().slice(0, 10), notes: '' })
+  const [payForm, setPayForm] = useState({ amount: '', method: 'virement', reference: '', paidAt: '', notes: '' })
+  // Hydrate paidAt with today's date after mount to avoid server/client Date mismatch
+  useEffect(() => { setPayForm(f => ({ ...f, paidAt: new Date().toISOString().slice(0, 10) })) }, [])
   const [lineItems, setLineItems] = useState<Array<{ description: string; quantity: number; unitPrice: number }>>([{ description: '', quantity: 1, unitPrice: 0 }])
   const [createForm, setCreateForm] = useState({ type: 'facture', clientId: '', caseId: '', currencyId: '', dueDate: '', billingType: 'forfait', notes: '', taxRate: '0', discountAmount: '0', terms: '' })
   const { restoredDraft: invoiceRestoredDraft, isDirty: invoiceIsDirty, clearDraft: clearInvoiceDraft, getDraft: getInvoiceDraft } = useFormDraft('invoice-form', createForm as unknown as Record<string, unknown>, { enabled: createOpen })

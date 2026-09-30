@@ -29,9 +29,10 @@ export function FinancesView() {
   const fin = dashData?.financial
   const payments: Payment[] = Array.isArray(paymentsData) ? paymentsData : Array.isArray(paymentsData?.payments) ? paymentsData.payments : []
   const overdueInvoices: Invoice[] = Array.isArray(overdueData) ? overdueData : []
-  const now = new Date()
 
+  // Use current date in useMemo to avoid server/client mismatch
   const overdueList = useMemo(() => {
+    const now = new Date()
     return overdueInvoices.filter(inv => inv.dueDate && isBefore(parseISO(inv.dueDate), now) && (inv.status === 'non_paye' || inv.status === 'partiel')).map(inv => ({
       ...inv,
       daysOverdue: differenceInDays(now, parseISO(inv.dueDate)),

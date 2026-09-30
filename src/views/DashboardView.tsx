@@ -33,10 +33,15 @@ export function DashboardView() {
     if (days > 30) return null
     return { daysLeft: days, planName: subData.plan?.name || 'Starter', endDate: new Date(subData.currentPeriodEnd).toLocaleDateString('fr-FR') }
   }, [subData])
-  const now = new Date()
-  const greeting = now.getHours() < 12 ? 'Bonjour' : now.getHours() < 18 ? 'Bon après-midi' : 'Bonsoir'
-  const hour = new Date().getHours()
-  const minute = new Date().getMinutes()
+  const [greeting, setGreeting] = useState('')
+  const [timeStr, setTimeStr] = useState('')
+  const [dateStr, setDateStr] = useState('')
+  useEffect(() => {
+    const now = new Date()
+    setGreeting(now.getHours() < 12 ? 'Bonjour' : now.getHours() < 18 ? 'Bon après-midi' : 'Bonsoir')
+    setTimeStr(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`)
+    setDateStr(format(now, 'EEEE d MMMM yyyy', { locale: fr }))
+  }, [])
 
   if (isLoading) return <div className="p-6"><Skeleton className="h-8 w-48 mb-6" /><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div></div>
   if (isError) return <div className="p-6"><EmptyState icon={AlertCircle} title='Erreur de chargement' description={error?.message || 'Impossible de charger les données du tableau de bord'} action={<Button variant="outline" onClick={() => refetch()}><RefreshCw className="size-4 mr-2" />Réessayer</Button>} /></div>
@@ -71,7 +76,7 @@ export function DashboardView() {
         <Card className="lg:col-span-2">
           <CardContent className="p-5">
             <div className="flex items-start justify-between mb-4">
-              <div><h2 className="text-xl font-bold text-[var(--text-primary)]">{greeting}, {user?.fullName?.split(' ').slice(-1)}</h2><p className="text-sm text-[var(--text-secondary)]">{format(now, 'EEEE d MMMM yyyy', { locale: fr })} — {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')}</p></div>
+              <div><h2 className="text-xl font-bold text-[var(--text-primary)]">{greeting}, {user?.fullName?.split(' ').slice(-1)}</h2><p className="text-sm text-[var(--text-secondary)]">{dateStr} — {timeStr}</p></div>
               <div className="flex gap-2"><Button size="sm" onClick={() => setCurrentView('cases')} className="hidden sm:flex"><Plus className="size-4 mr-1" />Nouveau dossier</Button><Button size="sm" variant="outline" onClick={() => setCurrentView('invoices')} className="hidden sm:flex"><Receipt className="size-4 mr-1" />Nouvelle facture</Button></div>
             </div>
             <Separator className="mb-4" />

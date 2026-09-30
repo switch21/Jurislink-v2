@@ -9,7 +9,9 @@ import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventA
 export function CalendarView() {
   const { user, setHasUnsavedChanges } = useAppStore()
   const qc = useQueryClient()
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [currentMonth, setCurrentMonth] = useState<Date | null>(null)
+  // Hydrate currentMonth after mount to avoid server/client Date mismatch
+  useEffect(() => { setCurrentMonth(new Date()) }, [])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<EventItem | null>(null)
   const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', eventType: 'rdv', criticality: 'normale', caseId: '', assignments: '' as string, location: '' })
@@ -17,7 +19,7 @@ export function CalendarView() {
   const { isDirty: eventIsDirty, clearDraft: clearEventDraft } = useFormDraft('event-form', form as unknown as Record<string, unknown>, { enabled: dialogOpen })
   const eventHasDraft = eventIsDirty
   useEffect(() => { registerDirtyForm('event-form', eventIsDirty); setHasUnsavedChanges(eventIsDirty); return () => { unregisterDirtyForm('event-form') } }, [eventIsDirty, setHasUnsavedChanges])
-  const monthStr = format(currentMonth, 'yyyy-MM')
+  const monthStr = currentMonth ? format(currentMonth, 'yyyy-MM') : ''
 
   // Fetch connected calendars (sync status)
   const { data: syncConnections } = useQuery({

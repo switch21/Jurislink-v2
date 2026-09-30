@@ -18,6 +18,7 @@ export function TrialBanner() {
 
   // Check if previously dismissed
   useEffect(() => {
+    if (typeof window === 'undefined') return // SSR-safe
     try {
       const wasDismissed = localStorage.getItem(DISMISS_KEY)
       if (wasDismissed) {
