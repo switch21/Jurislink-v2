@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+import { motion } from '@/lib/framer-motion-lazy'
 import { Briefcase, Search, FileText, Calendar } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import type { PortalCaseItem } from '@/types'
