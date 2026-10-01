@@ -6,6 +6,11 @@
  * Supabase's PostgreSQL database via the pg driver.
  */
 
+// Force-load .env with override so shell env vars (e.g. stale SQLite DATABASE_URL)
+// don't take precedence over the correct Supabase URL in .env
+import { config as dotenvConfig } from 'dotenv'
+dotenvConfig({ override: true })
+
 import { Pool, PoolClient, QueryResult } from 'pg'
 
 // ═══════════════════════════════════════════════════════════════
@@ -1678,6 +1683,10 @@ function createDb(executor?: Executor) {
     $queryRaw,
     $executeRaw,
     $queryRawUnsafe,
+    /** No-op for pg Pool — the pool auto-connects. Kept for Prisma API compat. */
+    $connect: () => Promise.resolve(),
+    /** End the pool. In request handlers this is a no-op (pool is shared). Kept for Prisma API compat. */
+    $disconnect: () => Promise.resolve(),
   }
 }
 

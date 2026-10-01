@@ -42,3 +42,24 @@ Unresolved issues or risks:
 - L'adaptateur ne gère pas certains patterns très spécifiques (include avec orderBy + where sur relations dans le même include) — à affiner si besoin
 - Le mini-service notification-service utilise maintenant pg directement — vérifier qu'il démarre correctement
 - Certains scripts Python dans scripts/ n'ont pas été vérifiés (non liés à Prisma)
+
+---
+Task ID: 2
+Agent: Main
+Task: Fix erreur de connexion root_admin
+
+Work Log:
+- Diagnostiqué: DATABASE_URL shell env var = `file:/home/z/my-project/db/custom.db` (SQLite) surcharge le .env (Supabase PostgreSQL)
+- Installé dotenv@18.0.5 et ajouté `dotenvConfig({ override: true })` au début de src/lib/db.ts pour forcer le .env
+- Diagnostiqué: `db.$disconnect()` non implémenté → TypeError crash dans finally block de toutes les API routes (140+ appels)
+- Ajouté `$disconnect` et `$connect` methods (no-op Promise.resolve()) à l'adaptateur db pour compat Prisma
+- Vérifié root_admin existe dans Supabase: email=pat.epee@gmail.com, role=root_admin, 114 permissions, is_active=true
+- Testé login API: POST /api/auth/login → 200, retourne utilisateur + 114 permissions
+- Testé login UI via agent-browser: formulaire rempli, connexion réussie, dashboard admin affiché
+- Mauvais mot de passe → 401 "Mot de passe incorrect" ✓
+
+Stage Summary:
+- **DATABASE_URL corrigé**: dotenv override force le .env Supabase PostgreSQL
+- **$disconnect/$connect ajoutés**: toutes les API routes fonctionnent sans crash
+- **Login root_admin fonctionnel**: API 200, UI dashboard admin accessible
+- Credentials: pat.epee@gmail.com / Admin@123
