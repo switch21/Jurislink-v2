@@ -12,7 +12,8 @@
     "db:push": "echo 'Using Supabase pg adapter - no schema push needed'",
     "db:generate": "echo 'Using Supabase pg adapter - no generation needed'",
     "db:migrate": "echo 'Using Supabase pg adapter - migrations managed via Supabase'",
-    "db:reset": "echo 'Using Supabase pg adapter - reset managed via Supabase'"
+    "db:reset": "echo 'Using Supabase pg adapter - reset managed via Supabase'",
+    "seed": "bunx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
