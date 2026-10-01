@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
-import { Prisma } from '@prisma/client'
+// Prisma namespace types removed — using inline types
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'report', 'view')
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const fromDate = searchParams.get('from') || undefined
     const toDate = searchParams.get('to') || undefined
 
-    const dateFilter: Prisma.CaseWhereInput = {}
+    const dateFilter: Record<string, unknown> = {}
     if (fromDate || toDate) {
       dateFilter.createdAt = {}
       if (fromDate) (dateFilter.createdAt as any).gte = new Date(fromDate)

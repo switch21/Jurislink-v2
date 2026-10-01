@@ -1,5 +1,4 @@
-import { getDb } from '@/lib/db'
-import { PrismaClient } from '@prisma/client'
+import { getDb, DbClient } from '@/lib/db'
 
 export type LimitResource = 'users' | 'cases' | 'storage'
 
@@ -91,7 +90,7 @@ export async function getTenantLimits(tenantId: string): Promise<TenantLimits> {
 export async function enforceLimit(
   resource: LimitResource,
   tenantId: string,
-  db: PrismaClient,
+  db: DbClient,
   currentCount?: number,
 ): Promise<EnforceLimitResult> {
   // 1. Fetch plan limits
@@ -171,7 +170,7 @@ export async function enforceLimit(
 async function resolveCount(
   resource: LimitResource,
   tenantId: string,
-  db: PrismaClient,
+  db: DbClient,
   providedCount?: number,
 ): Promise<number> {
   if (providedCount !== undefined) return providedCount

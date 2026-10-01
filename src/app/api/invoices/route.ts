@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { Prisma } from '@prisma/client'
+// Prisma namespace types removed — using inline types
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { fireNotification } from '@/lib/notify'
 
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     const type = searchParams.get('type')
     const caseId = searchParams.get('caseId')
 
-    const where: Prisma.InvoiceWhereInput = {}
+    const where: Record<string, unknown> = {}
     if (tenantId) where.tenantId = tenantId
     if (status) where.status = status
     if (clientId) where.clientId = clientId

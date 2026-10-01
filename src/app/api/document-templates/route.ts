@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { Prisma } from '@prisma/client'
+// Prisma namespace types removed — using inline types
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
     }
 
-    const where: Prisma.DocumentTemplateWhereInput = { tenantId }
+    const where: Record<string, unknown> = { tenantId }
     if (category) where.category = category
     if (isActive !== null && isActive !== undefined) {
       where.isActive = isActive === 'true'

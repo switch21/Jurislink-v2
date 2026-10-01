@@ -1,6 +1,6 @@
 /**
- * Direct Prisma script for auto-remind cron job.
- * Connects to Supabase PostgreSQL and runs the same logic as
+ * Direct script for auto-remind cron job.
+ * Connects to Supabase PostgreSQL via pg adapter and runs the same logic as
  * POST /api/invoices/overdue/auto-remind
  *
  * Thresholds:
@@ -9,7 +9,10 @@
  *   3rd reminder: 30+ days overdue
  *   Formal notice: 45+ days overdue
  */
-const { PrismaClient } = require('@prisma/client')
+const { Pool } = require('pg')
+require('dotenv').config()
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
 const THRESHOLDS = [
   { fromLevel: 0, toLevel: 1, minDaysOverdue: 7 },
@@ -21,7 +24,6 @@ const THRESHOLDS = [
 const LEVEL_LABELS = ['', '1ere relance', '2eme relance', '3eme relance', 'Mise en demeure']
 
 async function main() {
-  const db = new PrismaClient()
   const now = new Date()
   let actionsTaken = 0
   const results = []
@@ -33,65 +35,67 @@ async function main() {
       const cutoffDate = new Date(now.getTime() - threshold.minDaysOverdue * 86400000)
       const recentCutoff = new Date(now.getTime() - 3 * 86400000)
 
-      const invoices = await db.invoice.findMany({
-        where: {
-          type: 'facture',
-          status: { in: ['non_paye', 'partiel'] },
-          reminderLevel: threshold.fromLevel,
-          dueDate: { lte: cutoffDate },
-          reminders: { none: { level: threshold.toLevel, sentAt: { gte: recentCutoff } } },
-        },
-        include: {
-          client: { select: { id: true, fullName: true, email: true } },
-          tenant: { select: { id: true, name: true } },
-          payments: { select: { amount: true } },
-        },
-      })
+      const { rows: invoices } = await pool.query(`
+        SELECT i.*, c.id as client_id, c.full_name as client_full_name, c.email as client_email,
+               t.id as tenant_id, t.name as tenant_name
+        FROM invoices i
+        LEFT JOIN clients c ON c.id = i.client_id
+        LEFT JOIN tenants t ON t.id = i.tenant_id
+        WHERE i.type = 'facture'
+          AND i.status IN ('non_paye', 'partiel')
+          AND i.reminder_level = $1
+          AND i.due_date <= $2
+          AND NOT EXISTS (
+            SELECT 1 FROM reminder_logs rl
+            WHERE rl.invoice_id = i.id AND rl.level = $3 AND rl.sent_at >= $4
+          )
+      `, [threshold.fromLevel, cutoffDate, threshold.toLevel, recentCutoff])
 
       for (const inv of invoices) {
-        const daysOverdue = inv.dueDate
-          ? Math.floor((now.getTime() - new Date(inv.dueDate).getTime()) / 86400000)
+        const daysOverdue = inv.due_date
+          ? Math.floor((now.getTime() - new Date(inv.due_date).getTime()) / 86400000)
           : 0
-        const totalPaid = inv.payments.reduce((s, p) => s + p.amount, 0)
+
+        const { rows: payments } = await pool.query(
+          'SELECT amount FROM payments WHERE invoice_id = $1', [inv.id]
+        )
+        const totalPaid = payments.reduce((s, p) => s + p.amount, 0)
         const remaining = Math.max(0, inv.amount - totalPaid)
 
-        const subject = `${LEVEL_LABELS[threshold.toLevel]} — Facture ${inv.invoiceNumber || inv.id.slice(0, 8)}`
-        const content = `Relance automatique ${LEVEL_LABELS[threshold.toLevel]} pour la facture ${inv.invoiceNumber || inv.id.slice(0, 8)}.\nClient: ${inv.client?.fullName || 'N/A'}\nMontant du: ${new Intl.NumberFormat('fr-FR').format(Math.round(remaining))} FCFA\nRetard: ${daysOverdue} jours`
+        const subject = `${LEVEL_LABELS[threshold.toLevel]} — Facture ${inv.invoice_number || inv.id.slice(0, 8)}`
+        const content = `Relance automatique ${LEVEL_LABELS[threshold.toLevel]} pour la facture ${inv.invoice_number || inv.id.slice(0, 8)}.\nClient: ${inv.client_full_name || 'N/A'}\nMontant du: ${new Intl.NumberFormat('fr-FR').format(Math.round(remaining))} FCFA\nRetard: ${daysOverdue} jours`
 
-        await db.reminderLog.create({
-          data: {
-            level: threshold.toLevel, method: 'email', subject, content,
-            status: 'sent', daysOverdue, amountDue: remaining,
-            invoiceId: inv.id, tenantId: inv.tenantId,
-          },
-        })
+        await pool.query(`
+          INSERT INTO reminder_logs (level, method, subject, content, status, days_overdue, amount_due, invoice_id, tenant_id, sent_at)
+          VALUES ($1, 'email', $2, $3, 'sent', $4, $5, $6, $7, NOW())
+        `, [threshold.toLevel, subject, content, daysOverdue, remaining, inv.id, inv.tenant_id])
 
-        await db.notification.create({
-          data: {
-            title: `${LEVEL_LABELS[threshold.toLevel]} automatique`,
-            message: `${LEVEL_LABELS[threshold.toLevel]} pour ${inv.client?.fullName || 'client'} — ${inv.invoiceNumber || '?'} — ${daysOverdue}j de retard`,
-            category: 'facture', resourceType: 'invoice', resourceId: inv.id, tenantId: inv.tenantId,
-          },
-        })
+        await pool.query(`
+          INSERT INTO notifications (title, message, category, resource_type, resource_id, tenant_id, created_at)
+          VALUES ($1, $2, 'facture', 'invoice', $3, $4, NOW())
+        `, [
+          `${LEVEL_LABELS[threshold.toLevel]} automatique`,
+          `${LEVEL_LABELS[threshold.toLevel]} pour ${inv.client_full_name || 'client'} — ${inv.invoice_number || '?'} — ${daysOverdue}j de retard`,
+          inv.id, inv.tenant_id
+        ])
 
-        await db.invoice.update({
-          where: { id: inv.id },
-          data: { reminderLevel: threshold.toLevel, lastReminderAt: now },
-        })
+        await pool.query(`
+          UPDATE invoices SET reminder_level = $1, last_reminder_at = NOW() WHERE id = $2
+        `, [threshold.toLevel, inv.id])
 
         actionsTaken++
         results.push({
           invoiceId: inv.id,
-          invoiceNumber: inv.invoiceNumber || inv.id.slice(0, 8),
+          invoiceNumber: inv.invoice_number || inv.id.slice(0, 8),
           level: threshold.toLevel,
           levelLabel: LEVEL_LABELS[threshold.toLevel],
-          clientName: inv.client?.fullName || 'N/A',
-          clientEmail: inv.client?.email || 'N/A',
-          tenantName: inv.tenant?.name || 'N/A',
+          clientName: inv.client_full_name || 'N/A',
+          clientEmail: inv.client_email || 'N/A',
+          tenantName: inv.tenant_name || 'N/A',
           daysOverdue,
           amountDue: remaining,
         })
-        console.log(`  -> ${LEVEL_LABELS[threshold.toLevel]}: ${inv.invoiceNumber || inv.id.slice(0, 8)} (${inv.client?.fullName}) — ${daysOverdue}j — ${Math.round(remaining)} FCFA`)
+        console.log(`  -> ${LEVEL_LABELS[threshold.toLevel]}: ${inv.invoice_number || inv.id.slice(0, 8)} (${inv.client_full_name}) — ${daysOverdue}j — ${Math.round(remaining)} FCFA`)
       }
     }
 
@@ -101,7 +105,7 @@ async function main() {
     console.error('Auto-remind error:', error)
     process.exit(1)
   } finally {
-    await db.$disconnect()
+    await pool.end()
   }
 }
 

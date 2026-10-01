@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireRootAdmin } from '@/lib/auth-server'
+import { getDb } from '@/lib/db'
 
 export async function GET(request: Request) {
   const auth = await requireRootAdmin(request)
@@ -19,18 +20,17 @@ export async function GET(request: Request) {
     info['DB_url_end'] = '...' + url.substring(url.length - 20)
   }
 
-  // 2) Try Prisma connection
+  // 2) Try database connection
   try {
-    const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient()
+    const db = getDb()
     const start = Date.now()
-    await prisma.$queryRawUnsafe('SELECT 1 as ok')
-    info['prisma_connection'] = `OK (${Date.now() - start}ms)`
-    await prisma.$disconnect()
+    await db.$queryRawUnsafe('SELECT 1 as ok')
+    info['db_connection'] = `OK (${Date.now() - start}ms)`
+    await db.$disconnect()
   } catch (e: any) {
-    info['prisma_connection'] = 'FAILED'
-    info['prisma_error'] = (e?.message || String(e)).substring(0, 300)
-    info['prisma_code'] = e?.code || '?'
+    info['db_connection'] = 'FAILED'
+    info['db_error'] = (e?.message || String(e)).substring(0, 300)
+    info['db_code'] = e?.code || '?'
   }
 
   return NextResponse.json(info)

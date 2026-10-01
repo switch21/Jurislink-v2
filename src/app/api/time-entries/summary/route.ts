@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { Prisma } from '@prisma/client'
+// Prisma namespace types removed — using inline types
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
@@ -18,13 +18,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
     }
 
-    const where: Prisma.TimeEntryWhereInput = { tenantId }
+    const where: Record<string, unknown> = { tenantId }
     if (userId) where.userId = userId
 
     if (fromDate || toDate) {
       where.startTime = {}
-      if (fromDate) (where.startTime as Prisma.DateTimeNullableFilter).gte = new Date(fromDate)
-      if (toDate) (where.startTime as Prisma.DateTimeNullableFilter).lte = new Date(toDate)
+      if (fromDate) (where.startTime as any).gte = new Date(fromDate)
+      if (toDate) (where.startTime as any).lte = new Date(toDate)
     }
 
     // Aggregate totals

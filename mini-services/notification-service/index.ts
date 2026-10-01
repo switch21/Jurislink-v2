@@ -1,12 +1,30 @@
 import { createServer } from 'http'
 import { Server } from 'socket.io'
-import { PrismaClient } from '@prisma/client'
+import pg from 'pg'
 
-// ── Prisma ──
-const db = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL || undefined,
-  log: process.env.NODE_ENV === 'development' ? ['error'] : [],
+// ── Database adapter (pg-based, replaces Prisma) ──
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 })
+
+pool.on('error', (err) => {
+  console.error('[notif-service] Unexpected pool error:', err)
+})
+
+/** Simple query helper */
+async function query<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T[]> {
+  const { rows } = await pool.query(sql, params)
+  return rows as T[]
+}
+
+/** Single row helper */
+async function queryOne<T = Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<T | null> {
+  const rows = await query<T>(sql, params)
+  return rows[0] || null
+}
 
 // ── In-memory socket → user/portal mapping ──
 interface SocketUserEntry {
@@ -28,9 +46,12 @@ const socketMap = new Map<string, SocketEntry>()
 
 // ── Helpers: user notifications ──
 async function getUnreadCount(tenantId: string, userId?: string) {
-  const where: Record<string, unknown> = { tenantId, read: false }
-  if (userId) where.userId = userId
-  return db.notification.count({ where })
+  const sql = userId
+    ? 'SELECT count(*)::int AS cnt FROM notifications WHERE tenant_id = $1 AND user_id = $2 AND read = false'
+    : 'SELECT count(*)::int AS cnt FROM notifications WHERE tenant_id = $1 AND read = false'
+  const params = userId ? [tenantId, userId] : [tenantId]
+  const row = await queryOne<{ cnt: number }>(sql, params)
+  return row?.cnt ?? 0
 }
 
 async function broadcastUnreadCount(tenantId: string) {
@@ -44,7 +65,11 @@ async function broadcastUnreadCount(tenantId: string) {
 
 // ── Helpers: portal notifications ──
 async function getPortalUnreadCount(portalId: string) {
-  return db.portalNotification.count({ where: { portalId, read: false } })
+  const row = await queryOne<{ cnt: number }>(
+    'SELECT count(*)::int AS cnt FROM portal_notifications WHERE portal_id = $1 AND read = false',
+    [portalId],
+  )
+  return row?.cnt ?? 0
 }
 
 async function broadcastPortalUnreadCount(portalId: string) {
@@ -75,27 +100,31 @@ async function handleNotify(body: Record<string, unknown>) {
 
   const category = (type as string) || 'dossier'
 
-  const notification = await db.notification.create({
-    data: {
-      title: title as string,
-      message: message as string,
+  const rows = await query<{ id: string; created_at: string }>(
+    `INSERT INTO notifications (title, message, category, resource_type, resource_id, tenant_id, user_id, read)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, false)
+     RETURNING id, created_at`,
+    [
+      title as string,
+      message as string,
       category,
-      resourceType: (resourceType as string) || null,
-      resourceId: (resourceId as string) || null,
-      tenantId: tenantId as string,
-      userId: (userId as string) || null,
-    },
-  })
+      (resourceType as string) || null,
+      (resourceId as string) || null,
+      tenantId as string,
+      (userId as string) || null,
+    ],
+  )
+  const notification = rows[0]
 
   const payload = {
-    id: notification.id,
-    type: type as string || null,
-    title: notification.title,
-    message: notification.message,
-    resourceType: notification.resourceType,
-    resourceId: notification.resourceId,
+    id: notification?.id,
+    type: (type as string) || null,
+    title: title as string,
+    message: message as string,
+    resourceType: (resourceType as string) || null,
+    resourceId: (resourceId as string) || null,
     category,
-    createdAt: notification.createdAt,
+    createdAt: notification?.created_at,
   }
 
   for (const [socketId, info] of socketMap.entries()) {
@@ -107,7 +136,7 @@ async function handleNotify(body: Record<string, unknown>) {
   }
 
   await broadcastUnreadCount(tenantId as string)
-  return { status: 200, body: { ok: true, id: notification.id } }
+  return { status: 200, body: { ok: true, id: notification?.id } }
 }
 
 // ── Portal notification logic ──
@@ -117,26 +146,30 @@ async function handleNotifyPortal(body: Record<string, unknown>) {
     return { status: 400, body: { error: 'portalId, tenantId, title, message requis' } }
   }
 
-  const portalNotification = await db.portalNotification.create({
-    data: {
-      title: title as string,
-      message: message as string,
-      category: (category as string) || 'dossier',
-      resourceType: (resourceType as string) || null,
-      resourceId: (resourceId as string) || null,
-      portalId: portalId as string,
-      tenantId: tenantId as string,
-    },
-  })
+  const rows = await query<{ id: string; created_at: string }>(
+    `INSERT INTO portal_notifications (title, message, category, resource_type, resource_id, portal_id, tenant_id, read)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, false)
+     RETURNING id, created_at`,
+    [
+      title as string,
+      message as string,
+      (category as string) || 'dossier',
+      (resourceType as string) || null,
+      (resourceId as string) || null,
+      portalId as string,
+      tenantId as string,
+    ],
+  )
+  const portalNotification = rows[0]
 
   const payload = {
-    id: portalNotification.id,
-    title: portalNotification.title,
-    message: portalNotification.message,
-    category: portalNotification.category,
-    resourceType: portalNotification.resourceType,
-    resourceId: portalNotification.resourceId,
-    createdAt: portalNotification.createdAt,
+    id: portalNotification?.id,
+    title: title as string,
+    message: message as string,
+    category: (category as string) || 'dossier',
+    resourceType: (resourceType as string) || null,
+    resourceId: (resourceId as string) || null,
+    createdAt: portalNotification?.created_at,
   }
 
   // Broadcast to all portal sockets matching this portalId + tenantId
@@ -147,7 +180,7 @@ async function handleNotifyPortal(body: Record<string, unknown>) {
   }
 
   await broadcastPortalUnreadCount(portalId as string)
-  return { status: 200, body: { ok: true, id: portalNotification.id } }
+  return { status: 200, body: { ok: true, id: portalNotification?.id } }
 }
 
 // ════════════════════════════════════════════════════════
@@ -220,17 +253,17 @@ io.on('connection', (socket) => {
         return
       }
 
-      const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { id: true, tenantId: true, isActive: true },
-      })
+      const user = await queryOne<{ id: string; tenant_id: string; is_active: boolean }>(
+        'SELECT id, tenant_id, is_active FROM users WHERE id = $1',
+        [userId],
+      )
 
-      if (!user || !user.isActive) {
+      if (!user || !user.is_active) {
         socket.emit('auth-error', { message: 'Utilisateur introuvable ou inactif' })
         return
       }
 
-      if (user.tenantId !== tenantId && user.tenantId !== null) {
+      if (user.tenant_id !== tenantId && user.tenant_id !== null) {
         socket.emit('auth-error', { message: 'Cabinet non correspondant' })
         return
       }
@@ -256,17 +289,17 @@ io.on('connection', (socket) => {
         return
       }
 
-      const portal = await db.clientPortal.findUnique({
-        where: { id: portalId },
-        select: { id: true, tenantId: true, clientId: true, isActive: true },
-      })
+      const portal = await queryOne<{ id: string; tenant_id: string; client_id: string; is_active: boolean }>(
+        'SELECT id, tenant_id, client_id, is_active FROM client_portals WHERE id = $1',
+        [portalId],
+      )
 
-      if (!portal || !portal.isActive) {
+      if (!portal || !portal.is_active) {
         socket.emit('portal-auth-error', { message: 'Portal introuvable ou inactif' })
         return
       }
 
-      if (portal.tenantId !== tenantId) {
+      if (portal.tenant_id !== tenantId) {
         socket.emit('portal-auth-error', { message: 'Cabinet non correspondant' })
         return
       }
@@ -274,14 +307,14 @@ io.on('connection', (socket) => {
       socketMap.set(socket.id, {
         type: 'portal',
         portalId: portal.id,
-        tenantId: portal.tenantId,
-        clientId: portal.clientId,
+        tenantId: portal.tenant_id,
+        clientId: portal.client_id,
       })
 
       const unreadCount = await getPortalUnreadCount(portalId)
       socket.emit('portal-unread-count', unreadCount)
 
-      console.log(`[notif-service] Portal ${portalId} authenticated (tenant: ${tenantId}, client: ${portal.clientId}), unread: ${unreadCount}`)
+      console.log(`[notif-service] Portal ${portalId} authenticated (tenant: ${tenantId}, client: ${portal.client_id}), unread: ${unreadCount}`)
     } catch (err) {
       console.error('[notif-service] Portal auth error:', err)
       socket.emit('portal-auth-error', { message: "Erreur d'authentification portal" })
@@ -294,10 +327,10 @@ io.on('connection', (socket) => {
       const info = socketMap.get(socket.id)
       if (!info || info.type !== 'user') return
 
-      await db.notification.updateMany({
-        where: { id: notificationId, tenantId: info.tenantId, userId: info.userId },
-        data: { read: true },
-      })
+      await pool.query(
+        'UPDATE notifications SET read = true WHERE id = $1 AND tenant_id = $2 AND user_id = $3',
+        [notificationId, info.tenantId, info.userId],
+      )
 
       const unreadCount = await getUnreadCount(info.tenantId, info.userId)
       socket.emit('unread-count', unreadCount)
@@ -312,10 +345,10 @@ io.on('connection', (socket) => {
       const info = socketMap.get(socket.id)
       if (!info || info.type !== 'portal') return
 
-      await db.portalNotification.updateMany({
-        where: { id: notificationId, portalId: info.portalId, tenantId: info.tenantId },
-        data: { read: true },
-      })
+      await pool.query(
+        'UPDATE portal_notifications SET read = true WHERE id = $1 AND portal_id = $2 AND tenant_id = $3',
+        [notificationId, info.portalId, info.tenantId],
+      )
 
       const unreadCount = await getPortalUnreadCount(info.portalId)
       socket.emit('portal-unread-count', unreadCount)
@@ -365,7 +398,7 @@ const shutdown = (signal: string) => {
   console.log(`[notif-service] Received ${signal}, shutting down...`)
   apiServer.close(() => {})
   wsServer.close(async () => {
-    await db.$disconnect().catch(() => {})
+    await pool.end().catch(() => {})
     console.log('[notif-service] Servers closed')
     process.exit(0)
   })

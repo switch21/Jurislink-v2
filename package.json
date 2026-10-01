@@ -4,19 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:reset": "prisma migrate reset",
-    "seed": "bunx tsx prisma/seed.ts",
-    "prisma": {
-      "seed": "bunx tsx prisma/seed.ts"
-    }
+    "db:push": "echo 'Using Supabase pg adapter - no schema push needed'",
+    "db:generate": "echo 'Using Supabase pg adapter - no generation needed'",
+    "db:migrate": "echo 'Using Supabase pg adapter - migrations managed via Supabase'",
+    "db:reset": "echo 'Using Supabase pg adapter - reset managed via Supabase'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -24,7 +20,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.1.1",
     "@mdxeditor/editor": "^3.39.1",
-    "@prisma/client": "^6.11.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -73,8 +68,7 @@
     "otpauth": "^9.5.1",
     "pagedjs": "^0.4.3",
     "pdfkit": "^0.20.1",
-    "pg": "^8.23.0",
-    "prisma": "^6.11.1",
+    "pg": "^8.23.1",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-day-picker": "^9.8.0",

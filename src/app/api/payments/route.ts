@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { Prisma } from '@prisma/client'
+// Prisma namespace types removed — using inline types
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 async function recalcInvoiceStatus(db: ReturnType<typeof getDb>, invoiceId: string) {
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
     }
 
-    const where: Prisma.PaymentWhereInput = { tenantId }
+    const where: Record<string, unknown> = { tenantId }
     if (invoiceId) where.invoiceId = invoiceId
 
     const payments = await db.payment.findMany({
