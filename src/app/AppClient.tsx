@@ -6,6 +6,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
+import { ThemeProvider } from 'next-themes'
 import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, CardTitle, CardDescription, CardFooter, Button, Building2, Skeleton, cn, initAuthFetch, motion, AnimatePresence } from '@/views/shared-ui'
 import { queryClient } from '@/views/constants'
 import { SearchDialog } from '@/views/SearchDialog'
@@ -13,6 +14,7 @@ import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { TrialBanner } from '@/views/TrialBanner'
 import { Toaster } from '@/components/ui/toaster'
 import { hydrateLocale } from '@/lib/i18n'
+import { LocaleSync } from '@/components/LocaleSync'
 
 // ──── Lazy-loaded guard (non-critical, loads after mount) ────
 const LazyBeforeUnloadGuard = lazy(() => import('@/components/BeforeUnloadGuard').then(m => ({ default: m.BeforeUnloadGuard })))
@@ -269,7 +271,8 @@ export default function App() {
     return () => cancelAnimationFrame(id)
   }, [])
   return (
-    <>
+    <ThemeProvider attribute="class" defaultTheme="light" enableColorScheme disableTransitionOnChange>
+      <LocaleSync />
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <div className='min-h-screen flex flex-col bg-[var(--bg-page)] transition-colors duration-300'>
@@ -288,6 +291,6 @@ export default function App() {
         </TooltipProvider>
       </QueryClientProvider>
       <Toaster />
-    </>
+    </ThemeProvider>
   )
 }

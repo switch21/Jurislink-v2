@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { ThemeProvider } from "next-themes";
-import { LocaleSync } from "@/components/LocaleSync";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,18 +28,33 @@ export const metadata: Metadata = {
 };
 
 /**
- * Root layout — server component.
+ * Root layout — pure server component. ZERO hydration risk.
  *
- * We pre-render className="light" and style={{ colorScheme: 'light' }} on <html>
- * so the next-themes inline script (which runs BEFORE React hydrates) does NOT
- * cause a hydration attribute mismatch.
+ * ⚠️  NO ThemeProvider, NO LocaleSync, NO inline <script> here!
  *
- * In React 19, suppressHydrationWarning only suppresses TEXT mismatches,
- * NOT attribute mismatches. The next-themes script sets:
- *   document.documentElement.classList.add('light')
- *   document.documentElement.style.colorScheme = 'light'
- * ...before React hydrates. If the server HTML already has these attributes,
- * the DOM matches → no React error #185.
+ * Why no ThemeProvider in layout.tsx?
+ * ─────────────────────────────────
+ * In React 19, next-themes ThemeProvider renders a <script> whose `nonce`
+ * attribute differs between server (undefined → not rendered) and client
+ * ("" → empty string). Since React 19's suppressHydrationWarning only
+ * suppresses TEXT mismatches (not ATTRIBUTE mismatches), this causes
+ * React error #185 (hydration attribute mismatch).
+ *
+ * Why no manual <script> for FOUC prevention?
+ * ───────────────────────────────────────────
+ * React 19 warns: "Scripts inside React components are never executed
+ * when rendering on the client." A <script> in the body causes this
+ * warning and may have edge-case hydration behavior.
+ *
+ * Solution:
+ * ────────
+ * - ThemeProvider and LocaleSync live in AppClient.tsx, which is
+ *   dynamically imported AFTER hydration → zero hydration risk.
+ * - We set NO className/style on <html> in JSX. The CSS defaults to
+ *   light mode via :root styles. ThemeProvider applies the correct
+ *   theme from localStorage after mount.
+ * - React only checks attributes present in JSX props during hydration.
+ *   Since <html> only has lang="fr", React checks nothing else → no mismatch.
  */
 export default function RootLayout({
   children,
@@ -49,12 +62,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="light" style={{ colorScheme: 'light' }} suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="light" enableColorScheme disableTransitionOnChange>
-          <LocaleSync />
-          {children}
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

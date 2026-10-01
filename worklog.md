@@ -94,3 +94,31 @@ Stage Summary:
 - Error #185 CONFIRMED FIXED for default (light) theme users
 - Known limitation: dark mode users with stored theme preference may still see a brief mismatch (standard next-themes tradeoff)
 - Dev server unstable in sandbox (process keeps dying after ~30s) — infrastructure issue, not code issue
+
+---
+Task ID: 5
+Agent: Main
+Task: Fix persistent React error #185 (hydration mismatch) — Round 5
+
+Work Log:
+- Performed comprehensive static analysis of ALL possible hydration risk sources
+- Deep-dived into next-themes 0.4.6 source code (dist/index.js)
+- Identified ROOT CAUSE: next-themes ThemeProvider's <script> element has `nonce` attribute that differs between server (undefined → not rendered) and client ("" → empty string). In React 19, suppressHydrationWarning only suppresses TEXT mismatches, NOT ATTRIBUTE mismatches.
+- Also identified: useState initializer divergence (server: undefined, client: "light") in ThemeProvider
+- Previous approach (pre-rendering className="light" on <html>) was insufficient because the <script> element ITSELF had the nonce attribute mismatch
+- Applied comprehensive fix: Moved ThemeProvider ENTIRELY out of SSR/hydration path
+  - Removed ThemeProvider and LocaleSync from layout.tsx
+  - Removed className="light" and style={{ colorScheme: 'light' }} from <html> (CSS defaults to light via :root)
+  - Moved ThemeProvider and LocaleSync to AppClient.tsx (dynamically imported after mount → zero hydration risk)
+  - Removed manual <script> for FOUC prevention (React 19 warns about scripts in components)
+- layout.tsx is now a PURE server component with minimal JSX — only lang="fr" on <html>
+- Verified with agent-browser: ZERO hydration errors, ZERO React error #185
+- Page loads correctly with login form fully interactive
+- Only console message: informational React 19 warning about <script> in ThemeProvider (not an error)
+
+Stage Summary:
+- React error #185 is COMPLETELY FIXED after 5 rounds of debugging
+- Root cause was next-themes ThemeProvider's <script> nonce attribute mismatch in React 19
+- Fix: Move ThemeProvider to client-only render path (AppClient.tsx)
+- Trade-off: Brief FOUC possible for dark mode users (light mode renders first, then ThemeProvider applies dark after mount) — acceptable since light is default
+- Dev server remains unstable in sandbox (webpack compilation takes 15-20s, process may die) — infrastructure issue
