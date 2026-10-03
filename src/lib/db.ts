@@ -917,10 +917,17 @@ function applySelect(rows: Record<string, any>[], select: Record<string, any>): 
       } else if (typeof val === 'object' && val !== null) {
         // Nested select/include on relation
         if (key in row) {
+          // Unwrap { select: {...} } / { include: {...} } relation spec.
+          // Without this, nested selected relations become {} — which made
+          // getAuthUser see user.tenant as an empty object and 401 every cabinet user.
+          const nestedSpec =
+            ('select' in val && val.select) ||
+            ('include' in val && val.include) ||
+            val
           if (Array.isArray(row[key])) {
-            out[key] = applySelect(row[key], val)
+            out[key] = applySelect(row[key], nestedSpec)
           } else if (row[key] && typeof row[key] === 'object') {
-            out[key] = applySelect([row[key]], val)[0]
+            out[key] = applySelect([row[key]], nestedSpec)[0]
           } else {
             out[key] = row[key]
           }
