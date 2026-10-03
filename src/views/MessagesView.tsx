@@ -26,7 +26,7 @@ export function MessagesView() {
       if (selectedContact) p.set('contactId', selectedContact)
       return fetch(`/api/messages?${p}`).then(r => r.json()).then(d => Array.isArray(d) ? d : [])
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   })
 
   const sendMut = useMutation({

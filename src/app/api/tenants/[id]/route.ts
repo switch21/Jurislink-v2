@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { isErrorResponse, requireRootAdmin } from '@/lib/auth-server'
+import { isErrorResponse, requireAuth, requireRootAdmin } from '@/lib/auth-server'
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireRootAdmin(request)
+  const { id } = await params
+  const auth = await requireAuth(request)
   if (isErrorResponse(auth)) return auth
+  // Cabinet users may read their OWN tenant; root_admin may read any tenant
+  if (auth.role !== 'root_admin' && id !== auth.tenantId) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+  }
 
   const db = getDb()
   try {
-    const { id } = await params
     const tenant = await db.tenant.findUnique({
       where: { id },
       include: {
@@ -62,18 +66,23 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireRootAdmin(request)
+  const { id } = await params
+  const auth = await requireAuth(request)
   if (isErrorResponse(auth)) return auth
+  const isRoot = auth.role === 'root_admin'
+  // Cabinet users may update their OWN tenant (limited fields); root_admin may update any tenant
+  if (!isRoot && id !== auth.tenantId) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+  }
 
   const db = getDb()
   try {
-    const { id } = await params
     const body = await request.json()
     const tenant = await db.tenant.update({
       where: { id },
       data: {
         ...(typeof body.name === 'string' && body.name.trim() && { name: body.name.trim() }),
-        ...(typeof body.slug === 'string' && body.slug.trim() && { slug: body.slug.trim() }),
+        ...(isRoot && typeof body.slug === 'string' && body.slug.trim() && { slug: body.slug.trim() }),
         ...(typeof body.logoUrl === 'string' && { logoUrl: body.logoUrl }),
         ...(typeof body.address === 'string' && { address: body.address }),
         ...(typeof body.city === 'string' && { city: body.city }),
@@ -82,10 +91,10 @@ export async function PUT(
         ...(typeof body.country === 'string' && { country: body.country }),
         ...(typeof body.niu === 'string' && { niu: body.niu }),
         ...(typeof body.currencyCode === 'string' && body.currencyCode.trim() && { currencyCode: body.currencyCode.trim() }),
-        ...(body.plan !== undefined && { plan: body.plan }),
-        ...(body.maxUsers !== undefined && { maxUsers: body.maxUsers }),
-        ...(body.maxStorageGb !== undefined && { maxStorageGb: body.maxStorageGb }),
-        ...(body.isActive !== undefined && { isActive: body.isActive }),
+        ...(isRoot && body.plan !== undefined && { plan: body.plan }),
+        ...(isRoot && body.maxUsers !== undefined && { maxUsers: body.maxUsers }),
+        ...(isRoot && body.maxStorageGb !== undefined && { maxStorageGb: body.maxStorageGb }),
+        ...(isRoot && body.isActive !== undefined && { isActive: body.isActive }),
       },
     })
     return NextResponse.json(tenant)

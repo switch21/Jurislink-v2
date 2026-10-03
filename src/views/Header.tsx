@@ -70,7 +70,6 @@ export function Header() {
 
   // Polling hook — 30s interval, auto-pauses when unauthenticated
   const { notifications, unreadCount, refetchNow } = usePollingNotifications(!!user?.tenantId)
-  const msgCount = 0
 
   // Visual pulse on bell when new notifications arrive
   useEffect(() => {
@@ -135,21 +134,21 @@ export function Header() {
         <h1 className='text-lg font-semibold text-jl-primary hidden sm:block'>{viewLabel}</h1>
         <div className='relative flex-1 max-w-md ml-auto'>
           <button
-            onClick={() => {(window as any).__jlOpenSearch?.()}}
+            onClick={() => setCurrentView('search')}
             className='relative w-full flex items-center'
-            aria-label='Ouvrir la recherche globale (⌘K)'
+            aria-label='Ouvrir la recherche globale (Ctrl+K)'
           >
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-jl-muted' />
             <div className='w-full pl-9 pr-12 h-9 bg-jl-page border border-transparent hover:border-jl rounded-lg transition-colors duration-200 flex items-center'>
               <span className='text-sm text-jl-muted'>Rechercher dossiers, clients, factures, tâches…</span>
             </div>
             <kbd className='absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-jl-card border border-jl text-[10px] text-jl-muted font-mono pointer-events-none'>
-              <span className='text-xs'>⌘</span>K
+              <span className='text-xs'>Ctrl</span>K
             </kbd>
           </button>
         </div>
         <div className='flex items-center gap-1'>
-          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant='ghost' size='icon' className='relative size-9' onClick={() => { setCurrentView('messages') }} aria-label='Messages'><MessageSquare className='size-5' />{msgCount ? <span className='absolute -top-0.5 -right-0.5 size-4 rounded-full bg-jl-blue text-white text-[10px] flex items-center justify-center font-bold'>{msgCount > 9 ? '9+' : msgCount}</span> : null}</Button></TooltipTrigger><TooltipContent>Messages</TooltipContent></Tooltip></TooltipProvider>
+          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant='ghost' size='icon' className='relative size-9' onClick={() => { setCurrentView('messages') }} aria-label='Messages'><MessageSquare className='size-5' /></Button></TooltipTrigger><TooltipContent>Messages</TooltipContent></Tooltip></TooltipProvider>
           <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
             <DropdownMenuTrigger asChild>
               <Button
@@ -269,7 +268,7 @@ export function Header() {
               </button>
             </DropdownMenuContent>
           </DropdownMenu>
-          <DropdownMenu><DropdownMenuTrigger asChild><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant='ghost' size='icon' className='size-9' aria-label='Changer la langue'><Globe className='size-4' /></Button></TooltipTrigger><TooltipContent>{LOCALE_NAMES[locale]}</TooltipContent></Tooltip></TooltipProvider></DropdownMenuTrigger><DropdownMenuContent align='end'>{SUPPORTED_LOCALES.map((l: Locale) => (<DropdownMenuItem key={l} onClick={() => setLocaleL(l)} className={cn('cursor-pointer gap-2', locale === l && 'font-semibold bg-[var(--accent)]/10')}><span className='text-base'>{LOCALE_FLAGS[l]}</span><span>{LOCALE_NAMES[l]}</span></DropdownMenuItem>))}</DropdownMenuContent></DropdownMenu>
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant='ghost' size='icon' className='size-9' aria-label='Changer la langue' title={LOCALE_NAMES[locale]}><Globe className='size-4' /></Button></DropdownMenuTrigger><DropdownMenuContent align='end'>{SUPPORTED_LOCALES.map((l: Locale) => (<DropdownMenuItem key={l} onClick={() => setLocaleL(l)} className={cn('cursor-pointer gap-2', locale === l && 'font-semibold bg-[var(--accent)]/10')}><span className='text-base'>{LOCALE_FLAGS[l]}</span><span>{LOCALE_NAMES[l]}</span></DropdownMenuItem>))}</DropdownMenuContent></DropdownMenu>
           <ThemeToggle />
           <DropdownMenu><DropdownMenuTrigger asChild><Button variant='ghost' size='icon' aria-label='Menu utilisateur'><LogOut className='size-5 text-jl-secondary' /></Button></DropdownMenuTrigger><DropdownMenuContent align='end'><DropdownMenuItem onClick={logout} className='text-[var(--danger)] cursor-pointer'><LogOut className='size-4 mr-2' />Déconnexion</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </div>

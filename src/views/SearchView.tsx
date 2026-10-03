@@ -173,7 +173,7 @@ export function SearchView() {
                   : 'bg-jl-card border-jl text-jl-secondary hover:bg-jl-page'
               )}
             >
-              <span>{opt.label}</span>
+              <span>{t(opt.label)}</span>
               {count > 0 && (
                 <span className={cn(
                   'text-[10px] px-1.5 py-0.5 rounded-full',

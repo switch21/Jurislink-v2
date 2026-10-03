@@ -9,7 +9,6 @@ import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { ThemeProvider } from 'next-themes'
 import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, CardTitle, CardDescription, CardFooter, Button, Building2, Skeleton, cn, initAuthFetch, motion, AnimatePresence } from '@/views/shared-ui'
 import { queryClient } from '@/views/constants'
-import { SearchDialog } from '@/views/SearchDialog'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { TrialBanner } from '@/views/TrialBanner'
 import { Toaster } from '@/components/ui/toaster'
@@ -26,14 +25,14 @@ import { AdminSidebar } from '@/views/AdminSidebar'
 import { AdminHeader } from '@/views/AdminHeader'
 import { Header } from '@/views/Header'
 import { DashboardView } from '@/views/DashboardView'
-import { TasksView } from '@/views/TasksView'
-import { MessagesView } from '@/views/MessagesView'
-import { AuditLogsView } from '@/views/AuditLogsView'
-import { NotificationsView } from '@/views/NotificationsView'
-import { ArchivesView } from '@/views/ArchivesView'
-import { CommunicationsView } from '@/views/CommunicationsView'
 
 // ──── Lazy-loaded views (heavy / rarely shown) ────
+const LazyTasksView = lazy(() => import('@/views/TasksView').then(m => ({ default: m.TasksView })))
+const LazyMessagesView = lazy(() => import('@/views/MessagesView').then(m => ({ default: m.MessagesView })))
+const LazyAuditLogsView = lazy(() => import('@/views/AuditLogsView').then(m => ({ default: m.AuditLogsView })))
+const LazyNotificationsView = lazy(() => import('@/views/NotificationsView').then(m => ({ default: m.NotificationsView })))
+const LazyArchivesView = lazy(() => import('@/views/ArchivesView').then(m => ({ default: m.ArchivesView })))
+const LazyCommunicationsView = lazy(() => import('@/views/CommunicationsView').then(m => ({ default: m.CommunicationsView })))
 const LazyCasesView = lazy(() => import('@/views/CasesView').then(m => ({ default: m.CasesView })))
 const LazyClientsView = lazy(() => import('@/views/ClientsView').then(m => ({ default: m.ClientsView })))
 const LazyDocumentsView = lazy(() => import('@/views/DocumentsView').then(m => ({ default: m.DocumentsView })))
@@ -140,7 +139,7 @@ function DashboardRouter() {
             'dashboard': <DashboardView />,
             'cases': <LazyCasesView />,
             'clients': <LazyClientsView />,
-            'tasks': <TasksView />,
+            'tasks': <LazyTasksView />,
             'documents': <LazyDocumentsView />,
             'calendar': <LazyCalendarView />,
             'invoices': <LazyInvoicesView />,
@@ -148,14 +147,14 @@ function DashboardRouter() {
             'impayes': <LazyImpayesView />,
             'time-tracking': <LazyTimeTrackingView />,
             'templates': <LazyTemplatesView />,
-            'communications': <CommunicationsView />,
-            'messages': <MessagesView />,
+            'communications': <LazyCommunicationsView />,
+            'messages': <LazyMessagesView />,
             'reports': <LazyReportsView />,
             'search': <LazySearchView />,
-            'audit-logs': <AuditLogsView />,
+            'audit-logs': <LazyAuditLogsView />,
             'settings': <LazySettingsView />,
-            'archives': <ArchivesView />,
-            'notifications': <NotificationsView />,
+            'archives': <LazyArchivesView />,
+            'notifications': <LazyNotificationsView />,
             'pricing': <LazyPricingView />,
           }, <DashboardView />)}
         </motion.div>
@@ -164,31 +163,24 @@ function DashboardRouter() {
   )
 }
 
-// ==================== CMD+K SEARCH PROVIDER ====================
-const searchOpenState = { value: false, set: (v: boolean) => { searchOpenState.value = v } }
-// NOTE: __jlOpenSearch is now set in useEffect (below) to avoid module-level side effects
-
 // ==================== MAIN APP ====================
 function AppInner() {
   const { isAuthenticated, isPortalAuthenticated, user } = useAppStore()
   const isRootAdmin = user?.roleObj?.name === 'root_admin' || user?.role === 'root_admin'
   const needsTenant = isAuthenticated && !user?.tenantId && !isRootAdmin
-  const [searchOpen, setSearchOpen] = useState(false)
 
   // Real-time notification WebSocket (only when authenticated with a tenant)
   useNotificationSocket()
 
-  // Sync global state
-  useEffect(() => {
-    searchOpenState.set = setSearchOpen
-  }, [])
-
-  // Cmd+K / Ctrl+K listener
+  // Cmd+K / Ctrl+K listener → open the search VIEW (simple, no modal)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setSearchOpen(prev => !prev)
+        const s = useAppStore.getState()
+        if (s.isAuthenticated && !s.isPortalAuthenticated) {
+          s.setCurrentView(s.currentView === 'search' ? 'dashboard' : 'search')
+        }
       }
     }
     document.addEventListener('keydown', handler)
@@ -236,7 +228,6 @@ function AppInner() {
         <main id='main-content' className='flex-1' role='main'><AdminRouter /></main>
         <Footer />
       </div>
-      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <LazyBeforeUnloadGuard />
     </>
   )
@@ -249,7 +240,6 @@ function AppInner() {
         <main id='main-content' className='flex-1' role='main'><DashboardRouter /></main>
         <Footer />
       </div>
-      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <LazyBeforeUnloadGuard />
     </>
   )
@@ -264,9 +254,7 @@ export default function App() {
     hydrateLocale()
     // 3. Patch fetch for auth headers
     initAuthFetch()
-    // 4. Expose search open function globally (moved from module-level to avoid hydration issues)
-    ;(window as any).__jlOpenSearch = () => { searchOpenState.set(true) }
-    // 5. Set mounted after one frame to trigger AppInner render
+    // 4. Set mounted after one frame to trigger AppInner render
     const id = requestAnimationFrame(() => setMounted(true))
     return () => cancelAnimationFrame(id)
   }, [])

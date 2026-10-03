@@ -207,7 +207,11 @@ export function SettingsView() {
 
   const connectCalendarMut = useMutation({
     mutationFn: (provider: string) => fetch('/api/calendar/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider, tenantId: user?.tenantId }) }).then(r => r.json()),
-    onSuccess: (data) => { if (data.authUrl) window.location.href = data.authUrl },
+    onSuccess: (data) => {
+      // API returns { url, provider } — redirect to the OAuth consent page
+      if (data?.url) window.location.href = data.url
+      else if (data?.error) toast.error(data.error)
+    },
     onError: (e: Error) => toast.error('Erreur lors de la connexion'),
   })
 
@@ -388,7 +392,16 @@ export function SettingsView() {
                 <div className="space-y-1.5"><Label className="text-xs">Adresse</Label><Input value={cabinetForm.address || tenantInfo.address || ''} onChange={e => setCabinetForm(f => ({ ...f, address: e.target.value }))} className="h-10" /></div>
                 <div className="space-y-1.5"><Label className="text-xs">Ville</Label><Input value={cabinetForm.city || tenantInfo.city || ''} onChange={e => setCabinetForm(f => ({ ...f, city: e.target.value }))} className="h-10" /></div>
                 <div className="space-y-1.5"><Label className="text-xs">Pays</Label><Input value={cabinetForm.country || tenantInfo.country || ''} onChange={e => setCabinetForm(f => ({ ...f, country: e.target.value }))} className="h-10" /></div>
-                <div className="space-y-1.5"><Label className="text-xs">Devise</Label><Input value={cabinetForm.currencyCode || tenantInfo.currencyCode || 'XAF'} onChange={e => setCabinetForm(f => ({ ...f, currencyCode: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Devise</Label>
+                  <Select value={cabinetForm.currencyCode || tenantInfo?.currencyCode || 'XAF'} onValueChange={v => setCabinetForm(f => ({ ...f, currencyCode: v }))}>
+                    <SelectTrigger className="h-10 w-full"><SelectValue placeholder="Choisir une devise" /></SelectTrigger>
+                    <SelectContent>
+                      {(Array.isArray(currencies) ? currencies : []).map((c: CurrencyItem) => (
+                        <SelectItem key={c.id} value={c.code}>{c.code} — {c.name} ({c.symbol})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <Button size="sm" className="bg-jl-blue hover:bg-jl-blue" disabled={updateTenant.isPending} onClick={() => {
                 const clean: Record<string, string> = {}

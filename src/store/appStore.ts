@@ -292,7 +292,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   hydrateFromStorage: () => {
     const user = loadUser()
     if (user) {
-      set({ user, isAuthenticated: true, currentView: user.role === 'root_admin' ? 'admin-dashboard' : 'dashboard' })
+      // Restore the last visited view (fix: refresh no longer forces 'dashboard')
+      const savedView = loadSavedView()
+      const fallback = user.role === 'root_admin' ? 'admin-dashboard' : 'dashboard'
+      const valid: ViewName[] = ['dashboard', 'admin-dashboard', 'clients', 'cases', 'documents', 'calendar', 'invoices', 'messages', 'tasks', 'reports', 'settings', 'finances', 'impayes', 'notifications', 'audit-logs', 'archives', 'time-tracking', 'templates', 'communications', 'search', 'pricing', 'admin-cabinets', 'admin-users', 'admin-plans']
+      const isAdminOnly = ['admin-dashboard', 'admin-cabinets', 'admin-users', 'admin-plans'].includes(savedView)
+      const view = savedView && valid.includes(savedView) && !(isAdminOnly && user.role !== 'root_admin')
+        ? savedView
+        : fallback
+      set({ user, isAuthenticated: true, currentView: view })
     } else {
       // Check saved view even if not authenticated (for pricing page etc.)
       const savedView = loadSavedView()
