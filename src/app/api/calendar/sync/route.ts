@@ -3,7 +3,7 @@ import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await authenticate(request, 'event', 'manage')
+  const auth = await authenticate(request, 'event', 'edit')
   if (auth instanceof NextResponse) return auth
   const db = getDb()
   try {
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authenticate(request, 'event', 'manage')
+  const auth = await authenticate(request, 'event', 'edit')
   if (auth instanceof NextResponse) return auth
 
   try {
@@ -102,6 +102,33 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error('Calendar OAuth init error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request) {
+  const auth = await authenticate(request, 'event', 'edit')
+  if (auth instanceof NextResponse) return auth
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const provider = searchParams.get('provider')
+
+    if (provider !== 'google' && provider !== 'outlook') {
+      return NextResponse.json({ error: 'Fournisseur invalide. Utilisez google ou outlook.' }, { status: 400 })
+    }
+
+    const db = getDb()
+    try {
+      await db.externalCalendar.deleteMany({
+        where: { userId: auth.id, tenantId: auth.tenantId!, provider },
+      })
+      return NextResponse.json({ ok: true })
+    } finally {
+      await db.$disconnect().catch(() => {})
+    }
+  } catch (error) {
+    console.error('Calendar disconnect error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
