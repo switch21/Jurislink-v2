@@ -83,4 +83,7 @@ export function hydrateLocale() {
   } catch { /* ignore */ }
 }
 
-export const useLocale = () => useLocaleStore((s) => ({ locale: s.locale, setLocale: s.setLocale }))
+// NOTE: never build a new object in a zustand selector — useSyncExternalStore
+// compares snapshots with Object.is, so an unstable snapshot causes an infinite
+// re-render loop (React error #185). Return the whole store instead (stable ref).
+export const useLocale = () => useLocaleStore()
