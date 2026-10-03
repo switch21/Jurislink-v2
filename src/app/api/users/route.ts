@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { enforceLimit } from '@/lib/plan-limits'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'user', 'view')
@@ -128,6 +129,14 @@ export async function POST(request: Request) {
         tenantId: true,
       },
     })
+
+    await auditAction(request, auth, 'Utilisateur créé', {
+      resourceType: 'User',
+      resourceId: user.id,
+      tenantId: user.tenantId,
+      metadata: { email: user.email, nom: user.fullName },
+    })
+
     return NextResponse.json(user, { status: 201 })
   } catch (error) {
     console.error('Create user error:', error)

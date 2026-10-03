@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse, requireTenantAccess } from '@/lib/auth-server'
 import { getWorkflowTemplate } from '@/lib/workflow-templates'
 import { enforceLimit } from '@/lib/plan-limits'
+import { auditAction } from '@/lib/auditLog'
 
 // Allowed sort fields for sanitisation
 const SORTABLE_FIELDS = ['createdAt', 'updatedAt', 'title', 'reference', 'status', 'priority', 'caseType', 'nextDueDate'] as const
@@ -297,6 +298,12 @@ export async function POST(request: Request) {
         workflowResult = { taskCount: tasks.length, templateName: template.label }
       }
     }
+
+    await auditAction(request, auth, 'Dossier créé', {
+      resourceType: 'Case',
+      resourceId: caze.id,
+      metadata: { reference: caze.reference, title: caze.title, caseType: caze.caseType },
+    })
 
     return NextResponse.json({ ...caseWithTags, workflow: workflowResult }, { status: 201 })
   } catch (error: any) {

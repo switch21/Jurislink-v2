@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate } from '@/lib/auth-server'
 import { uploadFile } from '@/lib/storage'
+import { createAuditLog } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -86,16 +87,14 @@ export async function POST(
     })
 
     // Audit log
-    await db.auditLog.create({
-      data: {
-        action: 'document.version.create',
-        resourceType: 'document',
-        resourceId: id,
-        metadata: JSON.stringify({ newVersion, fileName: file.name, changeNote }),
-        tenantId: doc.tenantId,
-        userId: auth.id || null,
-      },
-    }).catch(() => {})
+    await createAuditLog({
+      tenantId: doc.tenantId,
+      userId: auth.id,
+      action: 'Nouvelle version de document',
+      resourceType: 'Document',
+      resourceId: id,
+      metadata: { newVersion, fileName: file.name, changeNote },
+    })
 
     return NextResponse.json(updated, { status: 200 })
   } catch (error) {

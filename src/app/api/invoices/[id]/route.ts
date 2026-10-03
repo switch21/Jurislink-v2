@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { fireNotification } from '@/lib/notify'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -152,6 +153,16 @@ export async function PUT(
       })
     }
 
+    await auditAction(request, auth, 'Facture modifiée', {
+      resourceType: 'Invoice',
+      resourceId: id,
+      tenantId: existing.tenantId,
+      metadata:
+        body.status && existing.status !== body.status
+          ? { numero: invoice.invoiceNumber, statut: `${existing.status} → ${body.status}` }
+          : { numero: invoice.invoiceNumber },
+    })
+
     return NextResponse.json(invoice)
   } catch (error) {
     console.error('Update invoice error:', error)
@@ -171,7 +182,22 @@ export async function DELETE(
   const db = getDb()
   try {
     const { id } = await params
+    const existing = await db.invoice.findUnique({
+      where: { id },
+      select: { tenantId: true, invoiceNumber: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
     await db.invoice.delete({ where: { id } })
+
+    await auditAction(request, auth, 'Facture supprimée', {
+      resourceType: 'Invoice',
+      resourceId: id,
+      tenantId: existing.tenantId,
+      metadata: { numero: existing.invoiceNumber },
+    })
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Delete invoice error:', error)

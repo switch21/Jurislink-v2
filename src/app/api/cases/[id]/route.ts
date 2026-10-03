@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse, requireTenantAccess } from '@/lib/auth-server'
 import { fireNotification } from '@/lib/notify'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -239,6 +240,17 @@ export async function PUT(
       ? { ...updated, tags: updated.taggings.map((t) => t.tag), taggings: undefined }
       : null
 
+    // Audit: case updated (status change tracked)
+    await auditAction(request, auth, 'Dossier modifié', {
+      resourceType: 'Case',
+      resourceId: id,
+      tenantId: updated?.tenantId,
+      metadata:
+        body.status && oldStatus && body.status !== oldStatus
+          ? { statut: `${oldStatus} → ${body.status}` }
+          : undefined,
+    })
+
     // Notification: case status changed
     if (body.status && oldStatus && body.status !== oldStatus) {
       const ref = updated?.reference || ''
@@ -280,7 +292,7 @@ export async function DELETE(
     // Verify case exists and tenant access
     const existing = await db.case.findUnique({
       where: { id },
-      select: { tenantId: true },
+      select: { tenantId: true, reference: true, title: true },
     })
     if (!existing) {
       return NextResponse.json({ error: 'Dossier non trouvé' }, { status: 404 })
@@ -290,6 +302,14 @@ export async function DELETE(
     }
 
     await db.case.delete({ where: { id } })
+
+    await auditAction(request, auth, 'Dossier supprimé', {
+      resourceType: 'Case',
+      resourceId: id,
+      tenantId: existing.tenantId,
+      metadata: { reference: existing.reference, title: existing.title },
+    })
+
     return NextResponse.json({ ok: true })
   } catch (error: any) {
     console.error('Suppression dossier erreur:', error)

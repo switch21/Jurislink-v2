@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { fireNotification } from '@/lib/notify'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'task', 'view')
@@ -161,6 +162,13 @@ export async function POST(request: Request) {
       message: `Nouvelle tâche : ${title}`,
       resourceType: 'task',
       resourceId: task.id,
+    })
+
+    await auditAction(request, auth, 'Tâche créée', {
+      resourceType: 'Task',
+      resourceId: task.id,
+      tenantId,
+      metadata: { titre: title },
     })
 
     // Resolve assigned users for the response

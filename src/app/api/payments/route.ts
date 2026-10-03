@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 // Prisma namespace types removed — using inline types
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { auditAction } from '@/lib/auditLog'
 
 async function recalcInvoiceStatus(db: ReturnType<typeof getDb>, invoiceId: string) {
   const payments = await db.payment.findMany({
@@ -127,6 +128,13 @@ export async function POST(request: Request) {
         resourceId: payment.id,
         tenantId,
       },
+    })
+
+    await auditAction(request, auth, 'Paiement enregistré', {
+      resourceType: 'Payment',
+      resourceId: payment.id,
+      tenantId,
+      metadata: { montant: parseFloat(amount), methode: method || 'virement', facture: invoiceId },
     })
 
     return NextResponse.json(payment, { status: 201 })

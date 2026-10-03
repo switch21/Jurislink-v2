@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { createAuditLog } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -96,15 +97,13 @@ export async function PUT(
       },
     })
 
-    await db.auditLog.create({
-      data: {
-        action: 'update',
-        resourceType: 'time_entry',
-        resourceId: id,
-        metadata: JSON.stringify({ description: timeEntry.description, duration: computedDuration }),
-        tenantId: existing.tenantId,
-        userId: existing.userId,
-      },
+    await createAuditLog({
+      tenantId: existing.tenantId,
+      userId: existing.userId,
+      action: 'Temps modifié',
+      resourceType: 'TimeEntry',
+      resourceId: id,
+      metadata: { description: timeEntry.description, duration: computedDuration },
     })
 
     return NextResponse.json(timeEntry)
@@ -133,15 +132,13 @@ export async function DELETE(
 
     await db.timeEntry.delete({ where: { id } })
 
-    await db.auditLog.create({
-      data: {
-        action: 'delete',
-        resourceType: 'time_entry',
-        resourceId: id,
-        metadata: JSON.stringify({ description: existing.description }),
-        tenantId: existing.tenantId,
-        userId: existing.userId,
-      },
+    await createAuditLog({
+      tenantId: existing.tenantId,
+      userId: existing.userId,
+      action: 'Temps supprimé',
+      resourceType: 'TimeEntry',
+      resourceId: id,
+      metadata: { description: existing.description },
     })
 
     return NextResponse.json({ success: true })

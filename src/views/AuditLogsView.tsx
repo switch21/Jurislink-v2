@@ -28,7 +28,7 @@ export function AuditLogsView() {
       <h2 className="text-lg font-semibold">Journal d'audit</h2>
       <Select value={resourceType} onValueChange={setResourceType}>
         <SelectTrigger className="w-[180px] h-9 text-xs"><SelectValue placeholder={t('audit.resourceType')} /></SelectTrigger>
-        <SelectContent><SelectItem value="all">{t('common.all')}</SelectItem><SelectItem value="Case">{t('audit.typeCase')}</SelectItem><SelectItem value="Client">{t('audit.typeClient')}</SelectItem><SelectItem value="User">{t('audit.typeUser')}</SelectItem><SelectItem value="Invoice">{t('audit.typeInvoice')}</SelectItem><SelectItem value="Document">{t('audit.typeDocument')}</SelectItem><SelectItem value="Task">{t('audit.typeTask')}</SelectItem></SelectContent>
+        <SelectContent><SelectItem value="all">{t('common.all')}</SelectItem><SelectItem value="Case">{t('audit.typeCase')}</SelectItem><SelectItem value="Client">{t('audit.typeClient')}</SelectItem><SelectItem value="User">{t('audit.typeUser')}</SelectItem><SelectItem value="Invoice">{t('audit.typeInvoice')}</SelectItem><SelectItem value="Payment">{t('audit.typePayment')}</SelectItem><SelectItem value="Document">{t('audit.typeDocument')}</SelectItem><SelectItem value="Task">{t('audit.typeTask')}</SelectItem></SelectContent>
       </Select>
 
       {isLoading ? <div className="flex justify-center py-12"><Skeleton className="h-6 w-48" /></div> :

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate } from '@/lib/auth-server'
 import { deleteFile } from '@/lib/storage'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -75,15 +76,11 @@ export async function PUT(
     })
 
     // Audit log
-    await db.auditLog.create({
-      data: {
-        action: 'document.update',
-        resourceType: 'document',
-        resourceId: id,
-        metadata: JSON.stringify({ changed: data }),
-        tenantId: existing.tenantId,
-        userId: auth.id || null,
-      },
+    await auditAction(request, auth, 'Document modifié', {
+      resourceType: 'Document',
+      resourceId: id,
+      tenantId: existing.tenantId,
+      metadata: { fileName: existing.fileName, changed: data },
     })
 
     return NextResponse.json(document)
@@ -134,15 +131,11 @@ export async function DELETE(
     await db.document.delete({ where: { id } })
 
     // Audit log
-    await db.auditLog.create({
-      data: {
-        action: 'document.delete',
-        resourceType: 'document',
-        resourceId: id,
-        metadata: JSON.stringify({ fileName: document.fileName }),
-        tenantId: document.tenantId,
-        userId: auth.id || null,
-      },
+    await auditAction(request, auth, 'Document supprimé', {
+      resourceType: 'Document',
+      resourceId: id,
+      tenantId: document.tenantId,
+      metadata: { fileName: document.fileName },
     })
 
     return NextResponse.json({ ok: true })

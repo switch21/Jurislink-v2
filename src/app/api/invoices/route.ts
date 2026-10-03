@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 // Prisma namespace types removed — using inline types
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { fireNotification } from '@/lib/notify'
+import { auditAction } from '@/lib/auditLog'
 
 const TYPE_PREFIXES: Record<string, string> = {
   facture: 'FAC',
@@ -174,6 +175,14 @@ export async function POST(request: Request) {
       message: `${invoiceNumber} — ${invoice.client?.fullName || invoice.client?.company || 'Client'} — ${total.toLocaleString('fr-FR')} FCFA`,
       resourceType: 'invoice',
       resourceId: invoice.id,
+    })
+
+    const typeLabel = type === 'devis' ? 'Devis' : type === 'avoir' ? 'Avoir' : type === 'recu' ? 'Reçu' : 'Facture'
+    await auditAction(request, auth, `${typeLabel} créé`, {
+      resourceType: 'Invoice',
+      resourceId: invoice.id,
+      tenantId,
+      metadata: { numero: invoiceNumber, montant: total },
     })
 
     return NextResponse.json(invoice, { status: 201 })

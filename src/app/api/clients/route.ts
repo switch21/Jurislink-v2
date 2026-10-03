@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'client', 'view')
@@ -68,6 +69,14 @@ export async function POST(request: Request) {
         tenantId: body.tenantId,
       },
     })
+
+    await auditAction(request, auth, 'Client créé', {
+      resourceType: 'Client',
+      resourceId: client.id,
+      tenantId: client.tenantId,
+      metadata: { nom: client.fullName, societe: client.company },
+    })
+
     return NextResponse.json(client, { status: 201 })
   } catch (error) {
     console.error('Create client error:', error)

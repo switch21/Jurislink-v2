@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 // Prisma namespace types removed — using inline types
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { createAuditLog } from '@/lib/auditLog'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'time_entry', 'view')
@@ -101,15 +102,13 @@ export async function POST(request: Request) {
       },
     })
 
-    await db.auditLog.create({
-      data: {
-        action: 'create',
-        resourceType: 'time_entry',
-        resourceId: timeEntry.id,
-        metadata: JSON.stringify({ description, duration: computedDuration }),
-        tenantId,
-        userId,
-      },
+    await createAuditLog({
+      tenantId,
+      userId,
+      action: 'Temps enregistré',
+      resourceType: 'TimeEntry',
+      resourceId: timeEntry.id,
+      metadata: { description, duration: computedDuration },
     })
 
     return NextResponse.json(timeEntry, { status: 201 })

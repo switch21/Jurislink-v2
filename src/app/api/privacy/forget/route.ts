@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { compare } from 'bcryptjs'
 import { randomUUID } from 'crypto'
+import { createAuditLog } from '@/lib/auditLog'
 
 /**
  * POST /api/privacy/forget
@@ -50,17 +51,15 @@ export async function POST(request: Request) {
     const userAgent = request.headers.get('user-agent') || ''
 
     // ── Journal d'audit AVANT l'anonymisation (pour tracer qui a demandé l'effacement) ──
-    await db.auditLog.create({
-      data: {
-        action: 'right_to_be_forgotten',
-        resourceType: 'user',
-        resourceId: userId,
-        metadata: JSON.stringify({ previousEmail: user.email, previousName: user.fullName }),
-        ipAddress,
-        userAgent,
-        tenantId: tenantId || '',
-        userId,
-      },
+    await createAuditLog({
+      tenantId: tenantId || undefined,
+      userId,
+      action: "Demande d'effacement (RGPD)",
+      resourceType: 'User',
+      resourceId: userId,
+      metadata: { previousEmail: user.email, previousName: user.fullName },
+      ipAddress,
+      userAgent,
     })
 
     const anonymizedEmail = `anonymized-${randomUUID().slice(0, 8)}@deleted.jurislink`

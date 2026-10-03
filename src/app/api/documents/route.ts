@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { authenticate } from '@/lib/auth-server'
 import { uploadFile } from '@/lib/storage'
 import { fireNotification } from '@/lib/notify'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'document', 'view')
@@ -160,15 +161,11 @@ export async function POST(request: Request) {
     })
 
     // Audit log
-    await db.auditLog.create({
-      data: {
-        action: 'document.upload',
-        resourceType: 'document',
-        resourceId: document.id,
-        metadata: JSON.stringify({ fileName: file.name, fileSize: file.size, folder, documentType }),
-        tenantId,
-        userId: auth.id || null,
-      },
+    await auditAction(request, auth, 'Document téléversé', {
+      resourceType: 'Document',
+      resourceId: document.id,
+      tenantId,
+      metadata: { fileName: file.name, fileSize: file.size, folder, documentType },
     })
 
     return NextResponse.json(document, { status: 201 })

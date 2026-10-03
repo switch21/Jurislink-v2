@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { hash, compare } from 'bcryptjs'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { auditAction } from '@/lib/auditLog'
 
 export async function PUT(
   request: Request,
@@ -44,6 +45,13 @@ export async function PUT(
       where: { id },
       data: { password: hashedPw },
       select: { id: true },
+    })
+
+    await auditAction(request, auth, 'Mot de passe modifié', {
+      resourceType: 'User',
+      resourceId: id,
+      tenantId: auth.tenantId,
+      metadata: adminOverride ? { par: 'admin' } : undefined,
     })
 
     return NextResponse.json({ ok: true, message: 'Mot de passe mis à jour' })

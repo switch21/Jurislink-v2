@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { auditAction } from '@/lib/auditLog'
 
 async function recalcInvoiceStatus(db: ReturnType<typeof getDb>, invoiceId: string) {
   const payments = await db.payment.findMany({
@@ -100,6 +101,13 @@ export async function PUT(
     // Recalculate invoice status after payment update
     await recalcInvoiceStatus(db, existing.invoiceId)
 
+    await auditAction(request, auth, 'Paiement modifié', {
+      resourceType: 'Payment',
+      resourceId: id,
+      tenantId: existing.tenantId,
+      metadata: { montant: payment.amount },
+    })
+
     return NextResponse.json(payment)
   } catch (error) {
     console.error('Update payment error:', error)
@@ -128,6 +136,13 @@ export async function DELETE(
 
     // Recalculate invoice status after payment deletion
     await recalcInvoiceStatus(db, existing.invoiceId)
+
+    await auditAction(request, auth, 'Paiement supprimé', {
+      resourceType: 'Payment',
+      resourceId: id,
+      tenantId: existing.tenantId,
+      metadata: { montant: existing.amount },
+    })
 
     return NextResponse.json({ ok: true })
   } catch (error) {

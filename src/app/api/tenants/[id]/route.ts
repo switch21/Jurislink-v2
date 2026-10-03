@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { isErrorResponse, requireAuth, requireRootAdmin } from '@/lib/auth-server'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -97,6 +98,14 @@ export async function PUT(
         ...(isRoot && body.isActive !== undefined && { isActive: body.isActive }),
       },
     })
+
+    await auditAction(request, auth, 'Paramètres du cabinet modifiés', {
+      resourceType: 'Tenant',
+      resourceId: id,
+      tenantId: id,
+      metadata: { nom: tenant.name },
+    })
+
     return NextResponse.json(tenant)
   } catch (error) {
     console.error('Update tenant error:', error)

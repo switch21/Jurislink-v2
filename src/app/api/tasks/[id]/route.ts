@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
 import { fireNotification } from '@/lib/notify'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -91,6 +92,16 @@ export async function PUT(
       })
     }
 
+    await auditAction(request, auth, 'Tâche modifiée', {
+      resourceType: 'Task',
+      resourceId: id,
+      tenantId: task.tenantId,
+      metadata:
+        oldStatus && body.status && oldStatus !== body.status
+          ? { titre: task.title, statut: `${oldStatus} → ${body.status}` }
+          : { titre: task.title },
+    })
+
     return NextResponse.json(task)
   } catch (error) {
     console.error('Update task error:', error)
@@ -111,7 +122,22 @@ export async function DELETE(
   const db = getDb()
   try {
     const { id } = await params
+    const existing = await db.task.findUnique({
+      where: { id },
+      select: { tenantId: true, title: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    }
     await db.task.delete({ where: { id } })
+
+    await auditAction(request, auth, 'Tâche supprimée', {
+      resourceType: 'Task',
+      resourceId: id,
+      tenantId: existing.tenantId,
+      metadata: { titre: existing.title },
+    })
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Delete task error:', error)

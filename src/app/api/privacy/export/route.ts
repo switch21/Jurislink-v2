@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { createAuditLog } from '@/lib/auditLog'
 
 /**
  * POST /api/privacy/export
@@ -225,17 +226,15 @@ export async function POST(request: Request) {
     `
 
     // ── Journal d'audit ──
-    await db.auditLog.create({
-      data: {
-        action: 'data_export',
-        resourceType: 'user',
-        resourceId: userId,
-        metadata: JSON.stringify({ format: 'json', sizeBytes: Buffer.byteLength(jsonStr, 'utf-8') }),
-        ipAddress,
-        userAgent,
-        tenantId: tenantId || '',
-        userId,
-      },
+    await createAuditLog({
+      tenantId: tenantId || undefined,
+      userId,
+      action: 'Export de données (RGPD)',
+      resourceType: 'User',
+      resourceId: userId,
+      metadata: { format: 'json', sizeBytes: Buffer.byteLength(jsonStr, 'utf-8') },
+      ipAddress,
+      userAgent,
     })
 
     // ── Retourner le fichier JSON en téléchargement ──

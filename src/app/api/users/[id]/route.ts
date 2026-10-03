@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -96,6 +97,14 @@ export async function PUT(
         roleObj: { select: { id: true, name: true, label: true } },
       },
     })
+
+    await auditAction(request, auth, 'Utilisateur modifié', {
+      resourceType: 'User',
+      resourceId: id,
+      tenantId: user.tenantId,
+      metadata: { email: user.email, nom: user.fullName, actif: user.isActive },
+    })
+
     return NextResponse.json({ ...user, role: user.roleObj?.name ?? user.role })
   } catch (error) {
     console.error('Update user error:', error)
@@ -116,7 +125,7 @@ export async function DELETE(
   const db = getDb()
   try {
     const { id } = await params
-    const targetUser = await db.user.findUnique({ where: { id }, select: { roleObj: { select: { name: true } }, email: true } })
+    const targetUser = await db.user.findUnique({ where: { id }, select: { roleObj: { select: { name: true } }, email: true, tenantId: true } })
     if (!targetUser) {
       return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
     }
@@ -124,6 +133,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Le compte root_admin ne peut pas être supprimé' }, { status: 403 })
     }
     await db.user.delete({ where: { id } })
+
+    await auditAction(request, auth, 'Utilisateur supprimé', {
+      resourceType: 'User',
+      resourceId: id,
+      tenantId: targetUser.tenantId,
+      metadata: { email: targetUser.email },
+    })
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Delete user error:', error)

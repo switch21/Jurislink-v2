@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { createAuditLog } from '@/lib/auditLog'
 
 /** Purposes valides pour le consentement (Loi 2024/017) */
 const VALID_PURPOSES = new Set([
@@ -106,17 +107,15 @@ export async function POST(request: Request) {
     `
 
     // Journal d'audit
-    await db.auditLog.create({
-      data: {
-        action: granted ? 'consent_granted' : 'consent_withdrawn',
-        resourceType: 'consent',
-        resourceId: purpose,
-        metadata: JSON.stringify({ purpose, granted }),
-        ipAddress,
-        userAgent,
-        tenantId,
-        userId,
-      },
+    await createAuditLog({
+      tenantId,
+      userId,
+      action: granted ? 'Consentement accordé' : 'Consentement retiré',
+      resourceType: 'consent',
+      resourceId: purpose,
+      metadata: { purpose, granted },
+      ipAddress,
+      userAgent,
     })
 
     return NextResponse.json(

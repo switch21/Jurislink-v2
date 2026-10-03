@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate } from '@/lib/auth-server'
 import { deleteFile } from '@/lib/storage'
+import { createAuditLog } from '@/lib/auditLog'
 
 /**
  * POST /api/documents/bulk
@@ -52,16 +53,14 @@ export async function POST(request: Request) {
           if (doc.filePath) await deleteFile(doc.filePath).catch(() => {})
 
           // Audit log per doc
-          await db.auditLog.create({
-            data: {
-              action: 'document.delete',
-              resourceType: 'document',
-              resourceId: doc.id,
-              metadata: JSON.stringify({ fileName: doc.fileName, bulk: true }),
-              tenantId: doc.tenantId,
-              userId: auth.id || null,
-            },
-          }).catch(() => {})
+          await createAuditLog({
+            tenantId: doc.tenantId,
+            userId: auth.id,
+            action: 'Document supprimé',
+            resourceType: 'Document',
+            resourceId: doc.id,
+            metadata: { fileName: doc.fileName, bulk: true },
+          })
         }
 
         return NextResponse.json({ ok: true, deleted: ids.length })

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { randomUUID } from 'crypto'
 
 export async function GET(request: Request) {
   const auth = await authenticate(request, 'audit', 'view')
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const auditLog = await db.auditLog.create({
       data: {
+        id: randomUUID(),
         action: body.action,
         resourceType: body.resourceType,
         resourceId: body.resourceId,

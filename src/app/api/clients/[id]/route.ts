@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { auditAction } from '@/lib/auditLog'
 
 export async function GET(
   request: Request,
@@ -79,6 +80,14 @@ export async function PUT(
         responsibleLawyerId: body.responsibleLawyerId,
       },
     })
+
+    await auditAction(request, auth, 'Client modifié', {
+      resourceType: 'Client',
+      resourceId: id,
+      tenantId: client.tenantId,
+      metadata: { nom: client.fullName },
+    })
+
     return NextResponse.json(client)
   } catch (error) {
     console.error('Update client error:', error)
@@ -99,7 +108,22 @@ export async function DELETE(
   const db = getDb()
   try {
     const { id } = await params
+    const existing = await db.client.findUnique({
+      where: { id },
+      select: { tenantId: true, fullName: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+    }
     await db.client.delete({ where: { id } })
+
+    await auditAction(request, auth, 'Client supprimé', {
+      resourceType: 'Client',
+      resourceId: id,
+      tenantId: existing.tenantId,
+      metadata: { nom: existing.fullName },
+    })
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Delete client error:', error)

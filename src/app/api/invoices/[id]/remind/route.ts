@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { auditAction } from '@/lib/auditLog'
 
 const REMINDER_CONFIG: Record<number, {
   daysAfterDue: number
@@ -180,6 +181,19 @@ export async function POST(
       data: {
         reminderLevel,
         lastReminderAt: now,
+      },
+    })
+
+    await auditAction(request, auth, `${config.label} envoyée`, {
+      resourceType: 'Invoice',
+      resourceId: id,
+      tenantId: invoice.tenantId,
+      metadata: {
+        numero: data.invoiceNumber,
+        niveau: reminderLevel,
+        methode: method,
+        retard: daysOverdue,
+        montant: remaining,
       },
     })
 

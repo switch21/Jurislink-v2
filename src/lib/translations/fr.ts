@@ -1097,6 +1097,7 @@ const fr: Record<string, string> = {
   'audit.typeClient': 'Client',
   'audit.typeUser': 'Utilisateur',
   'audit.typeInvoice': 'Facture',
+  'audit.typePayment': 'Paiement',
   'audit.typeDocument': 'Document',
   'audit.typeTask': 'Tâche',
   // === PORTAL (additional) ===

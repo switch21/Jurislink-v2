@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { compare } from 'bcryptjs'
 import { createMfaChallenge } from '../mfa/challenge/route'
+import { auditAction } from '@/lib/auditLog'
 
 export async function POST(request: Request) {
   const db = getDb()
@@ -36,6 +37,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Mot de passe incorrect' }, { status: 401 })
       }
     }
+
+    // Audit: successful authentication
+    await auditAction(
+      request,
+      { id: user.id, tenantId: user.tenantId },
+      'Connexion réussie',
+      { resourceType: 'User', resourceId: user.id, tenantId: user.tenantId }
+    )
 
     // Fetch user permissions
     // root_admin is a platform superuser — always grant ALL permissions regardless of role_permissions
