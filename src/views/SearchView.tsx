@@ -276,7 +276,7 @@ export function SearchView() {
                               <span className="text-[10px] text-jl-muted">{priorityLabel(item.priority)}</span>
                             )}
                             {item.caseType && <Badge variant="outline" className="text-[10px]">{typeLabel(item.caseType)}</Badge>}
-                            {item.eventType && <Badge variant="outline" className="text-[10px]">{EVENT_typeLabel(item.eventType)}</Badge>}
+                            {item.eventType && <Badge variant="outline" className="text-[10px]">{eventTypeLabel(item.eventType)}</Badge>}
                             {item.fileSize && <span className="text-[10px] text-jl-muted">{fmtFileSize(item.fileSize)}</span>}
                             {item.createdAt && <span className="text-[10px] text-jl-muted">{fmtDate(item.createdAt)}</span>}
                             {item.dueDate && <span className="text-[10px] text-jl-muted">{t('tasks.dueDate')}: {fmtDate(item.dueDate)}</span>}
