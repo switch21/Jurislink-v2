@@ -586,6 +586,15 @@ function buildWhere(
       } else if (val.every) {
         const subWhere = buildWhere(rel.targetModel, val.every, params)
         parts.push(`NOT EXISTS (SELECT 1 FROM ${targetTable} WHERE ${targetTable}.${rel.fkColumn} = ${prefix}id AND NOT (${subWhere}))`)
+      } else {
+        // Plain object relation filter: e.g. roleObj: { name: { not: 'root_admin' } }
+        const subWhere = buildWhere(rel.targetModel, val, params)
+        if (rel.isMany) {
+          parts.push(`EXISTS (SELECT 1 FROM ${targetTable} WHERE ${targetTable}.${rel.fkColumn} = ${prefix}id AND ${subWhere})`)
+        } else {
+          const fkCol = rel.fkOnTarget || rel.fkColumn
+          parts.push(`EXISTS (SELECT 1 FROM ${targetTable} WHERE ${targetTable}.id = ${prefix}${fkCol} AND ${subWhere})`)
+        }
       }
       continue
     }
@@ -710,7 +719,9 @@ function buildOrderBy(
     }
   } else if (Array.isArray(orderBy)) {
     for (const item of orderBy) {
-      parts.push(buildOrderBy(model, item, params))
+      const sub = buildOrderBy(model, item, params)
+      if (sub.startsWith('ORDER BY ')) parts.push(sub.slice('ORDER BY '.length))
+      else if (sub) parts.push(sub)
     }
   }
 
