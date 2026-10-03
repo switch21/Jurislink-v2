@@ -1188,7 +1188,7 @@ export function CasesView() {
                 <div key={e.id} className="flex items-center gap-3 p-2 rounded-lg border border-jl">
                   <Calendar className="size-4 text-jl-gold shrink-0" />
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="text-[10px] text-jl-muted">{fmtDateTime(e.startTime)}{e.description ? ` • ${e.description}` : ''}</p></div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">{EVENT_typeLabel(e.eventType)}</Badge>
+                  <Badge variant="outline" className="text-[10px] shrink-0">{eventTypeLabel(e.eventType)}</Badge>
                 </div>
               ))}</div>}
             </TabsContent>
