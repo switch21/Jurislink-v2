@@ -7,7 +7,7 @@
 
 import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
 import { ThemeProvider } from 'next-themes'
-import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, CardTitle, CardDescription, CardFooter, Button, Building2, Skeleton, cn, initAuthFetch, motion, AnimatePresence } from '@/views/shared-ui'
+import { QueryClientProvider, TooltipProvider, useAppStore, Card, CardHeader, CardTitle, CardDescription, CardFooter, Button, Building2, Skeleton, cn, initAuthFetch } from '@/views/shared-ui'
 import { queryClient } from '@/views/constants'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { TrialBanner } from '@/views/TrialBanner'
@@ -100,24 +100,15 @@ function AdminRouter() {
   const { currentView } = useAppStore()
   return (
     <Suspense fallback={<ViewLoader />}>
-      <AnimatePresence mode='wait'>
-        <motion.div
-          key={currentView}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className='h-full'
-        >
-          {switchView(currentView, {
-            'admin-dashboard': <LazyAdminDashboardView />,
-            'admin-cabinets': <LazyAdminCabinsView />,
-            'admin-users': <LazyAdminUsersView />,
-            'admin-plans': <LazyAdminPlansView />,
-            'settings': <LazySettingsView />,
-          }, <LazyAdminDashboardView />)}
-        </motion.div>
-      </AnimatePresence>
+      <div className='h-full'>
+        {switchView(currentView, {
+          'admin-dashboard': <LazyAdminDashboardView />,
+          'admin-cabinets': <LazyAdminCabinsView />,
+          'admin-users': <LazyAdminUsersView />,
+          'admin-plans': <LazyAdminPlansView />,
+          'settings': <LazySettingsView />,
+        }, <LazyAdminDashboardView />)}
+      </div>
     </Suspense>
   )
 }
@@ -127,39 +118,30 @@ function DashboardRouter() {
   const { currentView } = useAppStore()
   return (
     <Suspense fallback={<ViewLoader />}>
-      <AnimatePresence mode='wait'>
-        <motion.div
-          key={currentView}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className='h-full'
-        >
-          {switchView(currentView, {
-            'dashboard': <DashboardView />,
-            'cases': <LazyCasesView />,
-            'clients': <LazyClientsView />,
-            'tasks': <LazyTasksView />,
-            'documents': <LazyDocumentsView />,
-            'calendar': <LazyCalendarView />,
-            'invoices': <LazyInvoicesView />,
-            'finances': <LazyExportView />,
-            'impayes': <LazyImpayesView />,
-            'time-tracking': <LazyTimeTrackingView />,
-            'templates': <LazyTemplatesView />,
-            'communications': <LazyCommunicationsView />,
-            'messages': <LazyMessagesView />,
-            'reports': <LazyReportsView />,
-            'search': <LazySearchView />,
-            'audit-logs': <LazyAuditLogsView />,
-            'settings': <LazySettingsView />,
-            'archives': <LazyArchivesView />,
-            'notifications': <LazyNotificationsView />,
-            'pricing': <LazyPricingView />,
-          }, <DashboardView />)}
-        </motion.div>
-      </AnimatePresence>
+      <div className='h-full'>
+        {switchView(currentView, {
+          'dashboard': <DashboardView />,
+          'cases': <LazyCasesView />,
+          'clients': <LazyClientsView />,
+          'tasks': <LazyTasksView />,
+          'documents': <LazyDocumentsView />,
+          'calendar': <LazyCalendarView />,
+          'invoices': <LazyInvoicesView />,
+          'finances': <LazyExportView />,
+          'impayes': <LazyImpayesView />,
+          'time-tracking': <LazyTimeTrackingView />,
+          'templates': <LazyTemplatesView />,
+          'communications': <LazyCommunicationsView />,
+          'messages': <LazyMessagesView />,
+          'reports': <LazyReportsView />,
+          'search': <LazySearchView />,
+          'audit-logs': <LazyAuditLogsView />,
+          'settings': <LazySettingsView />,
+          'archives': <LazyArchivesView />,
+          'notifications': <LazyNotificationsView />,
+          'pricing': <LazyPricingView />,
+        }, <DashboardView />)}
+      </div>
     </Suspense>
   )
 }
