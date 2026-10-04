@@ -3,6 +3,8 @@ import { getDb } from '@/lib/db'
 import { compare } from 'bcryptjs'
 import { createMfaChallenge } from '../mfa/challenge/route'
 import { auditAction } from '@/lib/auditLog'
+import { startSession, MAX_ACTIVE_SESSIONS } from '@/lib/sessions'
+import { fireNotification } from '@/lib/notify'
 
 export async function POST(request: Request) {
   const db = getDb()
@@ -103,7 +105,28 @@ export async function POST(request: Request) {
       })
     } catch {}
 
-    return NextResponse.json(userData)
+    // Session tracking: max 2 simultaneous devices, notify the other session
+    let sessionId: string | null = null
+    const sess = await startSession(user.id, user.tenantId ?? null)
+    if (sess) {
+      if (sess.otherActiveCount >= MAX_ACTIVE_SESSIONS) {
+        return NextResponse.json({
+          error: "Nombre maximal d'appareils atteint (2). Déconnectez-vous d'un autre appareil pour continuer.",
+        }, { status: 403 })
+      }
+      sessionId = sess.sessionId
+      if (sess.otherActiveCount === 1) {
+        fireNotification({
+          tenantId: user.tenantId ?? '',
+          type: 'systeme',
+          title: 'Nouvelle connexion',
+          message: 'Une nouvelle connexion à votre compte a été détectée depuis un autre appareil.',
+          userId: user.id,
+        })
+      }
+    }
+
+    return NextResponse.json({ ...userData, sessionId })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue'
     console.error('Login error:', message)

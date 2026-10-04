@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import * as OTPAuth from 'otpauth'
 import { randomUUID } from 'crypto'
+import { startSession, MAX_ACTIVE_SESSIONS } from '@/lib/sessions'
+import { fireNotification } from '@/lib/notify'
 
 // In-memory store for pending MFA challenges (userId -> { token, expiresAt, userData })
 // In production, this would use Redis. For now, a simple Map with TTL cleanup.
@@ -89,6 +91,27 @@ export async function POST(request: Request) {
           data: { lastLoginAt: new Date() },
         })
       } catch {}
+
+      // Session tracking: max 2 simultaneous devices, notify the other session
+      const tenantId = (challenge.userData.tenantId as string) || null
+      const sess = await startSession(userId, tenantId)
+      if (sess) {
+        if (sess.otherActiveCount >= MAX_ACTIVE_SESSIONS) {
+          return NextResponse.json({
+            error: "Nombre maximal d'appareils atteint (2). Déconnectez-vous d'un autre appareil pour continuer.",
+          }, { status: 403 })
+        }
+        if (sess.otherActiveCount === 1) {
+          fireNotification({
+            tenantId: tenantId ?? '',
+            type: 'systeme',
+            title: 'Nouvelle connexion',
+            message: 'Une nouvelle connexion à votre compte a été détectée depuis un autre appareil.',
+            userId,
+          })
+        }
+        return NextResponse.json({ ...challenge.userData, sessionId: sess.sessionId })
+      }
 
       return NextResponse.json(challenge.userData)
     } finally {

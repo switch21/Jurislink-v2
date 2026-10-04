@@ -69,6 +69,7 @@ export function LoginPage() {
       if (data.mfaRequired) {
         setMfaPending({ userId: data.userId, mfaToken: data.mfaToken })
       } else {
+        if (data.sessionId) localStorage.setItem('jurislink_session', data.sessionId)
         login(data); toast.success(`Bienvenue, ${data.fullName} !`)
       }
     } catch { toast.error(t('login.errorServer')) } finally { setLoading(false) }
@@ -88,6 +89,7 @@ export function LoginPage() {
       })
       const data = await res.json()
       if (!res.ok) { toast.error(data.error || t('login.errorInvalid')); setMfaCode(''); return }
+      if (data.sessionId) localStorage.setItem('jurislink_session', data.sessionId)
       login(data); toast.success(`Bienvenue, ${data.fullName} !`)
     } catch { toast.error(t('common.error')) } finally { setMfaLoading(false) }
   }
@@ -123,9 +125,9 @@ export function LoginPage() {
                   <CardDescription className="text-sm mt-1 text-[var(--text-secondary)]">{t('login.subtitle')}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <form onSubmit={handleCabinetSubmit} className="space-y-4">
-                    <div className="space-y-2"><Label htmlFor="email">{t('login.email')}</Label><Input id="email" type="email" placeholder="email@jurislink.com" value={email} onChange={e => setEmail(e.target.value)} className="h-11 rounded-lg border-[var(--border)] bg-[var(--bg-card)]" /></div>
-                    <div className="space-y-2"><Label htmlFor="password">{t('login.password')}</Label><div className="relative"><Input id="password" type={showPassword ? 'text' : 'password'} placeholder="•••••••" value={password} onChange={e => setPassword(e.target.value)} className="h-11 rounded-lg border-[var(--border)] bg-[var(--bg-card)] pr-10" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors" tabIndex={-1}>{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></div>
+                  <form onSubmit={handleCabinetSubmit} className="space-y-4" autoComplete="off">
+                    <div className="space-y-2"><Label htmlFor="email">{t('login.email')}</Label><Input id="email" type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className="h-11 rounded-lg border-[var(--border)] bg-[var(--bg-card)]" /></div>
+                    <div className="space-y-2"><Label htmlFor="password">{t('login.password')}</Label><div className="relative"><Input id="password" type={showPassword ? 'text' : 'password'} autoComplete="off" value={password} onChange={e => setPassword(e.target.value)} className="h-11 rounded-lg border-[var(--border)] bg-[var(--bg-card)] pr-10" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors" tabIndex={-1}>{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></div>
                     <Button type="submit" className="w-full h-11 bg-[var(--primary)] hover:bg-jl-blue text-white rounded-lg font-medium" disabled={loading}>{loading ? <RefreshCw className="size-4 animate-spin" /> : t('login.submit')}</Button>
                   </form>
                 </CardContent>
@@ -141,7 +143,7 @@ export function LoginPage() {
                   <CardDescription className="text-sm mt-1 text-[var(--text-secondary)]">{t('login.mfaDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <form onSubmit={handleMfaSubmit} className="space-y-4">
+                  <form onSubmit={handleMfaSubmit} className="space-y-4" autoComplete="off">
                     <div className="space-y-2">
                       <Label htmlFor="mfa-code">{t('login.mfaCode')}</Label>
                       <Input
@@ -149,7 +151,7 @@ export function LoginPage() {
                         type="text"
                         inputMode="numeric"
                         maxLength={6}
-                        placeholder="000000"
+                        autoComplete="off"
                         value={mfaCode}
                         onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 6); setMfaCode(v) }}
                         className="h-11 rounded-lg border-[var(--border)] bg-[var(--bg-card)] text-center text-lg tracking-[0.3em] font-mono"
@@ -171,6 +173,25 @@ export function LoginPage() {
                 </CardContent>
                 <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-[var(--text-muted)]">{t('login.mfaTimer')}</p></CardFooter>
               </>}
+            </>}
+            {tab === 'portal' && <>
+              <CardHeader className="text-center pb-2 pt-8">
+                <div className="mx-auto mb-4 flex items-center justify-center">
+                  <div className="size-14 rounded-full bg-jl-blue/10 flex items-center justify-center">
+                    <UsersRound className="size-7 text-jl-blue" />
+                  </div>
+                </div>
+                <CardTitle className="text-base font-semibold">{t('portal.title')}</CardTitle>
+                <CardDescription className="text-sm mt-1 text-[var(--text-secondary)]">{t('portal.subtitle')}</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <form onSubmit={handlePortalSubmit} className="space-y-4" autoComplete="off">
+                  <div className="space-y-2"><Label htmlFor="portal-email">{t('login.email')}</Label><Input id="portal-email" type="email" autoComplete="off" value={portalEmail} onChange={e => setPortalEmail(e.target.value)} className="h-11 rounded-lg border-[var(--border)] bg-[var(--bg-card)]" /></div>
+                  <div className="space-y-2"><Label htmlFor="portal-password">{t('login.password')}</Label><div className="relative"><Input id="portal-password" type={portalShowPw ? 'text' : 'password'} autoComplete="off" value={portalPassword} onChange={e => setPortalPassword(e.target.value)} className="h-11 rounded-lg border-[var(--border)] bg-[var(--bg-card)] pr-10" /><button type="button" onClick={() => setPortalShowPw(!portalShowPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors" tabIndex={-1}>{portalShowPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button></div></div>
+                  <Button type="submit" className="w-full h-11 bg-[var(--primary)] hover:bg-jl-blue text-white rounded-lg font-medium" disabled={portalLoading}>{portalLoading ? <RefreshCw className="size-4 animate-spin" /> : t('portal.login')}</Button>
+                </form>
+              </CardContent>
+              <CardFooter className="flex-col gap-2 pb-8"><Separator className="mb-2" /><p className="text-xs text-[var(--text-muted)]">{t('portal.footerHint')}</p></CardFooter>
             </>}
             </Tabs>
           </Card>

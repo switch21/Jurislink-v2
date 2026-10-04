@@ -37,7 +37,7 @@ export function CalendarView() {
 
   const { data: tenantCases } = useQuery({
     queryKey: ['cases-mini-cal', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&limit=100`).then(r => r.json()).then(d => Array.isArray(d) ? d : (d?.cases || [])),
   })
 
   const { data: tenantUsers } = useQuery({

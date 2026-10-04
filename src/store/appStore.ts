@@ -108,6 +108,8 @@ interface AppState {
   lastNotification: { title: string; message: string; resourceType?: string | null; resourceId?: string | null } | null
   // Deep-linking: when a notification is clicked, set this so the target view opens the resource
   pendingResourceOpen: { resourceType: string; resourceId: string } | null
+  // Dashboard shortcuts: set before navigating so the target view opens its creation dialog
+  pendingCreateOpen: 'case' | 'invoice' | null
   // Portal client state
   portalUser: PortalUserInfo | null
   isPortalAuthenticated: boolean
@@ -130,6 +132,7 @@ interface AppState {
   setLastNotification: (n: { title: string; message: string; resourceType?: string | null; resourceId?: string | null } | null) => void
   // Deep-linking action
   setPendingResourceOpen: (v: { resourceType: string; resourceId: string } | null) => void
+  setPendingCreateOpen: (v: 'case' | 'invoice' | null) => void
   // Portal actions
   portalLogin: (user: PortalUserInfo) => void
   portalLogout: () => void
@@ -212,6 +215,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   unreadCount: 0,
   lastNotification: null,
   pendingResourceOpen: null,
+  pendingCreateOpen: null,
   portalUser: null,
   isPortalAuthenticated: false,
   portalCurrentView: 'portal-dashboard',
@@ -230,6 +234,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (typeof window !== 'undefined') {
       localStorage.removeItem('jurislink_user')
       localStorage.removeItem('jurislink_current_view')
+      localStorage.removeItem('jurislink_session')
     }
     set({ user: null, isAuthenticated: false, currentView: 'login' })
   },
@@ -254,6 +259,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setUnreadCount: (n) => set({ unreadCount: n }),
   setLastNotification: (n) => set({ lastNotification: n }),
   setPendingResourceOpen: (v) => set({ pendingResourceOpen: v }),
+  setPendingCreateOpen: (v) => set({ pendingCreateOpen: v }),
   portalLogin: (portalUser) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('jurislink_portal_user', JSON.stringify(portalUser))

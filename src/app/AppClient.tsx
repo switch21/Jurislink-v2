@@ -1,7 +1,7 @@
 'use client'
 
 // ════════════════════════════════════════════════════════════════════════════
-// JurisLink v3.8.73 — Orchestrator
+// JurisLink v3.9.2 — Orchestrator
 // Phase 7: UI/UX Polish — Dark Mode, Animations, Responsive
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -12,8 +12,9 @@ import { queryClient } from '@/views/constants'
 import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 import { TrialBanner } from '@/views/TrialBanner'
 import { Toaster } from '@/components/ui/toaster'
-import { hydrateLocale } from '@/lib/i18n'
+import { hydrateLocale, useLocale } from '@/lib/i18n'
 import { LocaleSync } from '@/components/LocaleSync'
+import { SessionManager } from '@/components/SessionManager'
 
 // ──── Lazy-loaded guard (non-critical, loads after mount) ────
 const LazyBeforeUnloadGuard = lazy(() => import('@/components/BeforeUnloadGuard').then(m => ({ default: m.BeforeUnloadGuard })))
@@ -40,7 +41,7 @@ const LazyCalendarView = lazy(() => import('@/views/CalendarView').then(m => ({ 
 const LazyInvoicesView = lazy(() => import('@/views/InvoicesView').then(m => ({ default: m.InvoicesView })))
 const LazyReportsView = lazy(() => import('@/views/ReportsView').then(m => ({ default: m.ReportsView })))
 const LazySettingsView = lazy(() => import('@/views/SettingsView').then(m => ({ default: m.SettingsView })))
-const LazyFinancesView = lazy(() => import('@/views/FinancesView').then(m => ({ default: m.FinancesView })))
+const LazyExportView = lazy(() => import('@/views/ExportView').then(m => ({ default: m.ExportView })))
 const LazyImpayesView = lazy(() => import('@/views/ImpayesView').then(m => ({ default: m.ImpayesView })))
 const LazyTimeTrackingView = lazy(() => import('@/views/TimeTrackingView').then(m => ({ default: m.TimeTrackingView })))
 const LazyTemplatesView = lazy(() => import('@/views/TemplatesView').then(m => ({ default: m.TemplatesView })))
@@ -89,7 +90,7 @@ function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--border)] py-4 px-6 flex items-center justify-between text-xs text-[var(--text-muted)] transition-colors duration-300">
       <span className="flex items-center gap-1.5"><img src="/icon.png" alt="" className="size-3.5 rounded-sm" />JurisLink</span>
-      <span>v3.8.73</span>
+      <span>v3.9.2</span>
     </footer>
   )
 }
@@ -143,7 +144,7 @@ function DashboardRouter() {
             'documents': <LazyDocumentsView />,
             'calendar': <LazyCalendarView />,
             'invoices': <LazyInvoicesView />,
-            'finances': <LazyFinancesView />,
+            'finances': <LazyExportView />,
             'impayes': <LazyImpayesView />,
             'time-tracking': <LazyTimeTrackingView />,
             'templates': <LazyTemplatesView />,
@@ -166,6 +167,9 @@ function DashboardRouter() {
 // ==================== MAIN APP ====================
 function AppInner() {
   const { isAuthenticated, isPortalAuthenticated, user } = useAppStore()
+  // Subscribe to locale so the whole app re-renders (and views re-read t())
+  // when the language changes — views call t() without subscribing themselves.
+  const { locale } = useLocale()
   const isRootAdmin = user?.roleObj?.name === 'root_admin' || user?.role === 'root_admin'
   const needsTenant = isAuthenticated && !user?.tenantId && !isRootAdmin
 
@@ -192,7 +196,7 @@ function AppInner() {
       <LazyPortalSidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
         <LazyPortalHeader />
-        <main id='main-content' className='flex-1' role='main'><LazyPortalRouter /></main>
+        <main key={locale} id='main-content' className='flex-1' role='main'><LazyPortalRouter /></main>
         <Footer />
       </div>
     </Suspense>
@@ -225,7 +229,7 @@ function AppInner() {
       <AdminSidebar />
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
         <AdminHeader />
-        <main id='main-content' className='flex-1' role='main'><AdminRouter /></main>
+        <main key={locale} id='main-content' className='flex-1' role='main'><AdminRouter /></main>
         <Footer />
       </div>
       <LazyBeforeUnloadGuard />
@@ -237,7 +241,7 @@ function AppInner() {
       <div className='lg:pl-[260px] flex-1 flex flex-col'>
         <Header />
         <TrialBanner />
-        <main id='main-content' className='flex-1' role='main'><DashboardRouter /></main>
+        <main key={locale} id='main-content' className='flex-1' role='main'><DashboardRouter /></main>
         <Footer />
       </div>
       <LazyBeforeUnloadGuard />
@@ -279,6 +283,7 @@ export default function App() {
         </TooltipProvider>
       </QueryClientProvider>
       <Toaster />
+      <SessionManager />
     </ThemeProvider>
   )
 }

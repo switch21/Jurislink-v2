@@ -7,7 +7,7 @@ import { useFormDraft, registerDirtyForm, unregisterDirtyForm } from '@/hooks/us
 import type { Client, CaseItem, CaseAssignment, CaseNote, Doc, EventItem, EventAssignment, InvoiceLineItem, Payment, Invoice, Message, Notification, AuditLogItem, UserItem, TenantItem, AdminDashboardData, AdminTenant, TaskItem, DashboardStats, ConflictResult, CurrencyItem, TimeEntry, DocTemplate, Communication, TimeSummary, PortalCaseItem, PortalCaseDetail, PortalTimelineEntry, PortalInvoiceItem, PortalDocItem, PortalCommunication, PortalDashboardData } from './types'
 // ==================== INVOICES VIEW ====================
 export function InvoicesView() {
-  const { user, setHasUnsavedChanges } = useAppStore()
+  const { user, setHasUnsavedChanges, pendingCreateOpen, setPendingCreateOpen } = useAppStore()
   const qc = useQueryClient()
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -21,6 +21,14 @@ export function InvoicesView() {
   const [lineItems, setLineItems] = useState<Array<{ description: string; quantity: number; unitPrice: number }>>([{ description: '', quantity: 1, unitPrice: 0 }])
   const [createForm, setCreateForm] = useState({ type: 'facture', clientId: '', caseId: '', currencyId: '', dueDate: '', billingType: 'forfait', notes: '', taxRate: '0', discountAmount: '0', terms: '' })
   const { restoredDraft: invoiceRestoredDraft, isDirty: invoiceIsDirty, clearDraft: clearInvoiceDraft, getDraft: getInvoiceDraft } = useFormDraft('invoice-form', createForm as unknown as Record<string, unknown>, { enabled: createOpen })
+
+  // Dashboard shortcut: open the "Nouvelle facture" dialog when requested
+  useEffect(() => {
+    if (pendingCreateOpen === 'invoice') {
+      setCreateOpen(true)
+      setPendingCreateOpen(null)
+    }
+  }, [pendingCreateOpen, setPendingCreateOpen])
 
   // Sync dirty state with global store
   useEffect(() => { registerDirtyForm('invoice-form', invoiceIsDirty); setHasUnsavedChanges(invoiceIsDirty); return () => { unregisterDirtyForm('invoice-form') } }, [invoiceIsDirty])
@@ -50,7 +58,7 @@ export function InvoicesView() {
   })
 
   const { data: clients } = useQuery({ queryKey: ['clients-invoice', user?.tenantId], queryFn: () => fetch(`/api/clients?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
-  const { data: cases } = useQuery({ queryKey: ['cases-invoice', user?.tenantId], queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
+  const { data: cases } = useQuery({ queryKey: ['cases-invoice', user?.tenantId], queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&limit=100`).then(r => r.json()).then(d => Array.isArray(d) ? d : (d?.cases || [])) })
   const { data: currencies } = useQuery({ queryKey: ['currencies-invoice'], queryFn: () => fetch('/api/currencies').then(r => r.json()).then(d => Array.isArray(d) ? d : []) })
 
   // Unbilled time entries

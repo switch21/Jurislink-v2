@@ -10,7 +10,7 @@ export function ArchivesView() {
 
   const { data: cases, isLoading } = useQuery({
     queryKey: ['archived-cases', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&status=archive`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&status=archive`).then(r => r.json()).then(d => Array.isArray(d) ? d : (d?.cases || [])),
   })
 
   return (

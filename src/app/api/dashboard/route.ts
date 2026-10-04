@@ -31,11 +31,59 @@ export async function GET(request: Request) {
     const where = { tenantId }
     const now = new Date()
 
-    // Time boundaries
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-    const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+    // Period filter: semaine | mois | trimestre | semestre | annee | personnalise (from/to)
+    const period = searchParams.get('period') || 'mois'
+    const fromParam = searchParams.get('from')
+    const toParam = searchParams.get('to')
+    const dayEnd = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999)
+
+    let periodStart: Date
+    let periodEnd: Date
+    switch (period) {
+      case 'semaine': {
+        const day = (now.getDay() + 6) % 7 // Monday = 0
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day)
+        periodEnd = dayEnd(new Date(periodStart.getTime() + 6 * 86400000))
+        break
+      }
+      case 'trimestre': {
+        const q = Math.floor(now.getMonth() / 3) * 3
+        periodStart = new Date(now.getFullYear(), q, 1)
+        periodEnd = dayEnd(new Date(now.getFullYear(), q + 3, 0))
+        break
+      }
+      case 'semestre': {
+        const h = now.getMonth() < 6 ? 0 : 6
+        periodStart = new Date(now.getFullYear(), h, 1)
+        periodEnd = dayEnd(new Date(now.getFullYear(), h + 6, 0))
+        break
+      }
+      case 'annee':
+        periodStart = new Date(now.getFullYear(), 0, 1)
+        periodEnd = dayEnd(new Date(now.getFullYear(), 11, 31))
+        break
+      case 'personnalise': {
+        const from = fromParam ? new Date(`${fromParam}T00:00:00`) : null
+        const to = toParam ? new Date(`${toParam}T00:00:00`) : null
+        if (from && to && !isNaN(from.getTime()) && !isNaN(to.getTime()) && from <= to) {
+          periodStart = from
+          periodEnd = dayEnd(to)
+        } else {
+          periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
+          periodEnd = dayEnd(new Date(now.getFullYear(), now.getMonth() + 1, 0))
+        }
+        break
+      }
+      case 'mois':
+      default:
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        periodEnd = dayEnd(new Date(now.getFullYear(), now.getMonth() + 1, 0))
+    }
+    const periodSpan = periodEnd.getTime() - periodStart.getTime() + 1
+    const prevPeriodEnd = new Date(periodStart.getTime() - 1)
+    const prevPeriodStart = new Date(prevPeriodEnd.getTime() - periodSpan + 1)
+
+    // Fixed time boundaries (not period-dependent)
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
     const sevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -83,17 +131,17 @@ export async function GET(request: Request) {
       safe(() => db.client.count({ where }), 0),
       safe(() => db.invoice.count({ where: { ...where, status: 'non_paye' } }), 0),
       safe(() => db.invoice.count({ where: { ...where, status: 'paye' } }), 0),
-      // Revenue aggregates (needs issued_at column)
-      safe(() => db.invoice.aggregate({ where: { ...where, status: 'paye', issuedAt: { gte: firstDayOfMonth, lte: lastDayOfMonth } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
-      safe(() => db.invoice.aggregate({ where: { ...where, status: 'paye', issuedAt: { gte: firstDayOfLastMonth, lte: lastDayOfLastMonth } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
-      // Payment aggregates (needs paid_at column)
-      safe(() => db.payment.aggregate({ where: { ...where, paidAt: { gte: firstDayOfMonth, lte: lastDayOfMonth }, status: { not: 'annule' } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
-      safe(() => db.payment.aggregate({ where: { ...where, paidAt: { gte: firstDayOfLastMonth, lte: lastDayOfLastMonth }, status: { not: 'annule' } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
+      // Revenue aggregates (period-based)
+      safe(() => db.invoice.aggregate({ where: { ...where, status: 'paye', issuedAt: { gte: periodStart, lte: periodEnd } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
+      safe(() => db.invoice.aggregate({ where: { ...where, status: 'paye', issuedAt: { gte: prevPeriodStart, lte: prevPeriodEnd } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
+      // Payment aggregates (period-based)
+      safe(() => db.payment.aggregate({ where: { ...where, paidAt: { gte: periodStart, lte: periodEnd }, status: { not: 'annule' } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
+      safe(() => db.payment.aggregate({ where: { ...where, paidAt: { gte: prevPeriodStart, lte: prevPeriodEnd }, status: { not: 'annule' } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
       // Grouped data
       safe(() => db.case.groupBy({ by: ['status'], where, _count: { status: true } }), []),
       safe(() => db.case.groupBy({ by: ['caseType'], where, _count: { caseType: true } }), []),
-      // Activity (needs timestamp column on audit_logs)
-      safe(() => db.auditLog.findMany({ where, include: { user: { select: { id: true, fullName: true } } }, orderBy: { timestamp: 'desc' }, take: 10 }), []),
+      // Activity (period-based)
+      safe(() => db.auditLog.findMany({ where: { ...where, timestamp: { gte: periodStart } }, include: { user: { select: { id: true, fullName: true } } }, orderBy: { timestamp: 'desc' }, take: 10 }), []),
       // Overdue invoices (needs type, issued_at columns)
       safe(() => db.invoice.findMany({
         where: { ...where, type: 'facture', dueDate: { lte: now }, status: { in: ['non_paye', 'partiel'] } },
@@ -121,13 +169,13 @@ export async function GET(request: Request) {
       // Financial KPIs (needs type column on invoices)
       safe(() => db.invoice.aggregate({ where: { ...where, type: 'facture', status: { in: ['non_paye', 'partiel'] } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
       safe(() => db.invoice.count({ where: { ...where, type: 'facture', dueDate: { lte: now }, status: { in: ['non_paye', 'partiel'] } } }), 0),
-      safe(() => db.payment.aggregate({ where: { ...where, paidAt: { gte: firstDayOfMonth, lte: lastDayOfMonth }, status: { not: 'annule' } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
-      // Activity counts
-      safe(() => db.case.count({ where: { ...where, createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth } } }), 0),
-      safe(() => db.case.count({ where: { ...where, status: 'ferme', updatedAt: { gte: firstDayOfMonth, lte: lastDayOfMonth } } }), 0),
-      safe(() => db.client.count({ where: { ...where, createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth } } }), 0),
-      safe(() => db.event.count({ where: { ...where, eventType: 'audience', startTime: { gte: firstDayOfMonth, lte: lastDayOfMonth } } }), 0),
-      safe(() => db.invoice.count({ where: { ...where, createdAt: { gte: firstDayOfMonth, lte: lastDayOfMonth } } }), 0),
+      safe(() => db.payment.aggregate({ where: { ...where, paidAt: { gte: periodStart, lte: periodEnd }, status: { not: 'annule' } }, _sum: { amount: true } }), { _sum: { amount: 0 } }),
+      // Activity counts (period-based)
+      safe(() => db.case.count({ where: { ...where, createdAt: { gte: periodStart, lte: periodEnd } } }), 0),
+      safe(() => db.case.count({ where: { ...where, status: 'ferme', updatedAt: { gte: periodStart, lte: periodEnd } } }), 0),
+      safe(() => db.client.count({ where: { ...where, createdAt: { gte: periodStart, lte: periodEnd } } }), 0),
+      safe(() => db.event.count({ where: { ...where, eventType: 'audience', startTime: { gte: periodStart, lte: periodEnd } } }), 0),
+      safe(() => db.invoice.count({ where: { ...where, createdAt: { gte: periodStart, lte: periodEnd } } }), 0),
       // Today's events
       safe(() => db.event.findMany({
         where: { ...where, startTime: { gte: startOfDay, lte: endOfDay } },
@@ -214,6 +262,7 @@ export async function GET(request: Request) {
     }))
 
     return NextResponse.json({
+      period: { key: period, start: periodStart.toISOString(), end: periodEnd.toISOString() },
       totalCases,
       activeCases,
       totalClients,

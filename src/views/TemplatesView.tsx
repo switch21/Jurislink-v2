@@ -46,7 +46,7 @@ export function TemplatesView() {
 
   const { data: cases } = useQuery({
     queryKey: ['cases-tpl', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&limit=100`).then(r => r.json()).then(d => Array.isArray(d) ? d : (d?.cases || [])),
     enabled: showGenerate !== null,
   })
 

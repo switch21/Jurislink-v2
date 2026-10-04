@@ -171,9 +171,27 @@ export function SettingsView() {
   }, [])
 
   const createUserMut = useMutation({
-    mutationFn: (body: Record<string, unknown>) => fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+    mutationFn: (body: Record<string, unknown>) => fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
     onSuccess: () => { toast.success('Utilisateur créé'); qc.invalidateQueries({ queryKey: ['settings-users'] }); setShowNewUser(false); setNewUser({ fullName: '', email: '', role: 'lawyer', password: '' }) },
-    onError: () => toast.error('Erreur lors de la création'),
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const toggleUserMut = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => fetch(`/api/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive }) }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: () => { toast.success(t('settings.userUpdated')); qc.invalidateQueries({ queryKey: ['settings-users'] }) },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const forceLogoutUserMut = useMutation({
+    mutationFn: (id: string) => fetch(`/api/users/${id}/force-logout`, { method: 'POST' }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: () => toast.success(t('settings.userLoggedOut')),
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const deleteUserMut = useMutation({
+    mutationFn: (id: string) => fetch(`/api/users/${id}`, { method: 'DELETE' }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Erreur'); return d }),
+    onSuccess: () => { toast.success(t('settings.userDeleted')); qc.invalidateQueries({ queryKey: ['settings-users'] }) },
+    onError: (e: Error) => toast.error(e.message),
   })
 
   const [editingCurrency, setEditingCurrency] = useState<{ id: string; name: string; symbol: string } | null>(null)
@@ -438,14 +456,14 @@ export function SettingsView() {
 
         {/* EQUIPE */}
         {isAdmin && <TabsContent value="equipe">
-          <Card><CardHeader className="flex flex-row items-center justify-between pb-3"><div><CardTitle className="text-sm font-semibold">Membres de l'équipe</CardTitle><CardDescription className="text-xs text-jl-secondary">{currentUserCount} sur {maxUsers} utilisateurs</CardDescription></div><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => setShowNewUser(true)}><Plus className="size-3.5 mr-1" />{t('settings.add')}</Button></CardHeader>
+          <Card><CardHeader className="flex flex-row items-center justify-between pb-3"><div><CardTitle className="text-sm font-semibold">Membres de l'équipe</CardTitle><CardDescription className="text-xs text-jl-secondary">{currentUserCount} sur {maxUsers} utilisateurs</CardDescription></div><Button size="sm" className="bg-jl-blue hover:bg-jl-blue disabled:opacity-50" onClick={() => setShowNewUser(true)} disabled={currentUserCount >= maxUsers} title={currentUserCount >= maxUsers ? t('settings.quotaReached') : undefined}><Plus className="size-3.5 mr-1" />{t('settings.add')}</Button></CardHeader>
           <CardContent>
             <div className="mb-4"><div className="flex items-center justify-between text-xs mb-1"><span className="text-jl-secondary">{t('settings.usage')}</span><span className={cn('font-medium', usagePercent >= 90 ? 'text-[var(--danger)]' : 'text-jl-secondary')}>{currentUserCount}/{maxUsers}</span></div><div className="h-2 bg-jl-page rounded-full overflow-hidden"><div className={cn('h-full rounded-full transition-all', usagePercent >= 90 ? 'bg-[var(--danger)]' : usagePercent >= 70 ? 'bg-jl-gold' : 'bg-jl-blue')} style={{ width: usagePercent + '%' }} /></div></div>
-            {showNewUser && <div className="border border-jl rounded-lg p-4 mb-4 space-y-3 bg-jl-page"><p className="text-xs font-semibold text-jl-primary">{t('admin.newUser')}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">{t('common.fullName')}</Label><Input value={newUser.fullName} onChange={e => setNewUser(u => ({ ...u, fullName: e.target.value }))} placeholder="Jean Dupont" /></div><div className="space-y-1.5"><Label className="text-xs">{t('common.email')}</Label><Input type="email" value={newUser.email} onChange={e => setNewUser(u => ({ ...u, email: e.target.value }))} placeholder="jean@jurislink.com" /></div><div className="space-y-1.5"><Label className="text-xs">{t('settings.role')}</Label><Select value={newUser.role} onValueChange={v => setNewUser(u => ({ ...u, role: v }))}><SelectTrigger className="h-10"><SelectValue placeholder={t('settings.selectPhoto')} /></SelectTrigger><SelectContent>{(permData?.roles || []).filter((r: { isSystem: boolean }) => r.isSystem).map((r: { id: string; name: string; label: string }) => <SelectItem key={r.id} value={r.name}>{r.label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-1.5"><Label className="text-xs">{t('settings.password')}</Label><Input type="password" value={newUser.password} onChange={e => setNewUser(u => ({ ...u, password: e.target.value }))} placeholder="••••••••" /></div></div><div className="flex gap-2 pt-1"><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => createUserMut.mutate({ ...newUser, tenantId: user?.tenantId })} disabled={!newUser.fullName || !newUser.email || !newUser.password}>{t('admin.newUser')}</Button><Button size="sm" variant="outline" onClick={() => setShowNewUser(false)}>{t('common.cancel')}</Button></div></div>}
+            {showNewUser && <div className="border border-jl rounded-lg p-4 mb-4 space-y-3 bg-jl-page"><p className="text-xs font-semibold text-jl-primary">{t('admin.newUser')}</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="space-y-1.5"><Label className="text-xs">{t('common.fullName')}</Label><Input value={newUser.fullName} onChange={e => setNewUser(u => ({ ...u, fullName: e.target.value }))} /></div><div className="space-y-1.5"><Label className="text-xs">{t('common.email')}</Label><Input type="email" value={newUser.email} onChange={e => setNewUser(u => ({ ...u, email: e.target.value }))} /></div><div className="space-y-1.5"><Label className="text-xs">{t('settings.role')}</Label><Select value={newUser.role} onValueChange={v => setNewUser(u => ({ ...u, role: v }))}><SelectTrigger className="h-10"><SelectValue placeholder={t('settings.selectRole')} /></SelectTrigger><SelectContent>{(permData?.roles || []).filter((r: { isSystem: boolean }) => r.isSystem).map((r: { id: string; name: string; label: string }) => <SelectItem key={r.id} value={r.name}>{r.label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-1.5"><Label className="text-xs">{t('settings.password')}</Label><Input type="password" value={newUser.password} onChange={e => setNewUser(u => ({ ...u, password: e.target.value }))} /></div></div><div className="flex gap-2 pt-1"><Button size="sm" className="bg-jl-blue hover:bg-jl-blue" onClick={() => createUserMut.mutate({ ...newUser, tenantId: user?.tenantId })} disabled={!newUser.fullName || !newUser.email || !newUser.password}>{t('admin.newUser')}</Button><Button size="sm" variant="outline" onClick={() => setShowNewUser(false)}>{t('common.cancel')}</Button></div></div>}
             <div className="max-h-96 overflow-y-auto rounded-lg border border-jl">
               <Table><TableHeader><TableRow className="bg-jl-page hover:bg-jl-page"><TableHead className="text-xs">{t('settings.users')}</TableHead><TableHead className="text-xs hidden sm:table-cell">Rôle</TableHead><TableHead className="text-xs hidden md:table-cell">{t('common.status')}</TableHead><TableHead className="text-xs text-right">Actions</TableHead></TableRow></TableHeader><TableBody>
                 {(usersList || []).map((u: UserItem) => (
-                  <TableRow key={u.id}><TableCell><div className="flex items-center gap-2.5"><Avatar className="size-8"><AvatarFallback className={cn('text-[10px]', u.isActive ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary')}>{initials(u.fullName)}</AvatarFallback></Avatar><div><p className="text-sm font-medium">{u.fullName}</p><p className="text-[11px] text-jl-muted">{u.email}</p></div></div></TableCell><TableCell className="hidden sm:table-cell"><Badge variant="outline" className="text-[10px]">{roleLabel(u.role)}</Badge></TableCell><TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><div className={cn('size-1.5 rounded-full', u.isActive ? 'bg-[var(--success)]' : 'bg-jl-page')} /><span className="text-xs">{u.isActive ? t('common.active') : t('common.inactive')}</span></div></TableCell><TableCell className="text-right"><Button size="sm" variant="ghost" className="size-7 text-jl-muted hover:text-jl-secondary"><MoreHorizontal className="size-3.5" /></Button></TableCell></TableRow>
+                  <TableRow key={u.id}><TableCell><div className="flex items-center gap-2.5"><Avatar className="size-8"><AvatarFallback className={cn('text-[10px]', u.isActive ? 'bg-jl-blue text-white' : 'bg-jl-page text-jl-secondary')}>{initials(u.fullName)}</AvatarFallback></Avatar><div><p className="text-sm font-medium">{u.fullName}</p><p className="text-[11px] text-jl-muted">{u.email}</p></div></div></TableCell><TableCell className="hidden sm:table-cell"><Badge variant="outline" className="text-[10px]">{roleLabel(u.role)}</Badge></TableCell><TableCell className="hidden md:table-cell"><div className="flex items-center gap-1.5"><div className={cn('size-1.5 rounded-full', u.isActive ? 'bg-[var(--success)]' : 'bg-jl-page')} /><span className="text-xs">{u.isActive ? t('common.active') : t('common.inactive')}</span></div></TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button size="sm" variant="ghost" className="size-7 text-jl-muted hover:text-jl-secondary"><MoreHorizontal className="size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-48"><DropdownMenuItem onClick={() => toggleUserMut.mutate({ id: u.id, isActive: !u.isActive })}>{u.isActive ? <Ban className="size-3.5 mr-2" /> : <UserCheck className="size-3.5 mr-2" />}{u.isActive ? t('settings.deactivate') : t('settings.activate')}</DropdownMenuItem><DropdownMenuItem onClick={() => forceLogoutUserMut.mutate(u.id)}><LogOut className="size-3.5 mr-2" />{t('settings.forceLogout')}</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem className="text-red-500 focus:text-red-500" disabled={u.id === user?.id} onClick={() => deleteUserMut.mutate(u.id)}><Trash2 className="size-3.5 mr-2" />{t('settings.deleteUser')}</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>
                 ))}
                 {(!usersList || usersList.length === 0) && <TableRow><TableCell colSpan={4} className="text-center py-8 text-xs text-jl-muted">Aucun membre dans l'équipe</TableCell></TableRow>}
               </TableBody></Table>
@@ -753,7 +771,6 @@ export function SettingsView() {
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
-                  placeholder="000000"
                   value={mfaSetupCode}
                   onChange={e => setMfaSetupCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   className="h-10 text-center text-base tracking-[0.3em] font-mono"
@@ -793,7 +810,6 @@ export function SettingsView() {
                 type="text"
                 inputMode="numeric"
                 maxLength={6}
-                placeholder="000000"
                 value={mfaDisableCode}
                 onChange={e => setMfaDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 className="h-10 text-center text-base tracking-[0.3em] font-mono"

@@ -8,12 +8,24 @@ import { usePollingNotifications } from '@/hooks/use-polling-notifications'
 import { fetchJson, fetchJsonOrNull } from '@/lib/api-fetch'
 // ==================== Dashboard ====================
 export function DashboardView() {
-  const { user, setCurrentView } = useAppStore()
+  const { user, setCurrentView, setPendingCreateOpen } = useAppStore()
+  const [period, setPeriod] = useState<'semaine' | 'mois' | 'trimestre' | 'semestre' | 'annee' | 'personnalise'>('mois')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
   const { data: stats, isLoading, isError, error, refetch } = useQuery<DashboardStats>({
-    queryKey: ['dashboard', user?.tenantId],
-    queryFn: () => fetchJson<DashboardStats>(`/api/dashboard?tenantId=${user!.tenantId}&userId=${user!.id}`),
+    queryKey: ['dashboard', user?.tenantId, period, customFrom, customTo],
+    queryFn: () => {
+      const p = new URLSearchParams({ tenantId: user!.tenantId, userId: user!.id, period })
+      if (period === 'personnalise') {
+        if (customFrom) p.set('from', customFrom)
+        if (customTo) p.set('to', customTo)
+      }
+      return fetchJson<DashboardStats>(`/api/dashboard?${p}`)
+    },
     enabled: !!user?.tenantId, refetchInterval: 60000, retry: 1
   })
+
+  const periodLabels: Record<string, string> = { semaine: 'Cette semaine', mois: 'Ce mois', trimestre: 'Ce trimestre', semestre: 'Ce semestre', annee: 'Cette année', personnalise: 'Personnalisé' }
 
   const { data: subData } = useQuery({
     queryKey: ['subscription', user?.tenantId],
@@ -77,7 +89,7 @@ export function DashboardView() {
           <CardContent className="p-5">
             <div className="flex items-start justify-between mb-4">
               <div><h2 className="text-xl font-bold text-[var(--text-primary)]">{greeting}, {user?.fullName?.split(' ').slice(-1)}</h2><p className="text-sm text-[var(--text-secondary)]">{dateStr} — {timeStr}</p></div>
-              <div className="flex gap-2"><Button size="sm" onClick={() => setCurrentView('cases')} className="hidden sm:flex"><Plus className="size-4 mr-1" />Nouveau dossier</Button><Button size="sm" variant="outline" onClick={() => setCurrentView('invoices')} className="hidden sm:flex"><Receipt className="size-4 mr-1" />Nouvelle facture</Button></div>
+              <div className="flex gap-2"><Button size="sm" onClick={() => { setPendingCreateOpen('case'); setCurrentView('cases') }} className="hidden sm:flex"><Plus className="size-4 mr-1" />Nouveau dossier</Button><Button size="sm" variant="outline" onClick={() => { setPendingCreateOpen('invoice'); setCurrentView('invoices') }} className="hidden sm:flex"><Receipt className="size-4 mr-1" />Nouvelle facture</Button></div>
             </div>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -196,7 +208,31 @@ export function DashboardView() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {finData && (
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><TrendingUp className="size-4 text-[var(--success)]" />Activité du cabinet</CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2"><TrendingUp className="size-4 text-[var(--success)]" />Activité du cabinet</CardTitle>
+              <div className="flex items-center gap-2">
+                <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+                  <SelectTrigger className="h-8 w-[150px] text-xs"><Filter className="size-3.5 mr-1 text-[var(--text-muted)]" /><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="semaine">Semaine</SelectItem>
+                    <SelectItem value="mois">Mois</SelectItem>
+                    <SelectItem value="trimestre">Trimestre</SelectItem>
+                    <SelectItem value="semestre">Semestre</SelectItem>
+                    <SelectItem value="annee">Année</SelectItem>
+                    <SelectItem value="personnalise">Personnalisé</SelectItem>
+                  </SelectContent>
+                </Select>
+                {period === 'personnalise' && (
+                  <div className="flex items-center gap-1.5">
+                    <Input type="date" className="h-8 w-[130px] text-xs px-2" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                    <span className="text-xs text-[var(--text-muted)]">→</span>
+                    <Input type="date" className="h-8 w-[130px] text-xs px-2" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardHeader>
           <CardContent>
             {stats.activityCounts && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
@@ -209,14 +245,14 @@ export function DashboardView() {
             )}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[var(--success)]/10 min-w-0 overflow-hidden">
-                <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">CA ce mois</p>
+                <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">CA · {periodLabels[period]}</p>
                 <p className="text-base sm:text-lg font-bold truncate" title={fmtMoney(finData.revenueThisMonth || 0)}>{fmtMoney(finData.revenueThisMonth || 0, 'XAF', true)}</p>
-                {finData.revenueLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "text-[var(--success)]" : "text-[var(--danger)]")}>{(finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "↑" : "↓"} vs mois dernier</p>}
+                {finData.revenueLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "text-[var(--success)]" : "text-[var(--danger)]")}>{(finData.revenueThisMonth || 0) >= finData.revenueLastMonth ? "↑" : "↓"} vs période précédente</p>}
               </div>
               <div className="rounded-xl p-3 border-l-4 border-l-[#059669] bg-[var(--success)]/10 min-w-0 overflow-hidden">
-                <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">Encaissé</p>
+                <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">Encaissé · {periodLabels[period]}</p>
                 <p className="text-base sm:text-lg font-bold truncate" title={fmtMoney(finData.collectedThisMonth || 0)}>{fmtMoney(finData.collectedThisMonth || 0, 'XAF', true)}</p>
-                {finData.collectedLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "text-[var(--success)]" : "text-[var(--danger)]")}>{(finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "↑" : "↓"} vs mois dernier</p>}
+                {finData.collectedLastMonth > 0 && <p className={cn("text-[10px] sm:text-xs mt-1 truncate", (finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "text-[var(--success)]" : "text-[var(--danger)]")}>{(finData.collectedThisMonth || 0) >= finData.collectedLastMonth ? "↑" : "↓"} vs période précédente</p>}
               </div>
               <div className="rounded-xl p-3 border-l-4 border-l-[#DC2626] bg-[var(--danger)]/10 dark:bg-red-950/50 min-w-0 overflow-hidden">
                 <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] mb-1">À recouvrer</p>

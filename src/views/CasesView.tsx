@@ -201,7 +201,7 @@ function AIAnalysisPanel({ analysis, loading, cached, analyzedAt, onAnalyze, onR
 
 // ==================== CASES VIEW ====================
 export function CasesView() {
-  const { user, pendingResourceOpen, setPendingResourceOpen, setHasUnsavedChanges } = useAppStore()
+  const { user, pendingResourceOpen, setPendingResourceOpen, pendingCreateOpen, setPendingCreateOpen, setHasUnsavedChanges } = useAppStore()
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -282,6 +282,14 @@ export function CasesView() {
         .finally(() => setPendingResourceOpen(null))
     }
   }, [pendingResourceOpen, setPendingResourceOpen])
+
+  // Dashboard shortcut: open the "Nouveau dossier" dialog when requested
+  useEffect(() => {
+    if (pendingCreateOpen === 'case') {
+      setDialogOpen(true)
+      setPendingCreateOpen(null)
+    }
+  }, [pendingCreateOpen, setPendingCreateOpen])
 
   // Check subscription for AI access
   const hasAI = useQuery({
@@ -1209,7 +1217,7 @@ export function CasesView() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2"><Gavel className="size-4 text-jl-gold" /><span className="text-xs font-semibold">Recherche de jurisprudence</span></div>
                     <div className="flex gap-2">
-                      <Input placeholder="Ex: clause de non-concurrence OHADA..." value={aiJurisQuery} onChange={e => setAiJurisQuery(e.target.value)} className="h-8 text-xs flex-1" onKeyDown={e => e.key === 'Enter' && handleJurisprudence()} />
+                      <Input placeholder={t('cases.jurisPlaceholder')} value={aiJurisQuery} onChange={e => setAiJurisQuery(e.target.value)} className="h-8 text-xs flex-1" onKeyDown={e => e.key === 'Enter' && handleJurisprudence()} />
                       <Button size="sm" className="h-8 text-xs gap-1" disabled={aiJurisLoading || !aiJurisQuery.trim()} onClick={handleJurisprudence}>{aiJurisLoading ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}Rechercher</Button>
                     </div>
                     {aiJurisLoading && <div className="flex items-center gap-2 text-xs text-jl-muted py-2"><Loader2 className="size-3 animate-spin" />Recherche en cours…</div>}

@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { QueryClient } from '@tanstack/react-query'
-import { LayoutDashboard, Briefcase, Users, ClipboardList, FileText, Calendar, Receipt, TrendingUp, AlertOctagon, Timer, SendHorizontal, FileCode2, MessageSquare, BarChart3, Bell, Shield, Settings, Search, BuildingIcon, CreditCardIcon, UsersRound } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Users, ClipboardList, FileText, Calendar, Receipt, FileDown, AlertOctagon, Timer, SendHorizontal, FileCode2, MessageSquare, BarChart3, Bell, Shield, Settings, Search, BuildingIcon, CreditCardIcon, UsersRound } from 'lucide-react'
 import type { ViewName } from '@/store/appStore'
 
 // ==================== Query Client ====================
@@ -93,7 +93,7 @@ export const NAV_ITEMS: { view: ViewName; labelKey: string; icon: React.ElementT
   { view: 'documents', labelKey: 'nav.documents', icon: FileText, permission: { resource: 'document', action: 'view' } },
   { view: 'calendar', labelKey: 'nav.calendar', icon: Calendar, permission: { resource: 'event', action: 'view' } },
   { view: 'invoices', labelKey: 'nav.invoices', icon: Receipt, permission: { resource: 'invoice', action: 'view' } },
-  { view: 'finances', labelKey: 'nav.finances', icon: TrendingUp, permission: { resource: 'invoice', action: 'view' } },
+  { view: 'finances', labelKey: 'nav.finances', icon: FileDown, permission: { resource: 'invoice', action: 'view' } },
   { view: 'impayes', labelKey: 'nav.impayes', icon: AlertOctagon, permission: { resource: 'invoice', action: 'view' } },
   { view: 'time-tracking', labelKey: 'nav.timeTracking', icon: Timer, permission: { resource: 'task', action: 'view' } },
   { view: 'communications', labelKey: 'nav.communications', icon: SendHorizontal, permission: { resource: 'message', action: 'view' } },

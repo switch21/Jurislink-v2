@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { authenticate, isErrorResponse } from '@/lib/auth-server'
+import { revokeAllSessions } from '@/lib/sessions'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -64,6 +65,9 @@ export async function POST(
       data: { forceLogoutAt: new Date() },
     })
     await db.$disconnect().catch(() => {})
+
+    // 1b. Revoke all device sessions — their next heartbeat logs them out
+    await revokeAllSessions(id)
 
     // 2. Immediately cut the user's WebSocket connection(s)
     const socketsCut = await disconnectUserSockets(id)

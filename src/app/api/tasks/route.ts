@@ -60,49 +60,52 @@ export async function GET(request: Request) {
 
     const tasks = await db.task.findMany({
       where,
-      include: {
-        case: {
-          select: { id: true, reference: true, title: true },
-        },
-        event: {
-          select: { id: true, title: true },
-        },
-      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
 
-    // For each task, resolve assigned users via case assignments
-    const tasksWithAssignees = await Promise.all(
-      tasks.map(async (task) => {
-        let assignedUsers: Array<{ userId: string; fullName: string }> = []
-        if (task.caseId) {
-          const assignments = await db.caseAssignment.findMany({
-            where: { caseId: task.caseId },
+    // Batch-resolve case refs, assignees and counts (avoids N+1 queries that
+    // pushed this endpoint past Vercel's 10s limit and caused 500s in prod)
+    const caseIds = [...new Set(tasks.map((t: { caseId: string | null }) => t.caseId).filter(Boolean))] as string[]
+
+    const [cases, assignments, countRows] = await Promise.all([
+      caseIds.length > 0
+        ? db.case.findMany({
+            where: { id: { in: caseIds } },
+            select: { id: true, reference: true, title: true },
+          })
+        : Promise.resolve([]),
+      caseIds.length > 0
+        ? db.caseAssignment.findMany({
+            where: { caseId: { in: caseIds } },
             include: { user: { select: { id: true, fullName: true } } },
           })
-          assignedUsers = assignments.map((a) => ({
-            userId: a.userId,
-            fullName: a.user.fullName,
-          }))
-        }
-        return {
-          ...task,
-          assignedUsers,
-        }
-      })
-    )
-
-    // Completed vs total count for dashboard
-    const countWhere: Record<string, unknown> = {}
-    if (tenantId) countWhere.tenantId = tenantId
-
-    const [total, completed] = await Promise.all([
-      db.task.count({ where: countWhere }),
-      db.task.count({ where: { ...countWhere, status: 'terminee' } }),
+        : Promise.resolve([]),
+      db.$queryRawUnsafe(
+        'SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE status = $2)::int AS completed FROM tasks WHERE ($1::uuid IS NULL OR tenant_id = $1)',
+        tenantId || null,
+        'terminee',
+      ),
     ])
 
-    return NextResponse.json({ tasks: tasksWithAssignees, _count: { total, completed } })
+    const caseById = new Map((cases as Array<{ id: string; reference: string; title: string }>).map((c) => [c.id, c]))
+    const assigneesByCase = new Map<string, Array<{ userId: string; fullName: string }>>()
+    for (const a of assignments as Array<{ caseId: string; user: { id: string; fullName: string } }>) {
+      const list = assigneesByCase.get(a.caseId) || []
+      list.push({ userId: a.user.id, fullName: a.user.fullName })
+      assigneesByCase.set(a.caseId, list)
+    }
+
+    const tasksWithAssignees = tasks.map((task: { caseId: string | null }) => ({
+      ...task,
+      case: task.caseId ? caseById.get(task.caseId) || null : null,
+      event: null,
+      assignedUsers: task.caseId ? assigneesByCase.get(task.caseId) || [] : [],
+    }))
+
+    const counts = (countRows?.[0] as { total: number; completed: number } | undefined) || { total: 0, completed: 0 }
+
+    return NextResponse.json({ tasks: tasksWithAssignees, _count: { total: counts.total, completed: counts.completed } })
   } catch (error) {
     console.error('List tasks error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

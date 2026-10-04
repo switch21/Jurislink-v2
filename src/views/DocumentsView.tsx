@@ -56,7 +56,7 @@ export function DocumentsView() {
 
   const { data: cases } = useQuery({
     queryKey: ['cases-mini-docs', user?.tenantId],
-    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}`).then(r => r.json()).then(d => Array.isArray(d) ? d : []),
+    queryFn: () => fetch(`/api/cases?tenantId=${user?.tenantId}&limit=100`).then(r => r.json()).then(d => Array.isArray(d) ? d : (d?.cases || [])),
   })
 
   const { data: docsData, isLoading } = useQuery({
@@ -333,7 +333,7 @@ export function DocumentsView() {
               {bulkAction === 'folder' && (
                 <Select value={bulkValue} onValueChange={setBulkValue}>
                   <SelectTrigger className="h-7 w-[140px] text-[10px]"><SelectValue placeholder={t('documents.folder')} /></SelectTrigger>
-                  <SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] || f}</SelectItem>)}</SelectContent>
+                  <SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] ? t(folderKeys[f]) : f}</SelectItem>)}</SelectContent>
                 </Select>
               )}
               {bulkAction === 'status' && (
@@ -477,7 +477,7 @@ export function DocumentsView() {
             {uploading && <div className="space-y-1"><div className="flex justify-between text-xs"><span className="text-jl-secondary">Téléchargement...</span><span className="font-medium">{uploadProgress}%</span></div><Progress value={uploadProgress} className="h-1.5" /></div>}
             <div><Label className="text-xs">Dossier lié</Label><Select value={uploadForm.caseId} onValueChange={v => setUploadForm(f => ({ ...f, caseId: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue placeholder={t('common.none')} /></SelectTrigger><SelectContent>{(Array.isArray(cases) ? cases : []).map(c => <SelectItem key={c.id} value={c.id}>{c.reference} — {c.title}</SelectItem>)}</SelectContent></Select></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Répertoire</Label><Select value={uploadForm.folder} onValueChange={v => setUploadForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] || f}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-xs">Répertoire</Label><Select value={uploadForm.folder} onValueChange={v => setUploadForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] ? t(folderKeys[f]) : f}</SelectItem>)}</SelectContent></Select></div>
               <div><Label className="text-xs">Type de document</Label><Select value={uploadForm.documentType} onValueChange={v => setUploadForm(f => ({ ...f, documentType: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{docTypes.map(dt => <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div><Label className="text-xs">Tags (séparés par des virgules)</Label><Input value={uploadForm.tags} onChange={e => setUploadForm(f => ({ ...f, tags: e.target.value }))} placeholder="contrat, urgent, v1" className="h-9 mt-1" /></div>
@@ -495,7 +495,7 @@ export function DocumentsView() {
             <div><Label className="text-xs">Nom du fichier</Label><Input value={editForm.fileName} onChange={e => setEditForm(f => ({ ...f, fileName: e.target.value }))} className="h-9 mt-1" /></div>
             <div><Label className="text-xs">Description</Label><Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder={t('documents.descriptionPlaceholder')} className="mt-1 min-h-[60px] text-sm" /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Répertoire</Label><Select value={editForm.folder} onValueChange={v => setEditForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] || f}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label className="text-xs">Répertoire</Label><Select value={editForm.folder} onValueChange={v => setEditForm(f => ({ ...f, folder: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{folders.map(f => <SelectItem key={f} value={f}>{folderKeys[f] ? t(folderKeys[f]) : f}</SelectItem>)}</SelectContent></Select></div>
               <div><Label className="text-xs">Type de document</Label><Select value={editForm.documentType} onValueChange={v => setEditForm(f => ({ ...f, documentType: v }))}><SelectTrigger className="h-9 mt-1"><SelectValue /></SelectTrigger><SelectContent>{docTypes.map(dt => <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
