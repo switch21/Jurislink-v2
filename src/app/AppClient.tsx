@@ -258,9 +258,9 @@ export default function App() {
     hydrateLocale()
     // 3. Patch fetch for auth headers
     initAuthFetch()
-    // 4. Set mounted after one frame to trigger AppInner render
-    const id = requestAnimationFrame(() => setMounted(true))
-    return () => cancelAnimationFrame(id)
+    // 4. Set mounted to trigger AppInner render (setTimeout works even when the tab is hidden, unlike requestAnimationFrame)
+    const id = setTimeout(() => setMounted(true), 0)
+    return () => clearTimeout(id)
   }, [])
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableColorScheme disableTransitionOnChange>
