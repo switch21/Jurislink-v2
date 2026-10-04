@@ -53,6 +53,7 @@ const en: Record<string, string> = {
   'login.errorFields': 'Please fill in all fields',
   'login.errorInvalid': 'Login error',
   'login.copyright': '© 2025 JurisLink — All rights reserved',
+  'login.viewPricing': 'View pricing',
   // === COMMON ===
   'common.search': 'Search...',
   'common.all': 'All',

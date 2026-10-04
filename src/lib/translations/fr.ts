@@ -62,6 +62,7 @@ const fr: Record<string, string> = {
   'login.errorFields': 'Veuillez remplir tous les champs',
   'login.errorInvalid': 'Erreur de connexion',
   'login.copyright': '© 2025 JurisLink — Tous droits réservés',
+  'login.viewPricing': 'Voir les tarifs',
   // === COMMON ===
   'common.search': 'Rechercher...',
   'common.all': 'Tous',
